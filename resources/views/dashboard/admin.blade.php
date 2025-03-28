@@ -76,8 +76,7 @@
                                 <h6 class="mb-1">{{ $isu->judul }}</h6>
                                 <small>{{ $isu->tanggal->format('d M Y') }}</small>
                             </div>
-                            <p class="mb-1 text-truncate">{{ Str::limit($isu->rangkuman, 100) }}</p>
-                            <small>{{ $isu->isu_strategis ? 'Strategis' : 'Non-Strategis' }} | {{ $isu->skala }}</small>
+                            <small>{{ $isu->isu_strategis ? 'Strategis' : 'Non-Strategis' }}</small>
                         </a>
                     @endforeach
                 </div>
@@ -112,7 +111,7 @@
                     </div>
                     @if(Auth::user()->isAdmin())
                     <div class="col-6 mb-3">
-                        <a href="#" class="btn btn-secondary w-100 py-3">
+                        <a href="{{ route('users.index') }}" class="btn btn-secondary w-100 py-3">
                             <i class="bi bi-people"></i><br>
                             Kelola Pengguna
                         </a>

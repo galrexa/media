@@ -1,4 +1,5 @@
-@extends('layouts.admin')
+<!-- resources/views/trending/create.blade.php -->
+@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Tambah Trending Baru')
 
@@ -53,6 +54,14 @@
                 </div>
 
                 <div class="mb-3">
+                    <label for="url" class="form-label">URL</label>
+                    <input type="url" class="form-control @error('url') is-invalid @enderror" id="url" name="url" value="{{ old('url') }}" required>
+                    @error('url')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="mb-3">
                     <label for="judul" class="form-label">Judul Trending</label>
                     <input type="text" class="form-control @error('judul') is-invalid @enderror" id="judul" name="judul" value="{{ old('judul') }}" required>
                     @error('judul')
@@ -60,12 +69,22 @@
                     @enderror
                 </div>
 
-                <div class="mb-3">
-                    <label for="url" class="form-label">URL</label>
-                    <input type="url" class="form-control @error('url') is-invalid @enderror" id="url" name="url" value="{{ old('url') }}" required>
-                    @error('url')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                <!-- Preview Container -->
+                <div class="preview-container" id="preview-container" style="display: none;">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 preview-image">
+                                    <img id="preview-image" src="" alt="Thumbnail" class="img-fluid" style="max-height: 150px;" onerror="this.style.display='none'">
+                                </div>
+                                <div class="col-md-9">
+                                    <h5 id="preview-title" class="site-title"></h5>
+                                    <div id="preview-url" class="site-url"></div>
+                                    <div id="preview-description" class="site-description"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
@@ -80,4 +99,82 @@
 
 @section('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<style>
+    .preview-container {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    .site-title {
+        margin-top: 0;
+        color: #1a0dab;
+        font-size: 18px;
+    }
+    .site-url {
+        color: #006621;
+        font-size: 14px;
+        word-break: break-all;
+    }
+    .site-description {
+        color: #545454;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+</style>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const urlInput = document.getElementById('url');
+    const previewContainer = document.getElementById('preview-container');
+    const previewImage = document.getElementById('preview-image');
+    const previewTitle = document.getElementById('preview-title');
+    const previewUrl = document.getElementById('preview-url');
+    const previewDescription = document.getElementById('preview-description');
+
+    urlInput.addEventListener('input', debounce(function() {
+        const url = urlInput.value.trim();
+        if (url) {
+            fetch('/trending/preview?url=' + encodeURIComponent(url))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.title || data.image) {
+                        previewContainer.style.display = 'block';
+                        previewImage.src = data.image || '';
+                        previewTitle.textContent = data.title || '';
+                        previewUrl.textContent = data.url || '';
+                        previewDescription.textContent = data.description || '';
+                        
+                        // Auto-fill title if empty
+                        if (!document.getElementById('judul').value && data.title) {
+                            document.getElementById('judul').value = data.title;
+                        }
+                    } else {
+                        previewContainer.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    previewContainer.style.display = 'none';
+                });
+        } else {
+            previewContainer.style.display = 'none';
+        }
+    }, 500));
+});
+
+// Debounce function to limit API calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
 @endsection

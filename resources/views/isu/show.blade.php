@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', $isu->judul)
 
@@ -28,10 +28,17 @@
                 <h5 class="mb-0">{{ $isu->isu_strategis ? 'Isu Strategis' : 'Isu Lainnya' }}</h5>
                 <h2 class="mb-0">{{ $isu->judul }}</h2>
             </div>
-            <div>
-                <span class="badge {{ $isu->tone == 'positif' ? 'bg-success' : 'bg-danger' }} p-2">{{ ucfirst($isu->tone) }}</span>
-                <span class="badge bg-warning p-2 ms-2">{{ strtoupper($isu->skala) }}</span>
-            </div>
+                <div>
+                    <!-- Tone -->
+                    <span class="badge {{ $isu->refTone && $isu->refTone->nama == 'Positif' ? 'bg-success' : 'bg-danger' }} p-2">
+                        {{ $isu->refTone ? ucfirst($isu->refTone->nama) : ucfirst($isu->tone) }}
+                    </span>
+
+                    <!-- Skala -->
+                    <span class="badge bg-warning p-2 ms-2">
+                        {{ $isu->refSkala ? strtoupper($isu->refSkala->nama) : $isu->skala }}
+                    </span>
+                </div>
         </div>
         
         <div class="card-body">
@@ -44,7 +51,8 @@
             
             <section class="mb-4">
                 <h3>Rangkuman</h3>
-                <p>{{ $isu->rangkuman }}</p>
+                <div>{!! $isu->rangkuman !!}</div>
+            </section>
             </section>
 
             <div class="row mb-4">
@@ -54,7 +62,7 @@
                             <h5 class="mb-0">Narasi Positif</h5>
                         </div>
                         <div class="card-body bg-light">
-                            <p>{{ $isu->narasi_positif }}</p>
+                            <div>{!! $isu->narasi_positif !!}</div>
                         </div>
                     </div>
                 </div>
@@ -64,7 +72,7 @@
                             <h5 class="mb-0">Narasi Negatif</h5>
                         </div>
                         <div class="card-body bg-light">
-                            <p>{{ $isu->narasi_negatif }}</p>
+                            <div>{!! $isu->narasi_negatif !!}</div>
                         </div>
                     </div>
                 </div>
@@ -83,7 +91,7 @@
                                     <div class="d-flex">
                                         <div class="flex-shrink-0 me-3">
                                             @if($ref->thumbnail)
-                                                <img src="{{ asset('storage/' . $ref->thumbnail) }}" alt="{{ $ref->judul }}" class="img-fluid" style="width: 80px; height: 80px; object-fit: cover;">
+                                                <img src="{{ $ref->thumbnail }}" alt="{{ $ref->judul }}" class="img-fluid" style="width: 80px; height: 80px; object-fit: cover;">
                                             @else
                                                 <div class="bg-secondary d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
                                                     <i class="bi bi-image text-white fs-1"></i>
@@ -112,7 +120,7 @@
         <div class="card-footer">
             <div class="d-flex justify-content-between">
                 <div>
-                    <span class="text-muted">Tanggal: {{ $isu->tanggal->format('d F Y') }}</span>
+                    <span class="text-muted">Tanggal: {{ $isu->tanggal->translatedFormat('d F Y') }}</span>
                 </div>
                 @if(Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isEditor()))
                     <div>

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Isu; // Tambahkan import model Isu
 
 class AuthController extends Controller
 {
@@ -28,14 +29,26 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         // Validasi request
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
+        $request->validate([
+            'username' => ['required', 'string'],
             'password' => ['required'],
         ]);
 
-        // Mencoba login
+        // Mencoba login dengan username
+        $credentials = [
+            'username' => $request->username,
+            'password' => $request->password
+        ];
+
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+
+            // Ambil tanggal isu terakhir
+            $latestIsuDate = Isu::latest('tanggal')->first()->tanggal ?? now();
+            
+            // Tambahkan ke session untuk ditampilkan di splash screen
+            session()->flash('login_success', true);
+            session()->flash('latestIsuDate', $latestIsuDate->format('d F Y'));
 
             // Redirect ke halaman yang sesuai berdasarkan role
             $user = Auth::user();
@@ -44,14 +57,14 @@ class AuthController extends Controller
             } elseif ($user->isEditor()) {
                 return redirect()->intended('dashboard/editor');
             } else {
-                return redirect()->intended('dashboard');
+                return redirect()->intended('/'); // Viewer diarahkan ke halaman beranda
             }
         }
 
         // Jika login gagal
         return back()->withErrors([
-            'email' => 'Email atau password yang diberikan tidak cocok dengan data kami.',
-        ])->onlyInput('email');
+            'username' => 'Username atau password yang diberikan tidak cocok dengan data kami.',
+        ])->onlyInput('username');
     }
 
     /**

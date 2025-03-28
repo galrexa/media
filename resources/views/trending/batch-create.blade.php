@@ -1,5 +1,5 @@
 <!-- resources/views/trending/batch-create.blade.php -->
-@extends('layouts.app')
+@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Batch Input Trending')
 

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Daftar Trending')
 
@@ -30,47 +30,35 @@
             <h5 class="mb-0">Trending Google</h5>
         </div>
         <div class="card-body">
-            @if($trendingGoogle->count() > 0)
+            @if(!empty($trendingGoogle))
                 <div class="table-responsive">
                     <table class="table table-striped">
                         <thead>
                             <tr>
+                                <th>Peringkat</th>
                                 <th>Judul</th>
                                 <th>Tanggal</th>
                                 <th>URL</th>
-                                <th>Aksi</th>
+                                <th>Trafik</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($trendingGoogle as $trending)
                                 <tr>
-                                    <td>{{ $trending->judul }}</td>
-                                    <td>{{ $trending->tanggal->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $trending['rank'] }}</td>
+                                    <td>{{ $trending['judul'] }}</td>
+                                    <td>{{ $trending['tanggal']->format('d/m/Y H:i') }}</td>
                                     <td>
-                                        <a href="{{ $trending->url }}" target="_blank" class="text-decoration-none">
-                                            {{ Str::limit($trending->url, 30) }}
+                                        <a href="{{ $trending['url'] }}" target="_blank" class="text-decoration-none">
+                                            {{ Str::limit($trending['url'], 30) }}
                                         </a>
                                     </td>
-                                    <td>
-                                        @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
-                                            <a href="{{ route('trending.edit', $trending) }}" class="btn btn-sm btn-warning">
-                                                <i class="bi bi-pencil"></i> Edit
-                                            </a>
-                                            <form action="{{ route('trending.destroy', $trending) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus trending ini?')">
-                                                    <i class="bi bi-trash"></i> Hapus
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </td>
+                                    <td>{{ $trending['traffic'] }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-                {{ $trendingGoogle->links() }}
             @else
                 <p class="text-center">Tidak ada trending Google untuk ditampilkan</p>
             @endif

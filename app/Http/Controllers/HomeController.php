@@ -3,7 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Isu;
 use App\Models\Trending;
-use App\Models\Image;
+use App\Models\Document;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -11,33 +11,58 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil parameter navigasi
-        $page = max(0, (int) $request->query('page', 0));
-        $dayParam = (int) $request->query('day', 0);
+        // Cek apakah ada parameter day atau offset
+        $hasDay = $request->has('day');
+        $hasOffset = $request->has('offset');
         
-        // Tanggal yang dipilih: day=0 adalah hari ini, day=1 adalah kemarin, dst
-        $selectedDate = Carbon::today()->subDays($dayParam);
+        // Tentukan offset: Prioritaskan penggunaan parameter offset jika ada
+        if ($hasOffset) {
+            $offset = (int) $request->query('offset', 0);
+        } elseif ($hasDay) {
+            // Jika hanya parameter day yang ada, konversi day ke offset
+            $dayParam = (int) $request->query('day', 0);
+            $offset = -$dayParam;  // Konversi langsung, tanpa redirect
+        } else {
+            // Default ke hari ini jika tidak ada parameter
+            $offset = 0;
+        }
+        
+        // Batasi offset agar tidak melampaui batas (opsional)
+        $minOffset = -30; // 30 hari ke masa lalu
+        $maxOffset = 0;   // hingga hari ini (tidak dapat melihat masa depan)
+        
+        if ($offset < $minOffset) $offset = $minOffset;
+        if ($offset > $maxOffset) $offset = $maxOffset;
+        
+        // Untuk kompatibilitas dengan view yang menggunakan selectedDay
+        $selectedDay = -$offset; // Konversi offset ke format day lama
+        
+        // Tanggal yang dipilih berdasarkan offset
+        $selectedDate = Carbon::today()->addDays($offset);
+        
+        // Ambil page untuk navigasi multi-halaman (jika masih digunakan)
+        $page = max(0, (int) $request->query('page', 0));
         
         // Rentang waktu untuk filter data (1 hari penuh)
         $startDate = $selectedDate->copy()->startOfDay();
         $endDate = $selectedDate->copy()->endOfDay();
-
+    
         // Ambil tanggal-tanggal yang memiliki data
-        $availableDates = $this->getAvailableDates($selectedDate, $dayParam);
+        $availableDates = $this->getAvailableDates();
         
         // Pengolahan untuk tampilan tanggal di navigasi (7 hari per halaman)
-        $offset = $page * 7;
-        $dates = array_slice($availableDates, $offset, 7);
-        $hasNextPage = count($availableDates) > ($offset + 7);
+        $offsetPage = $page * 7;
+        $dates = array_slice($availableDates, $offsetPage, 7);
+        $hasNextPage = count($availableDates) > ($offsetPage + 7);
         $hasPrevPage = $page > 0;
-
+    
         // Ambil data untuk tanggal yang dipilih
-        $dailyImages = Image::whereDate('tanggal', $selectedDate)->first();
-        
+        $dailyImages = Document::whereDate('tanggal', $selectedDate)->first();
+
         $isuStrategis = Isu::where('isu_strategis', true)
             ->whereDate('tanggal', $selectedDate->format('Y-m-d'))
             ->orderByDesc('tanggal')
-            ->limit(15)
+            ->limit(10)
             ->get();
             
         $isuLainnya = Isu::where('isu_strategis', false)
@@ -46,18 +71,15 @@ class HomeController extends Controller
             ->limit(12)
             ->get();
             
-        $trendingGoogle = Trending::whereHas('mediaSosial', fn($query) => $query->where('nama', 'Google'))
-            ->whereBetween('tanggal', [$startDate, $endDate])
-            ->orderByDesc('tanggal')
-            ->limit(6)
-            ->get();
+        // Ambil data trending Google dari RSS feed
+        $trendingGoogle = $this->fetchGoogleTrends();
             
         $trendingX = Trending::whereHas('mediaSosial', fn($query) => $query->where('nama', 'X'))
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->orderByDesc('tanggal')
             ->limit(6)
             ->get();
-
+    
         // Data untuk view
         $viewData = compact(
             'isuStrategis',
@@ -69,63 +91,95 @@ class HomeController extends Controller
             'hasNextPage',
             'hasPrevPage',
             'dailyImages',
-            'selectedDate'
+            'selectedDay',     // Untuk kompatibilitas mundur
+            'selectedDate',
+            'availableDates',  // Pastikan availableDates disertakan
+            'offset',          // Tambahkan offset untuk digunakan di view baru
+            'minOffset',       // Tambahkan batas minimum offset
+            'maxOffset'        // Tambahkan batas maksimum offset
         );
 
-        $viewData['selectedDay'] = $dayParam;
+        // Ambil tanggal isu terakhir
+        $latestIsuDate = Isu::latest('tanggal')->first()->tanggal ?? Carbon::now();
+        
+        // Tambahkan ke viewData
+        $viewData['latestIsuDate'] = $latestIsuDate;
+        
+        // Cek jika ada intended_url setelah login
+        if ($request->session()->has('intended_url')) {
+            $intendedUrl = $request->session()->pull('intended_url');
+            return redirect($intendedUrl);
+        }
+    
+        // Sekarang gunakan satu view untuk semua pengguna
+        return view('home', $viewData);
+    }
 
-        // Tentukan view berdasarkan peran pengguna
-        $view = auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor())
-            ? 'home.admin'
-            : 'home';
-
-        return view($view, $viewData);
+    private function fetchGoogleTrends($selectedDate = null)
+    {
+        $rss_url = "https://trends.google.com/trending/rss?geo=ID";
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $rss_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
+        
+        $rss_content = curl_exec($ch);
+        $trendingGoogle = [];
+    
+        if (!curl_errno($ch)) {
+            $rss = @simplexml_load_string($rss_content);
+            if ($rss !== false) {
+                $counter = 1;
+                foreach ($rss->channel->item as $item) {
+                    $title = (string)$item->title;
+                    $ht = $item->children('ht', true);
+                    $traffic = (string)$ht->approx_traffic;
+                    $pubDate = Carbon::parse((string)$item->pubDate);
+                    $url = isset($ht->news_item[0]->news_item_url) ? (string)$ht->news_item[0]->news_item_url : '#';
+    
+                    // Filter berdasarkan tanggal jika diberikan
+                    if ($selectedDate && !$pubDate->isSameDay($selectedDate)) {
+                        continue;
+                    }
+    
+                    $trendingGoogle[] = [
+                        'judul' => $title,
+                        'tanggal' => $pubDate,
+                        'url' => $url,
+                        'traffic' => $traffic,
+                        'rank' => $counter,
+                    ];
+                    $counter++;
+                    if ($counter > 10) break; // Batasi ke 10 item
+                }
+            }
+        }
+        curl_close($ch);
+        return $trendingGoogle;
     }
     
     /**
-     * Mendapatkan tanggal-tanggal yang tersedia dan mengurutkannya
+     * Mendapatkan tanggal-tanggal yang tersedia (hanya tanggal sebelum atau sama dengan hari ini)
      */
-    private function getAvailableDates($selectedDate, $selectedDay)
+    private function getAvailableDates()
     {
-        // Ambil tanggal-tanggal yang memiliki data isu
+        // Ambil tanggal-tanggal yang memiliki data isu, hanya sebelum atau sama dengan hari ini
         $datesFromDb = Isu::selectRaw('DISTINCT DATE(tanggal) as date')
-            ->orderBy('date')
+            ->where('tanggal', '<=', Carbon::today())
+            ->orderBy('date', 'desc')
             ->pluck('date')
+            ->map(function ($date) {
+                return Carbon::parse($date)->format('Y-m-d');
+            })
             ->toArray();
             
-        // Jika database kosong atau tidak ada data isu, buat 7 hari secara manual
+        // Jika database kosong, kembalikan array kosong
         if (empty($datesFromDb)) {
-            $dateRange = [];
-            for ($i = -3; $i <= 3; $i++) {
-                $date = Carbon::today()->addDays($i);
-                $dateRange[] = $date->format('Y-m-d');
-            }
-            $datesFromDb = $dateRange;
+            return [];
         }
         
-        // Format tanggal untuk tampilan
-        $formattedDates = [];
-        foreach ($datesFromDb as $date) {
-            $carbonDate = Carbon::parse($date)->startOfDay();
-            $daysFromToday = Carbon::today()->startOfDay()->diffInDays($carbonDate, false);
-            
-            $formattedDates[] = [
-                'date' => $carbonDate->format('d F Y'),
-                'display_date' => $carbonDate->format('d F'),
-                'day' => $daysFromToday >= 0 ? $daysFromToday : abs($daysFromToday),
-                'active' => $carbonDate->isSameDay($selectedDate),
-                'is_today' => $carbonDate->isToday(),
-                'sort_key' => $daysFromToday // Kunci untuk pengurutan
-            ];
-        }
-        
-        // Urutkan: hari ini pertama, kemudian tanggal terdekat
-        usort($formattedDates, function($a, $b) {
-            if ($a['is_today']) return -1;
-            if ($b['is_today']) return 1;
-            return abs($a['sort_key']) - abs($b['sort_key']);
-        });
-        
-        return $formattedDates;
+        return $datesFromDb;
     }
 }
