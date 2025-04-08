@@ -45,4 +45,30 @@ class ThumbnailHelper
         
         return null;
     }
+    // Tambahkan method ini di ThumbnailHelper
+
+    public static function getUrlMetadata($url)
+    {
+        try {
+            $embed = new Embed();
+            $info = $embed->get($url);
+            
+            return [
+                'title' => $info->title,
+                'description' => $info->description,
+                'image' => $info->image,
+                'favicon' => $info->favicon,
+                'url' => $url
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Error fetching URL metadata: ' . $e->getMessage());
+            return [
+                'title' => '',
+                'description' => '',
+                'image' => '',
+                'favicon' => '',
+                'url' => $url
+            ];
+        }
+    }
 }

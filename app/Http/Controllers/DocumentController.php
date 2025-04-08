@@ -7,6 +7,7 @@ use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
+use Purifier;
 
 class DocumentController extends Controller
 {
@@ -51,12 +52,37 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
-        return $this->handleDocumentUpload($request);
+        //return $this->handleDocumentUpload($request);
+        $validated = $request->validate([
+            'judul' => 'required',
+            'isi' => 'required',
+        ]);
+    
+        $validated['isi'] = Purifier::clean($validated['isi']);
+    
+        Document::create($validated);
+        return redirect()->route('document.index');
     }
 
-    public function update(Request $request, $id)
+    // public function update(Request $request, $id)
+    // {
+    //     return $this->handleDocumentUpload($request, $id);
+    // }
+
+    public function update(Request $request, Document $document)
     {
-        return $this->handleDocumentUpload($request, $id);
+    $validated = $request->validate([
+        'judul' => 'required|string|max:255',
+        'isi'   => 'required|string',
+    ]);
+
+    // Sanitize HTML jika diperlukan
+    $validated['isi'] = Purifier::clean($validated['isi']);
+
+    $document->update($validated);
+
+    return redirect()->route('document.index')
+                     ->with('success', 'Dokumen berhasil diperbarui.');
     }
 
     /**

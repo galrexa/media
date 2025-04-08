@@ -1,3 +1,4 @@
+<!-- resources/views/trending/index.blade.php -->
 @extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Daftar Trending')
@@ -65,10 +66,67 @@
         </div>
     </div>
 
-    <!-- Trending X -->
-    <div class="card">
+    <!-- Trending X Live dari Trends24.in -->
+    <div class="card mb-4">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Trending X</h5>
+            <h5 class="mb-0">Trending X (Live dari Trends24.in)</h5>
+            <span class="badge bg-primary">Diperbarui: {{ now()->format('d/m/Y H:i:s') }}</span>
+        </div>
+        <div class="card-body">
+            @if(!empty($trendingXLive))
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Peringkat</th>
+                                <th>Kata Kunci</th>
+                                <th>Jumlah Tweet</th>
+                                <th>URL</th>
+                                @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
+                                    <th>Aksi</th>
+                                @endif
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($trendingXLive as $trending)
+                                <tr>
+                                    <td>{{ $trending['rank'] }}</td>
+                                    <td>{{ $trending['name'] }}</td>
+                                    <td>{{ $trending['tweet_count'] }}</td>
+                                    <td>
+                                        <a href="{{ $trending['url'] }}" target="_blank" class="text-decoration-none">
+                                            {{ Str::limit($trending['url'], 30) }}
+                                        </a>
+                                    </td>
+                                    @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
+                                        <td>
+                                            <form action="{{ route('trending.saveFromFeed') }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <input type="hidden" name="name" value="{{ $trending['name'] }}">
+                                                <input type="hidden" name="url" value="{{ $trending['url'] }}">
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-database-add"></i> Simpan ke DB
+                                                </button>
+                                            </form>
+                                        </td>
+                                    @endif
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> Gagal memuat data trending dari Trends24.in. Silakan coba lagi nanti.
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Trending X dari Database -->
+    <div class="card">
+        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Trending X (Tersimpan di Database)</h5>
         </div>
         <div class="card-body">
             @if($trendingX->count() > 0)
@@ -113,7 +171,7 @@
                 </div>
                 {{ $trendingX->links() }}
             @else
-                <p class="text-center">Tidak ada trending X untuk ditampilkan</p>
+                <p class="text-center">Tidak ada trending X tersimpan di database</p>
             @endif
         </div>
     </div>
@@ -122,4 +180,9 @@
 
 @section('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<style>
+    .badge {
+        font-size: 0.8em;
+    }
+</style>
 @endsection

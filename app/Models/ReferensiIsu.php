@@ -27,6 +27,7 @@ class ReferensiIsu extends Model
         'judul',
         'url',
         'thumbnail',
+        'description',
     ];
 
     /**

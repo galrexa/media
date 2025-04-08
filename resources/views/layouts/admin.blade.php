@@ -4,53 +4,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Admin dashboard untuk sistem pemantauan media">
+    <meta name="theme-color" content="#4361ee">
     <title>@yield('title', 'Admin Dashboard')</title>
     
     <!-- Font Awesome untuk ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Inter & Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
     <style>
         :root {
+            /* Modern Color Palette */
             --primary-color: #4361ee;
+            --primary-light: #4cc9f0;
+            --primary-dark: #3a56d4;
             --secondary-color: #3f37c9;
             --accent-color: #4895ef;
-            --success-color: #4cc9f0;
+            --success-color: #0cce6b;
+            --danger-color: #e5383b;
+            --warning-color: #ff9e00;
+            --info-color: #4cc9f0;
             --light-color: #f8f9fa;
             --dark-color: #212529;
             --text-color: #495057;
-            --sidebar-width: 240px;
+            --text-light: #6c757d;
+            --bg-color: #f5f7fb;
+            
+            /* Sidebar Dimensions */
+            --sidebar-width: 260px;
             --sidebar-collapsed-width: 70px;
-            --border-radius: 0.5rem;
-            --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            --transition: all 0.3s ease;
+            
+            /* Modern UI Elements */
+            --border-radius-sm: 6px;
+            --border-radius-md: 10px;
+            --border-radius-lg: 16px;
+            --border-radius-xl: 24px;
+            
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 5px 15px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
+            --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+            
+            /* Transitions */
+            --transition-fast: all 0.2s ease;
+            --transition-normal: all 0.3s ease;
+            --transition-slow: all 0.5s ease;
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: #f5f7fb;
+            font-family: 'Inter', 'Poppins', sans-serif;
+            background-color: var(--bg-color);
             margin: 0;
             color: var(--text-color);
             overflow-x: hidden;
+            line-height: 1.6;
         }
 
-        /* Sidebar styling */
+        /* Modern Glassmorphism Sidebar */
         .sidebar {
             position: fixed;
             top: 0;
             left: 0;
             width: var(--sidebar-width);
             height: 100vh;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            background: linear-gradient(145deg, var(--primary-color), var(--secondary-color));
             color: #fff;
             z-index: 1040;
             overflow-y: auto;
-            transition: var(--transition);
+            transition: var(--transition-normal);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .sidebar.collapsed {
@@ -60,7 +91,8 @@
         .sidebar.collapsed .nav-link span,
         .sidebar.collapsed .sidebar-header h5,
         .sidebar.collapsed .nav-category,
-        .sidebar.collapsed .submenu-dash {
+        .sidebar.collapsed .submenu-dash,
+        .sidebar.collapsed .sidebar-title {
             display: none;
         }
         
@@ -71,12 +103,16 @@
         .sidebar-content {
             padding: 0;
             height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .sidebar-header {
-            padding: 1.2rem 1.5rem;
+            padding: 1.4rem 1.5rem;
             background-color: rgba(0, 0, 0, 0.1);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
         }
 
         .sidebar-title {
@@ -84,10 +120,13 @@
             font-size: 1.25rem;
             font-weight: 700;
             color: white;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .sidebar-menu {
             padding: 1rem 0;
+            flex-grow: 1;
         }
 
         .nav-item {
@@ -97,22 +136,29 @@
         .nav-link {
             display: flex;
             align-items: center;
-            padding: 0.6rem 1.5rem;
-            color: rgba(255, 255, 255, 0.8) !important;
-            transition: all 0.2s ease;
+            padding: 0.75rem 1.5rem;
+            color: rgba(255, 255, 255, 0.85) !important;
+            transition: var(--transition-fast);
             font-size: 0.95rem;
             white-space: nowrap;
+            border-radius: 0;
+            position: relative;
+            font-weight: 500;
+            letter-spacing: 0.3px;
         }
 
         .nav-link:hover {
             color: #fff !important;
             background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(3px);
         }
 
         .nav-link.active {
             color: #fff !important;
-            background-color: rgba(255, 255, 255, 0.15);
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.15), transparent);
             border-left: 3px solid #fff;
+            font-weight: 600;
+            letter-spacing: 0.3px;
         }
 
         .nav-link i {
@@ -120,24 +166,30 @@
             font-size: 1.1rem;
             width: 24px;
             text-align: center;
+            transition: var(--transition-fast);
+        }
+        
+        .nav-link:hover i {
+            transform: scale(1.1);
         }
 
         .nav-item.category {
-            padding: 0.8rem 1.5rem 0.4rem;
+            padding: 1rem 1.5rem 0.4rem;
         }
 
         .nav-category {
             font-size: 0.7rem;
             font-weight: 600;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
             color: rgba(255, 255, 255, 0.5);
             text-transform: uppercase;
+            margin-bottom: 0.3rem;
         }
 
         .nav-item.submenu .nav-link {
             padding-left: 3.2rem;
             font-size: 0.9rem;
-            height: 2.2rem;
+            height: 2.4rem;
         }
 
         .submenu-dash {
@@ -153,13 +205,28 @@
             display: flex;
             align-items: center;
             cursor: pointer;
+            color: rgba(255, 255, 255, 0.85);
+            transition: var(--transition-fast);
+            padding: 0.75rem 1.5rem;
+        }
+        
+        .logout-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .logout-btn i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
         }
 
-        /* Main content styling */
+        /* Main Content with Modern UI */
         .main-content {
             margin-left: var(--sidebar-width);
-            padding: 1.5rem;
-            transition: var(--transition);
+            padding: 2rem;
+            transition: var(--transition-normal);
             min-height: 100vh;
         }
 
@@ -167,18 +234,20 @@
             margin-left: var(--sidebar-collapsed-width);
         }
 
-        /* Cards */
+        /* Modern Floating Cards */
         .card {
             border: none;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            transition: var(--transition);
+            border-radius: var(--border-radius-md);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-normal);
             overflow: hidden;
             margin-bottom: 1.5rem;
+            background-color: white;
+            border: 1px solid rgba(0, 0, 0, 0.03);
         }
 
         .card:hover {
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-md);
             transform: translateY(-3px);
         }
 
@@ -186,64 +255,114 @@
             background-color: #fff;
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             font-weight: 600;
-            padding: 1rem 1.25rem;
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            align-items: center;
+            letter-spacing: 0.3px;
+        }
+        
+        .card-header i {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
         }
 
-        /* Alerts */
+        /* Modern Alert Design */
         .alert {
-            border-radius: var(--border-radius);
+            border-radius: var(--border-radius-md);
             border-left: 4px solid;
-            padding: 1rem;
+            padding: 1rem 1.25rem;
             margin-bottom: 1.5rem;
             border-top: none;
             border-right: none;
             border-bottom: none;
+            display: flex;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
         }
 
         .alert-success {
-            background-color: rgba(25, 135, 84, 0.1);
-            border-left-color: #198754;
+            background-color: rgba(12, 206, 107, 0.1);
+            border-left-color: var(--success-color);
+            color: #0a8c50;
         }
 
         .alert-danger {
-            background-color: rgba(220, 53, 69, 0.1);
-            border-left-color: #dc3545;
+            background-color: rgba(229, 56, 59, 0.1);
+            border-left-color: var(--danger-color);
+            color: #b52a2c;
+        }
+        
+        .alert-warning {
+            background-color: rgba(255, 158, 0, 0.1);
+            border-left-color: var(--warning-color);
+            color: #cc7e00;
+        }
+        
+        .alert-info {
+            background-color: rgba(76, 201, 240, 0.1);
+            border-left-color: var(--info-color);
+            color: #039ccc;
         }
 
-        /* Buttons */
+        /* Modern Button Styles */
         .btn {
-            border-radius: var(--border-radius);
-            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius-sm);
+            padding: 0.6rem 1.2rem;
             font-weight: 500;
-            transition: var(--transition);
+            transition: var(--transition-normal);
+            letter-spacing: 0.3px;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            border: none;
+            box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
         }
 
         .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
             transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .btn-light {
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: var(--text-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-light:hover {
+            background: #f8f9fa;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
-        /* Sidebar toggle button */
+        /* Sidebar Toggle Button with Modern Style */
         .toggle-sidebar {
-            background: none;
+            background: white;
             border: none;
             font-size: 1.5rem;
             color: var(--primary-color);
             cursor: pointer;
             padding: 0.5rem;
             border-radius: 50%;
-            transition: var(--transition);
+            transition: var(--transition-normal);
+            box-shadow: var(--shadow-sm);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .toggle-sidebar:hover {
             background-color: rgba(67, 97, 238, 0.1);
-            color: var(--secondary-color);
+            color: var(--primary-dark);
+            transform: rotate(180deg);
+            box-shadow: var(--shadow-md);
         }
         
         /* Floating toggle button for mobile */
@@ -252,19 +371,36 @@
             bottom: 20px;
             right: 20px;
             z-index: 1050;
-            display: none;
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            box-shadow: var(--shadow-md);
+            transition: var(--transition-normal);
+            border: none;
+            font-size: 1.25rem;
+        }
+        
+        .mobile-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .mobile-toggle:active {
+            transform: scale(0.95);
         }
 
-        /* Mobile styles */
+        /* Modern Responsive Design */
+        @media (max-width: 992px) {
+            .main-content {
+                padding: 1.5rem;
+            }
+        }
+        
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -277,7 +413,7 @@
             
             .main-content {
                 margin-left: 0;
-                padding: 1rem;
+                padding: 1.2rem;
             }
             
             .mobile-toggle {
@@ -289,65 +425,124 @@
             }
         }
 
-        /* Dropdown styling */
+        /* Modern Dropdown Menu with Animation */
         .dropdown-menu {
             border: none;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            border-radius: var(--border-radius-md);
             background-color: #fff;
             margin-top: 0.5rem;
-            padding: 0.5rem 0;
+            padding: 0.75rem 0;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            animation: dropdownFade 0.2s ease-out;
+        }
+        
+        @keyframes dropdownFade {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .dropdown-menu .dropdown-item {
             color: var(--text-color);
-            padding: 0.5rem 1.5rem;
+            padding: 0.6rem 1.5rem;
             font-size: 0.9rem;
-            transition: var(--transition);
+            transition: var(--transition-fast);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
         }
 
         .dropdown-menu .dropdown-item:hover {
             color: var(--primary-color);
-            background-color: rgba(67, 97, 238, 0.1);
+            background-color: rgba(67, 97, 238, 0.05);
+            transform: translateX(3px);
+        }
+        
+        .dropdown-menu .dropdown-item i {
+            transition: var(--transition-fast);
+        }
+        
+        .dropdown-menu .dropdown-item:hover i {
+            transform: scale(1.1);
         }
 
-        /* Page heading */
+        /* Page Heading with Modern Typography */
         .page-heading {
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .page-heading h1 {
             font-size: 1.75rem;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--dark-color);
             margin-bottom: 0.5rem;
+            letter-spacing: 0.3px;
         }
 
         .page-heading p {
-            font-size: 0.9rem;
-            color: var(--text-color);
+            font-size: 0.95rem;
+            color: var(--text-light);
+            line-height: 1.6;
         }
 
-        /* Stats cards */
+        /* Modern Stat Cards with Gradient */
         .stat-card {
-            background: #fff;
-            border-radius: var(--border-radius);
+            background: white;
+            border-radius: var(--border-radius-md);
             padding: 1.5rem;
-            box-shadow: var(--box-shadow);
-            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-normal);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
         }
 
         .stat-card:hover {
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-md);
             transform: translateY(-3px);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary-color), var(--primary-light));
         }
 
         .stat-card .stat-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
+            font-size: 2.25rem;
+            margin-bottom: 1.2rem;
             color: var(--primary-color);
+            opacity: 0.9;
+        }
+        
+        .stat-card.danger-card::before {
+            background: linear-gradient(to bottom, var(--danger-color), #ff6b6d);
+        }
+        
+        .stat-card.danger-card .stat-icon {
+            color: var(--danger-color);
+        }
+        
+        .stat-card.success-card::before {
+            background: linear-gradient(to bottom, var(--success-color), #5dffaa);
+        }
+        
+        .stat-card.success-card .stat-icon {
+            color: var(--success-color);
+        }
+        
+        .stat-card.warning-card::before {
+            background: linear-gradient(to bottom, var(--warning-color), #ffce6d);
+        }
+        
+        .stat-card.warning-card .stat-icon {
+            color: var(--warning-color);
         }
 
         .stat-card .stat-value {
@@ -358,11 +553,37 @@
         }
 
         .stat-card .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-color);
+            font-size: 0.95rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+        
+        .stat-card .stat-change {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.8rem;
+            border-radius: 50px;
+            font-weight: 600;
+        }
+        
+        .stat-card .stat-change.positive {
+            background-color: rgba(12, 206, 107, 0.1);
+            color: var(--success-color);
+        }
+        
+        .stat-card .stat-change.negative {
+            background-color: rgba(229, 56, 59, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .stat-card .stat-change i {
+            margin-right: 0.25rem;
+            font-size: 0.75rem;
         }
 
-        /* Scrollbar */
+        /* Modern Scrollbar Design */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -380,71 +601,280 @@
             background: rgba(255, 255, 255, 0.5);
         }
 
-        /* Tables */
+        /* Modern Table Design */
         .table {
             border-collapse: separate;
             border-spacing: 0;
             width: 100%;
         }
 
-        .table th {
+        .table thead th {
             font-weight: 600;
-            padding: 1rem;
+            padding: 1rem 1.25rem;
             background-color: rgba(0, 0, 0, 0.02);
+            color: var(--text-color);
+            border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+            vertical-align: middle;
+            letter-spacing: 0.3px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+        
+        .table thead th:first-child {
+            border-top-left-radius: var(--border-radius-sm);
+        }
+        
+        .table thead th:last-child {
+            border-top-right-radius: var(--border-radius-sm);
         }
 
-        .table td {
-            padding: 1rem;
+        .table tbody td {
+            padding: 1rem 1.25rem;
             vertical-align: middle;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 0.95rem;
+        }
+        
+        .table tbody tr:last-child td:first-child {
+            border-bottom-left-radius: var(--border-radius-sm);
+        }
+        
+        .table tbody tr:last-child td:last-child {
+            border-bottom-right-radius: var(--border-radius-sm);
         }
 
         .table-striped tbody tr:nth-of-type(odd) {
-            background-color: rgba(0, 0, 0, 0.01);
+            background-color: rgba(0, 0, 0, 0.02);
         }
 
+        .table-hover tbody tr {
+            transition: var(--transition-fast);
+        }
+        
         .table-hover tbody tr:hover {
             background-color: rgba(67, 97, 238, 0.05);
+            transform: scale(1.01);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* Badge Design */
+        .badge {
+            padding: 0.35em 0.65em;
+            font-weight: 600;
+            font-size: 0.75rem;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge-primary {
+            background-color: rgba(67, 97, 238, 0.15);
+            color: var(--primary-color);
+        }
+        
+        .badge-success {
+            background-color: rgba(12, 206, 107, 0.15);
+            color: var(--success-color);
+        }
+        
+        .badge-danger {
+            background-color: rgba(229, 56, 59, 0.15);
+            color: var(--danger-color);
+        }
+        
+        .badge-warning {
+            background-color: rgba(255, 158, 0, 0.15);
+            color: var(--warning-color);
+        }
+        
+        /* Page Transition Animation */
+        .page-content {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Top navbar user dropdown */
+        .user-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: var(--border-radius-md);
+            padding: 0.6rem 1rem;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-fast);
+        }
+        
+        .user-dropdown-toggle:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+        
+        .user-dropdown-toggle .user-info {
+            margin-right: 0.5rem;
+        }
+        
+        .user-dropdown-toggle .user-name {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .user-dropdown-toggle .user-role {
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        
+        .user-dropdown-toggle .user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --text-color: #e8eaed;
+                --text-light: #9aa0a6;
+                --dark-color: #e8eaed;
+            }
+            
+            body {
+                background-color: var(--bg-color);
+            }
+            
+            .card, 
+            .dropdown-menu, 
+            .stat-card,
+            .user-dropdown-toggle {
+                background-color: #1e1e1e;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            
+            .card-header {
+                background-color: #1e1e1e;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            
+            .table thead th {
+                background-color: rgba(255, 255, 255, 0.05);
+                color: var(--text-color);
+                border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+            }
+            
+            .table tbody td {
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            
+            .table-striped tbody tr:nth-of-type(odd) {
+                background-color: rgba(255, 255, 255, 0.02);
+            }
+            
+            .table-hover tbody tr:hover {
+                background-color: rgba(67, 97, 238, 0.1);
+            }
+            
+            .btn-light {
+                background-color: #2d2d2d;
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                color: var(--text-color);
+            }
+            
+            .btn-light:hover {
+                background-color: #3d3d3d;
+            }
+            
+            .toggle-sidebar {
+                background-color: #2d2d2d;
+                color: var(--primary-light);
+            }
+            
+            .toggle-sidebar:hover {
+                background-color: rgba(67, 97, 238, 0.2);
+            }
+            
+            .alert-success {
+                background-color: rgba(12, 206, 107, 0.1);
+                color: #5dffaa;
+            }
+            
+            .alert-danger {
+                background-color: rgba(229, 56, 59, 0.1);
+                color: #ff6b6d;
+            }
         }
     </style>
     @yield('styles')
 </head>
 <body>
-    <!-- Sidebar -->
+    <!-- Sidebar dengan Glassmorphism Effect -->
     <nav id="sidebar" class="sidebar">
-        @include('partials.sidebar')
+        <div class="sidebar-content">
+            <div class="sidebar-header">
+                <div class="sidebar-title">ADMIN DASHBOARD</div>
+            </div>
+            
+            <div class="sidebar-menu">
+                @include('partials.sidebar')
+            </div>
+        </div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Main Content dengan Modern UI -->
     <main id="content" class="main-content">
-        <!-- Top navbar -->
+        <!-- Top navbar dengan modern styling -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <button class="toggle-sidebar d-none d-md-block" id="toggleSidebar">
-                <i class="bi bi-list"></i>
-            </button>
+            <div class="d-flex align-items-center">
+                <button class="toggle-sidebar d-none d-md-block me-3" id="toggleSidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <div class="page-title d-none d-md-block">
+                    <h4 class="m-0 fw-bold">@yield('page-title', 'Dashboard')</h4>
+                </div>
+            </div>
             
             <div class="dropdown">
-                <button class="btn btn-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-user-circle me-1"></i>
-                    <span>{{ Auth::user()->name ?? 'Admin' }}</span>
+                <button class="user-dropdown-toggle dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <div class="d-none d-md-block">
+                        <div class="user-info">
+                            <div class="user-name">{{ Auth::user()->name ?? 'Admin' }}</div>
+                            <div class="user-role">Administrator</div>
+                        </div>
+                    </div>
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profil</a></li>
-                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
-                <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i>Tentang</a></li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <form action="{{ route('logout') }}" method="POST">
-                        @csrf
-                        <button type="submit" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt me-2"></i>Logout
-                        </button>
-                    </form>
-                </li>
-            </ul>
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profil</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i>Tentang</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{{ route('logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="dropdown-item">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </button>
+                        </form>
+                    </li>
+                </ul>
             </div>
         </div>
 
-        <!-- Alerts -->
+        <!-- Alerts dengan modern styling -->
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
@@ -458,19 +888,19 @@
             </div>
         @endif
 
-        <!-- Page Content -->
+        <!-- Page Content dengan animasi transisi -->
         <div class="page-content">
             @yield('content')
         </div>
     </main>
 
-    <!-- Mobile Toggle Button -->
+    <!-- Mobile Toggle Button dengan efek floating -->
     <button class="mobile-toggle" id="mobileToggle">
         <i class="bi bi-list"></i>
     </button>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const sidebar = document.getElementById('sidebar');
@@ -478,13 +908,13 @@
             const toggleSidebar = document.getElementById('toggleSidebar');
             const mobileToggle = document.getElementById('mobileToggle');
             
-            // Desktop sidebar toggle
+            // Desktop sidebar toggle dengan animasi
             toggleSidebar?.addEventListener('click', () => {
                 sidebar.classList.toggle('collapsed');
                 content.classList.toggle('expanded');
             });
             
-            // Mobile sidebar toggle
+            // Mobile sidebar toggle dengan animasi
             mobileToggle?.addEventListener('click', () => {
                 sidebar.classList.toggle('show');
             });
@@ -508,7 +938,7 @@
                 }
             });
             
-            // Active menu highlighting
+            // Active menu highlighting dengan efek visual
             const currentPath = window.location.pathname;
             const navLinks = document.querySelectorAll('.nav-link');
             
@@ -529,6 +959,25 @@
                         }
                     }
                 }
+            });
+            
+            // Efek ripple pada button
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const x = e.clientX - e.target.offsetLeft;
+                    const y = e.clientY - e.target.offsetTop;
+                    
+                    const ripple = document.createElement('span');
+                    ripple.style.left = `${x}px`;
+                    ripple.style.top = `${y}px`;
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
             });
         });
     </script>
