@@ -1,0 +1,37 @@
+stages:
+    - dev
+    - prod
+
+deploy_to_dev:
+  stage: dev
+  image: tetraweb/php
+  before_script:
+    - mkdir /root/.ssh && chmod 700 /root/.ssh
+    - ssh-keyscan -H -p 22 $DEV_IP >> /root/.ssh/known_hosts
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$DEV_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - '[[ -f /.dockerenv ]] && echo -e "Host *ntStrictHostKeyChecking nonn" > ~/.ssh/config'
+    - apt-get install rsync git
+    - git submodule update --init --recursive
+  script:
+    - rsync -rav -e ssh --exclude=.git --exclude=uploads --exclude=db.php --exclude=params.php --exclude=.gitlab-ci.yml ./ root@$DEV_IP:/var/www/media-ksp/
+  only:
+    - staging
+
+deploy_to_prod:
+  stage: prod
+  image: tetraweb/php
+  before_script:
+    - mkdir /root/.ssh && chmod 700 /root/.ssh
+    - ssh-keyscan -H -p 22 $PROD_IP >> /root/.ssh/known_hosts
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$PROD_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - '[[ -f /.dockerenv ]] && echo -e "Host *ntStrictHostKeyChecking nonn" > ~/.ssh/config'
+    - apt-get install rsync git
+    - git submodule update --init --recursive
+  script:
+    - rsync -rav -e ssh --exclude=.git --exclude=uploads --exclude=db.php --exclude=params.php --exclude=.gitlab-ci.yml ./ root@$PROD_IP:/var/www/media-ksp/
+  only:
+    - main
