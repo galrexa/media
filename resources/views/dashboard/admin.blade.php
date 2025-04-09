@@ -98,7 +98,7 @@
                         </a>
                     </div>
                     <div class="col-6 mb-3">
-                        <a href="{{ route('images.create') }}" class="btn btn-success w-100 py-3">
+                        <a href="{{ route('documents.create') }}" class="btn btn-success w-100 py-3">
                             <i class="bi bi-image"></i><br>
                             Upload Gambar
                         </a>

@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/IsuController.php
 namespace App\Http\Controllers;
 
 use App\Models\Isu;
@@ -6,6 +7,7 @@ use App\Models\ReferensiIsu;
 use App\Models\RefSkala;
 use App\Models\RefTone;
 use App\Models\Kategori;
+use App\Helpers\ThumbnailHelper;
 use Embed\Embed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -292,6 +294,11 @@ class IsuController extends Controller
 
     public function show(Isu $isu)
     {
+        
+        foreach ($isu->referensi as $ref) {
+            $metadata = ThumbnailHelper::getUrlMetadata($ref->url);
+            $ref->meta_description = $metadata['description'];
+        }
         $isu->load(['referensi', 'refSkala', 'refTone']);
         return view('isu.show', compact('isu'));
     }
