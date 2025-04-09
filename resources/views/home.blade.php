@@ -331,7 +331,7 @@
                     
                     <!-- Trending X -->
                     <div class="col-md-6">
-                        <div class="card h-100 {{ $noImages ? 'full-width-card' : '' }}">
+                        <div class="card h-100 {{ $noImages ?? false ? 'full-width-card' : '' }}">
                             <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Trend X</h5>
                                 <div class="navigation-buttons">
@@ -343,35 +343,96 @@
                                     </button>
                                 </div>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-0">
                                 <div class="x-slider-container">
                                     <div class="x-slider">
-                                        <!-- Halaman pertama -->
-                                        <div class="x-slide active">
-                                            <div class="list-group list-group-flush">
-                                                @forelse($trendingX->take(3) as $index => $trend)
-                                                    <div class="list-group-item border-bottom py-2">
-                                                        <a href="{{ $trend->url }}" target="_blank" class="text-decoration-none">
-                                                            {{ $index + 1 }}. {{ $trend->judul }}
-                                                        </a>
-                                                    </div>
-                                                @empty
-                                                    <div class="list-group-item">Tidak ada trending X</div>
-                                                @endforelse
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Halaman kedua (jika ada) -->
-                                        @if(count($trendingX) > 3)
-                                            <div class="x-slide">
-                                                <div class="list-group list-group-flush">
-                                                    @foreach($trendingX->skip(3)->take(3) as $index => $trend)
-                                                        <div class="list-group-item border-bottom py-2">
-                                                            <a href="{{ $trend->url }}" target="_blank" class="text-decoration-none">
-                                                                {{ $index + 4 }}. {{ $trend->judul }}
-                                                            </a>
+                                        @php
+                                            // Tentukan jumlah item per slide yang optimal
+                                            $itemsPerSlide = 5;
+                                            // Pastikan data trending tersedia
+                                            $xData = $trendingXLive ?? [];
+                                            // Hitung jumlah slide yang dibutuhkan
+                                            $totalSlides = ceil(count($xData) / $itemsPerSlide);
+                                        @endphp
+
+                                        @for ($slideIndex = 0; $slideIndex < $totalSlides; $slideIndex++)
+                                            <div class="x-slide {{ $slideIndex === 0 ? 'active' : '' }}">
+                                                <ul class="trend-list">
+                                                    @foreach(array_slice($xData, $slideIndex * $itemsPerSlide, $itemsPerSlide) as $trend)
+                                                    <li class="trend-item">
+                                                        <span class="trend-rank {{ $trend['rank'] <= 3 ? 'top-'.$trend['rank'] : '' }}">{{ $trend['rank'] }}</span>
+                                                        <div class="trend-content">
+                                                            <div class="trend-title">
+                                                                <a href="{{ $trend['url'] }}" target="_blank">{{ $trend['name'] }}</a>
+                                                            </div>
+                                                            <div class="trend-info">
+                                                                @if(!empty($trend['tweet_count']))
+                                                                    <span class="trend-traffic"><i class="bi bi-twitter"></i> {{ $trend['tweet_count'] }}</span>
+                                                                @endif
+                                                                <span class="trend-source"><i class="bi bi-lightning"></i> Live</span>
+                                                            </div>
                                                         </div>
+                                                    </li>
                                                     @endforeach
+                                                </ul>
+                                            </div>
+                                        @endfor
+
+                                        <!-- Slide fallback jika tidak ada data live -->
+                                        @if(empty($xData) && count($trendingX) > 0)
+                                            <div class="x-slide active">
+                                                <ul class="trend-list">
+                                                    @foreach($trendingX->take($itemsPerSlide) as $index => $trend)
+                                                    <li class="trend-item">
+                                                        <span class="trend-rank {{ $index < 3 ? 'top-'.($index+1) : '' }}">{{ $index + 1 }}</span>
+                                                        <div class="trend-content">
+                                                            <div class="trend-title">
+                                                                <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
+                                                            </div>
+                                                            <div class="trend-info">
+                                                                <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                                <span class="trend-source"><i class="bi bi-database"></i> DB</span>
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+
+                                            @if(count($trendingX) > $itemsPerSlide)
+                                                @php
+                                                    $dbSlides = ceil(count($trendingX) / $itemsPerSlide) - 1;
+                                                @endphp
+                                                @for ($dbSlideIndex = 1; $dbSlideIndex <= $dbSlides; $dbSlideIndex++)
+                                                    <div class="x-slide">
+                                                        <ul class="trend-list">
+                                                            @foreach($trendingX->skip($dbSlideIndex * $itemsPerSlide)->take($itemsPerSlide) as $index => $trend)
+                                                            <li class="trend-item">
+                                                                <span class="trend-rank">{{ ($dbSlideIndex * $itemsPerSlide) + $index + 1 }}</span>
+                                                                <div class="trend-content">
+                                                                    <div class="trend-title">
+                                                                        <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
+                                                                    </div>
+                                                                    <div class="trend-info">
+                                                                        <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                                        <span class="trend-source"><i class="bi bi-database"></i> DB</span>
+                                                                    </div>
+                                                                </div>
+                                                            </li>
+                                                            @endforeach
+                                                        </ul>
+                                                    </div>
+                                                @endfor
+                                            @endif
+                                        @endif
+
+                                        <!-- Slide fallback jika sama sekali tidak ada data -->
+                                        @if(empty($xData) && count($trendingX) == 0)
+                                            <div class="x-slide active">
+                                                <div class="text-center p-4">
+                                                    <div class="alert alert-light">
+                                                        <i class="bi bi-exclamation-circle"></i> Tidak ada trending X untuk ditampilkan
+                                                    </div>
                                                 </div>
                                             </div>
                                         @endif
@@ -380,7 +441,18 @@
                             </div>
                             <div class="card-footer p-0">
                                 <div class="slider-indicators d-flex justify-content-start p-2">
-                                    @for ($i = 0; $i < ceil(count($trendingX) / 3); $i++)
+                                    @php
+                                        // Hitung jumlah indikator
+                                        $indicatorCount = 0;
+                                        if (!empty($xData)) {
+                                            $indicatorCount = $totalSlides;
+                                        } elseif (count($trendingX) > 0) {
+                                            $indicatorCount = ceil(count($trendingX) / $itemsPerSlide);
+                                        } else {
+                                            $indicatorCount = 1;
+                                        }
+                                    @endphp
+                                    @for ($i = 0; $i < $indicatorCount; $i++)
                                         <span class="slider-dot x-dot {{ $i === 0 ? 'active' : '' }}" data-index="{{ $i }}"></span>
                                     @endfor
                                 </div>
@@ -421,17 +493,11 @@
     }
 
     /* Styling untuk membuat modal berbentuk persegi */
-    #welcomeModal .modal-dialog {
-        width: 30%; /* Atur lebar tetap */
-        height: 50%; /* Atur tinggi sama dengan lebar */
-        max-width: none; /* Hapus batasan default Bootstrap */
-        margin: auto; /* Pusatkan modal */
-    }
-
     #welcomeModal .modal-content {
-        height: 100%; /* Isi seluruh tinggi modal-dialog */
-        border-radius: 0; /* Hapus sudut membulat untuk bentuk persegi sempurna */
-        overflow-y: auto; /* Tambahkan scroll jika konten melebihi tinggi */
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        overflow: hidden;
     }
 
     /* Opsional: Sesuaikan padding dan konten agar terlihat rapi */
@@ -443,9 +509,13 @@
         text-align: center;
     }
 
-    #welcomeModal .modal-header,
+    #welcomeModal .modal-header {
+        border-bottom: none;
+        padding: 1.5rem 1.5rem 0.5rem;
+    }
+
     #welcomeModal .modal-footer {
-        padding: 10px;
+        padding: 1rem 1.5rem 1.5rem;
     }
 
     /* Responsif: Gunakan vw untuk ukuran dinamis */

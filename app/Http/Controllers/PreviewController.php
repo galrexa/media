@@ -1,4 +1,5 @@
 <?php
+// app/Http/Controllers/PreviewController.php
 
 namespace App\Http\Controllers;
 

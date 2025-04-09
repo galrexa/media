@@ -1,5 +1,5 @@
 <?php
-
+// app/Models/RefSkala.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

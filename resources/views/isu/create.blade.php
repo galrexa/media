@@ -1,5 +1,4 @@
 <!-- resources/views/isu/create.blade.php -->
-<!-- resources/views/isu/create.blade.php -->
 @extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Tambah Isu Baru')
@@ -249,7 +248,7 @@ $(document).ready(function() {
         toolbar: [
             ['style', ['style']],
             ['font', ['bold', 'italic', 'underline']],
-            ['para', ['ul', 'ol', 'paragraph']], // Bullet dan numbering
+            ['para', ['ul', 'ol', 'paragraph']],
             ['insert', ['link']],
             ['table', ['table']],
             ['view', ['undo', 'redo']]

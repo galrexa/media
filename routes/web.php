@@ -37,6 +37,7 @@ Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->m
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+
 // Route yang memerlukan autentikasi
 Route::middleware(['auth'])->group(function () {
     
@@ -72,8 +73,13 @@ Route::middleware(['auth'])->group(function () {
     // Route yang dapat diakses semua user yang login
     Route::get('/isu', [IsuController::class, 'index'])->name('isu.index');
     Route::get('/trending', [TrendingController::class, 'index'])->name('trending.index');
-    Route::get('/preview', [IsuController::class, 'preview'])->name('preview');
     
+    // PINDAHKAN route test sebelum route parameter trending/{trending}
+    Route::get('/trending/test', [TrendingController::class, 'test'])->name('trending.test');
+    
+    Route::get('/preview', [IsuController::class, 'preview'])->name('preview');
+
+
     // Route yang hanya dapat diakses admin dan editor - PENTING: create harus sebelum wildcard {isu}
     Route::middleware(['role:admin,editor'])->group(function () {
         Route::get('/isu/create', [IsuController::class, 'create'])->name('isu.create');
@@ -81,6 +87,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/isu/{isu}/edit', [IsuController::class, 'edit'])->name('isu.edit');
         Route::put('/isu/{isu}', [IsuController::class, 'update'])->name('isu.update');
         Route::delete('/isu/{isu}', [IsuController::class, 'destroy'])->name('isu.destroy');
+
         
         Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
         Route::get('/documents/upload', [DocumentController::class, 'create'])->name('documents.create');
@@ -90,6 +97,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/trending/create', [TrendingController::class, 'create'])->name('trending.create');
         Route::post('/trending', [TrendingController::class, 'store'])->name('trending.store');
         Route::post('/trending/edit/{date?}', [TrendingController::class, 'edit'])->name('trending.edit');
+        Route::post('/trending/save-from-feed', [TrendingController::class, 'saveFromFeed'])->name('trending.saveFromFeed');
+        
+        // Pastikan route ini SETELAH route /trending/test
         Route::delete('/trending/{trending}', [TrendingController::class, 'destroy'])->name('trending.destroy');
 
         // routes/web.php
