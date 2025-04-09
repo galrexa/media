@@ -32,7 +32,6 @@
         --text-color: #2b2d42;               /* Warna teks utama */
         --text-light: #6c757d;               /* Warna teks sekunder */
         --light-bg: #f8f9fa;                 /* Background terang */
-        --dark-bg: #212529;                  /* Background gelap untuk dark mode */
         
         /* Modern Shadow Styles */
         --card-shadow: 0 10px 20px rgba(0,0,0,0.04), 0 6px 6px rgba(0,0,0,0.05);
@@ -645,91 +644,6 @@
         
         .narasi-card {
             margin-bottom: 1.5rem;
-        }
-    }
-    
-    /* Dark mode support with modern adjustments */
-    @media (prefers-color-scheme: dark) {
-        :root {
-            --secondary-color: rgba(60, 60, 67, 0.3);
-            --text-color: #e8eaed;
-            --text-light: #bdc1c6;
-            --neomorphic-shadow: 5px 5px 10px rgba(0,0,0,0.2), -5px -5px 10px rgba(255,255,255,0.05);
-        }
-        
-        body {
-            background-color: #121212;
-        }
-        
-        .card, .dropdown-menu, .date-nav .date-item {
-            background-color: #1e1e1e;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .card-header {
-            background-color: #1e1e1e;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .dropdown-item:hover {
-            background-color: rgba(255,255,255,0.05);
-        }
-        
-        footer {
-            background: linear-gradient(to right, rgba(30,30,30,0.9), rgba(25,25,25,0.9));
-            border-top: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .alert-success {
-            background-color: rgba(13, 49, 33, 0.8);
-            color: #a2e0bc;
-        }
-        
-        .alert-danger {
-            background-color: rgba(60, 19, 20, 0.8);
-            color: #f9c6c6;
-        }
-        
-        #welcomeModal .modal-content {
-            background-color: #1e1e1e;
-            color: var(--text-color);
-        }
-        
-        .glass-container {
-            background: rgba(30,30,30,0.8);
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        .content-text, .card-body p, .card-body ul, .card-body ol, .card-body li {
-            color: var(--text-color) !important;
-        }
-        
-        .rangkuman-section {
-            background-color: rgba(67, 97, 238, 0.1);
-        }
-        
-        .empty-state {
-            background-color: rgba(255,255,255,0.05);
-        }
-        
-        .card-title {
-            color: var(--text-color);
-        }
-        
-        .text-muted {
-            color: rgba(255,255,255,0.7) !important;
-        }
-        
-        .divider {
-            background: linear-gradient(to right, transparent, rgba(255,255,255,0.1), transparent);
-        }
-        
-        .btn-edit {
-            background-color: rgba(255, 193, 7, 0.15);
-        }
-        
-        .btn-delete {
-            background-color: rgba(229, 56, 59, 0.15);
         }
     }
 </style>
