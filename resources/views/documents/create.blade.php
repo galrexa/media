@@ -21,7 +21,9 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="tanggal" class="form-label">Tanggal</label>
-                            <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal" name="tanggal" value="{{ old('tanggal', isset($date) ? $date->format('Y-m-d') : today()->format('Y-m-d')) }}" required>
+                            <input type="date" class="form-control @error('tanggal') is-invalid @enderror" 
+                                id="tanggal" name="tanggal" 
+                                value="{{ old('tanggal', isset($date) ? $date->format('Y-m-d') : today()->format('Y-m-d')) }}" required>
                             @error('tanggal')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -172,7 +174,7 @@
                         <i class="bi bi-x-circle"></i> Batal
                     </a>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-cloud-upload"></i> Upload Gambar
+                        <i class="bi bi-cloud-upload"></i> Upload
                     </button>
                 </div>
             </form>

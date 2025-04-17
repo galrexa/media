@@ -1,4 +1,4 @@
-<!-- resources/views/isu/edit.blade.php -->
+<!-- resources/views/isu/edit.blade.php dengan CKEditor -->
 @extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Edit Isu')
@@ -39,7 +39,7 @@
                     <div class="col-md-4">
                         <div class="mb-3">
                             <label for="tanggal" class="form-label">Tanggal</label>
-                            <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal" name="tanggal" value="{{ old('tanggal', $isu->tanggal->format('Y-m-d')) }}" required>
+                            <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal" name="tanggal" value="{{ old('tanggal', $isu->tanggal->format('Y-m-d')) }}">
                             @error('tanggal')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -49,7 +49,7 @@
 
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <div class="form-check mb-3">
+                        <div class="form-check form-switch">
                             <input type="checkbox" class="form-check-input" id="isu_strategis" name="isu_strategis" value="1" {{ old('isu_strategis', $isu->isu_strategis) ? 'checked' : '' }}>
                             <label class="form-check-label" for="isu_strategis">Isu Strategis</label>
                         </div>
@@ -67,10 +67,10 @@
                     <div class="col-md-4">
                         <div class="mb-3">
                             <label for="skala" class="form-label">Skala</label>
-                            <select class="form-select @error('skala') is-invalid @enderror" id="skala" name="skala" required>
+                            <select class="form-select @error('skala') is-invalid @enderror" id="skala" name="skala">
                                 <option value="">Pilih Skala</option>
                                 @foreach($skalaList as $skala)
-                                    <option value="{{ $skala->kode }}" {{ old('skala', $isu->skala) == $skala->kode ? 'selected' : '' }}>
+                                    <option value="{{ $skala->id }}" {{ old('skala', $isu->skala) == $skala->id ? 'selected' : '' }}>
                                         {{ $skala->nama }}
                                     </option>
                                 @endforeach
@@ -83,10 +83,10 @@
                     <div class="col-md-4">
                         <div class="mb-3">
                             <label for="tone" class="form-label">Tone Isu</label>
-                            <select class="form-select @error('tone') is-invalid @enderror" id="tone" name="tone" required>
+                            <select class="form-select @error('tone') is-invalid @enderror" id="tone" name="tone">
                                 <option value="">Pilih Tone</option>
                                 @foreach($toneList as $tone)
-                                    <option value="{{ $tone->kode }}" {{ old('tone', $isu->tone) == $tone->kode ? 'selected' : '' }}>
+                                    <option value="{{ $tone->id }}" {{ old('tone', $isu->tone) == $tone->id ? 'selected' : '' }}>
                                         {{ $tone->nama }}
                                     </option>
                                 @endforeach
@@ -100,7 +100,7 @@
 
                 <div class="mb-3">
                     <label for="rangkuman" class="form-label">Rangkuman</label>
-                    <textarea class="form-control summernote @error('rangkuman') is-invalid @enderror" id="rangkuman" name="rangkuman" rows="5" required>{{ old('rangkuman', $isu->rangkuman) }}</textarea>
+                    <textarea class="form-control ckeditor @error('rangkuman') is-invalid @enderror" id="rangkuman" name="rangkuman" rows="5" >{{ old('rangkuman', $isu->rangkuman) }}</textarea>
                     @error('rangkuman')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
@@ -110,7 +110,7 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="narasi_positif" class="form-label">Narasi Positif</label>
-                            <textarea class="form-control summernote @error('narasi_positif') is-invalid @enderror" id="narasi_positif" name="narasi_positif" rows="5" required>{{ old('narasi_positif', $isu->narasi_positif) }}</textarea>
+                            <textarea class="form-control ckeditor @error('narasi_positif') is-invalid @enderror" id="narasi_positif" name="narasi_positif" rows="5" >{{ old('narasi_positif', $isu->narasi_positif) }}</textarea>
                             @error('narasi_positif')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -119,7 +119,7 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="narasi_negatif" class="form-label">Narasi Negatif</label>
-                            <textarea class="form-control summernote @error('narasi_negatif') is-invalid @enderror" id="narasi_negatif" name="narasi_negatif" rows="5" required>{{ old('narasi_negatif', $isu->narasi_negatif) }}</textarea>
+                            <textarea class="form-control ckeditor @error('narasi_negatif') is-invalid @enderror" id="narasi_negatif" name="narasi_negatif" rows="5" >{{ old('narasi_negatif', $isu->narasi_negatif) }}</textarea>
                             @error('narasi_negatif')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -132,56 +132,50 @@
                     @foreach ($isu->referensi ?? [] as $index => $ref)
                         <div class="referensi-item border p-3 mb-3">
                             <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label">Judul Referensi</label>
-                                        <input type="text" class="form-control referensi-judul" name="referensi_judul[]" value="{{ old('referensi_judul.' . $index, $ref->judul) }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <div class="mb-3">
                                         <label class="form-label">URL</label>
                                         <div class="input-group">
                                             <input type="url" class="form-control referensi-url" name="referensi_url[]" value="{{ old('referensi_url.' . $index, $ref->url) }}">
                                             <button type="button" class="btn btn-outline-secondary preview-btn">Preview</button>
                                         </div>
-                                        <small class="form-text text-muted">Thumbnail akan otomatis diambil dari URL</small>
+                                        <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
+                                        <!-- Judul sebagai hidden input -->
+                                        <input type="hidden" class="referensi-judul" name="referensi_judul[]" value="{{ old('referensi_judul.' . $index, $ref->judul) }}">
+                                        <input type="hidden" name="referensi_id[]" value="{{ $ref->id }}">
                                     </div>
                                 </div>
                             </div>
-                            <div class="preview-container mt-2" style="{{ $ref->thumbnail_url ? 'display: block;' : 'display: none;' }}">
+                            <div class="preview-container mt-2" style="{{ $ref->thumbnail ? 'display: block;' : 'display: none;' }}">
                                 <div class="row">
                                     <div class="col-md-4">
-                                        <img src="{{ $ref->thumbnail_url ?? '' }}" class="img-fluid preview-img" alt="Preview">
+                                        <img src="{{ $ref->thumbnail ?? '' }}" class="img-fluid preview-img" alt="Preview" style="{{ $ref->thumbnail ? '' : 'display: none;' }}">
                                     </div>
                                     <div class="col-md-8">
                                         <p class="preview-title">{{ $ref->judul ?? '' }}</p>
                                     </div>
                                 </div>
-                                <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url" value="{{ old('referensi_thumbnail_url.' . $index, $ref->thumbnail_url) }}">
+                                <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url" value="{{ old('referensi_thumbnail_url.' . $index, $ref->thumbnail) }}">
                             </div>
                             <div class="text-end">
                                 <button type="button" class="btn btn-sm btn-danger remove-referensi">Hapus Referensi</button>
                             </div>
                         </div>
                     @endforeach
+                    
                     <!-- Item referensi kosong untuk tambahan baru -->
                     <div class="referensi-item border p-3 mb-3" style="display: none;" id="referensi-template">
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Judul Referensi</label>
-                                    <input type="text" class="form-control referensi-judul" name="referensi_judul[]">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="mb-3">
                                     <label class="form-label">URL</label>
                                     <div class="input-group">
                                         <input type="url" class="form-control referensi-url" name="referensi_url[]">
                                         <button type="button" class="btn btn-outline-secondary preview-btn">Preview</button>
                                     </div>
-                                    <small class="form-text text-muted">Thumbnail akan otomatis diambil dari URL</small>
+                                    <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
+                                    <!-- Judul sebagai hidden input -->
+                                    <input type="hidden" class="referensi-judul" name="referensi_judul[]">
                                 </div>
                             </div>
                         </div>
@@ -220,7 +214,6 @@
 
 @section('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.9.1/summernote-bs5.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
 <style>
     .tagify {
@@ -248,29 +241,56 @@
 
     .card-body ul, .card-body ol {
     margin-left: 20px;
-    }   
-
+    }
+    
+    /* CKEditor styling */
+    .ck-editor__editable {
+        min-height: 200px;
+    }
+    .ck-content {
+        font-size: 14px;
+    }
 </style>
 @endsection
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/summernote/0.9.1/summernote-bs5.min.js"></script>
+<!-- CKEditor 5 -->
+<script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
 <script>
 $(document).ready(function() {
-    // Inisialisasi Summernote
-    $('.summernote').summernote({
-        height: 200, // Tinggi editor
-        toolbar: [
-            ['style', ['style']],
-            ['font', ['bold', 'italic', 'underline']],
-            ['para', ['ul', 'ol', 'paragraph']], // Bullet dan numbering
-            ['insert', ['link']],
-            ['view', ['undo', 'redo']]
-        ],
-        placeholder: 'Tulis di sini...'
-    });
+    // Inisialisasi CKEditor untuk setiap elemen dengan class ckeditor
+    document.querySelectorAll('.ckeditor').forEach(function(element) {
+        // Untuk halaman edit
+        ClassicEditor
+            .create(element, {
+                toolbar: [
+                    'heading', '|', 
+                    'bold', 'italic', 'link', '|',
+                    'bulletedList', 'numberedList', '|',
+                    'undo', 'redo'
+                ],
+                placeholder: 'Tulis di sini...',
+                link: {
+                    defaultProtocol: 'https://',
+                    addTargetToExternalLinks: true
+                }
+            })
+            .then(editor => {
+                // Pastikan konten HTML di-render dengan benar
+                // Jika data sudah ada, pastikan HTML tidak dianggap sebagai string biasa
+                editor.setData(element.value);
+                
+                // Tambahkan event listener untuk sinkronisasi konten
+                editor.model.document.on('change:data', () => {
+                    element.value = editor.getData();
+                });
+            })
+            .catch(error => {
+                console.error('CKEditor error:', error);
+            });
+        });
 
     const input = document.querySelector('#kategori');
     const tagify = new Tagify(input, {
@@ -300,11 +320,10 @@ $(document).ready(function() {
 document.addEventListener('DOMContentLoaded', function() {
     const referensiContainer = document.getElementById('referensi-container');
     const addReferensiBtn = document.getElementById('add-referensi');
-    const referensiTemplate = document.getElementById('referensi-template');
 
     // Fungsi untuk mengatur tombol hapus
     function updateRemoveButtons() {
-        const referensiItems = referensiContainer.querySelectorAll('.referensi-item:not(#referensi-template)');
+        const referensiItems = referensiContainer.querySelectorAll('.referensi-item');
         referensiItems.forEach((item, index) => {
             const removeBtn = item.querySelector('.remove-referensi');
             if (referensiItems.length > 1) {
@@ -315,43 +334,101 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Fungsi untuk mengekstrak domain dari URL sebagai judul
+    function extractDomainForTitle(url) {
+        // Menambahkan protokol jika belum ada
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+        
+        try {
+            // Membuat objek URL untuk mengekstrak hostname
+            const urlObj = new URL(url);
+            // Mengambil hostname (domain) dari URL
+            let domain = urlObj.hostname;
+            
+            // Menghapus 'www.' jika ada
+            domain = domain.replace(/^www\./, '');
+            
+            return domain;
+        } catch (e) {
+            // Jika URL tidak valid, kembalikan string kosong
+            console.error('URL tidak valid:', e);
+            return '';
+        }
+    }
+
+    // Fungsi untuk update judul berdasarkan URL
+    function updateJudulFromUrl(referensiItem) {
+        const urlInput = referensiItem.querySelector('.referensi-url');
+        const judulInput = referensiItem.querySelector('.referensi-judul');
+        
+        if (urlInput && urlInput.value && judulInput) {
+            const url = urlInput.value.trim();
+            if (url) {
+                // Mengekstrak domain dan menggunakannya sebagai judul
+                const domain = extractDomainForTitle(url);
+                if (domain && !judulInput.value) {
+                    judulInput.value = domain;
+                }
+            }
+        }
+    }
+
     // Tambah referensi baru
     addReferensiBtn.addEventListener('click', function() {
-        const referensiItem = referensiTemplate.cloneNode(true);
-        referensiItem.style.display = 'block';
-        referensiItem.removeAttribute('id');
-
+        const referensiItem = document.querySelector('.referensi-item').cloneNode(true);
+        
         // Clear input values
         const inputs = referensiItem.querySelectorAll('input');
-        inputs.forEach(input => input.value = '');
-
+        inputs.forEach(input => {
+            input.value = '';
+        });
+        
         // Reset preview container
         const previewContainer = referensiItem.querySelector('.preview-container');
-        previewContainer.style.display = 'none';
-        const previewImg = previewContainer.querySelector('.preview-img');
-        previewImg.src = '';
-        const previewTitle = previewContainer.querySelector('.preview-title');
-        previewTitle.textContent = '';
-
+        if (previewContainer) {
+            previewContainer.style.display = 'none';
+            const previewImg = previewContainer.querySelector('.preview-img');
+            if (previewImg) {
+                previewImg.src = '';
+            }
+            const previewTitle = previewContainer.querySelector('.preview-title');
+            if (previewTitle) {
+                previewTitle.textContent = '';
+            }
+        }
+        
         // Tambahkan event listener untuk URL input
         const urlInput = referensiItem.querySelector('.referensi-url');
-        urlInput.addEventListener('change', function() {
-            const previewBtn = referensiItem.querySelector('.preview-btn');
-            if (previewBtn && this.value.trim()) {
-                previewBtn.click();
-            }
-        });
-
+        if (urlInput) {
+            // Event saat input diketik untuk mengupdate judul secara realtime
+            urlInput.addEventListener('input', function() {
+                updateJudulFromUrl(referensiItem);
+            });
+            
+            urlInput.addEventListener('change', function() {
+                const previewBtn = referensiItem.querySelector('.preview-btn');
+                if (previewBtn) {
+                    previewBtn.click(); // Auto preview when URL is entered
+                }
+            });
+        }
+        
         // Tambahkan event listener untuk tombol preview
         const previewBtn = referensiItem.querySelector('.preview-btn');
-        previewBtn.addEventListener('click', handlePreview);
-
+        if (previewBtn) {
+            previewBtn.addEventListener('click', handlePreview);
+        }
+        
         // Tambahkan event listener untuk tombol hapus
         const removeBtn = referensiItem.querySelector('.remove-referensi');
-        removeBtn.addEventListener('click', function() {
-            referensiContainer.removeChild(referensiItem);
-            updateRemoveButtons();
-        });
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                referensiContainer.removeChild(referensiItem);
+                updateRemoveButtons();
+            });
+        }
 
         referensiContainer.appendChild(referensiItem);
         updateRemoveButtons();
@@ -369,6 +446,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const thumbnailUrlInput = referensiItem.querySelector('.thumbnail-url');
         const judulInput = referensiItem.querySelector('.referensi-judul');
         
+        // Auto-fill judul dari domain jika masih kosong
+        if (!judulInput.value && url) {
+            judulInput.value = extractDomainForTitle(url);
+        }
+
         // Tampilkan loading state
         event.target.textContent = 'Loading...';
         event.target.disabled = true;
@@ -389,38 +471,77 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
+                // Reset tombol
                 event.target.textContent = 'Preview';
                 event.target.disabled = false;
                 
                 if (data.success && data.image) {
+                    // Set gambar preview
                     previewImg.src = data.image;
-                    previewTitle.textContent = data.title || '';
-                    if (!judulInput.value && data.title) {
-                        judulInput.value = data.title;
+                    previewImg.style.display = 'block';
+                    
+                    // Set judul jika ada
+                    if (data.title) {
+                        previewTitle.textContent = data.title;
+                        // Jika judul saat ini hanya domain atau kosong, ganti dengan judul dari metadata
+                        const currentJudul = judulInput.value;
+                        if (!currentJudul || currentJudul === extractDomainForTitle(url)) {
+                            judulInput.value = data.title;
+                        }
+                    } else {
+                        // Gunakan domain sebagai judul jika tidak ada title dari metadata
+                        const domain = extractDomainForTitle(url);
+                        previewTitle.textContent = domain;
                     }
+                    
+                    // Simpan URL thumbnail
                     thumbnailUrlInput.value = data.image;
+                    
+                    // Tampilkan container preview
                     previewContainer.style.display = 'block';
                 } else {
-                    alert('Tidak dapat menemukan gambar dari URL tersebut.');
-                    previewContainer.style.display = 'none';
+                    // Tetap tampilkan preview dengan domain sebagai judul
+                    const domain = extractDomainForTitle(url);
+                    previewTitle.textContent = domain;
+                    judulInput.value = domain;
+                    
+                    // Sembunyikan gambar karena tidak ada
+                    previewImg.style.display = 'none';
                     thumbnailUrlInput.value = '';
-                    previewTitle.textContent = '';
+                    
+                    // Tampilkan container preview
+                    previewContainer.style.display = 'block';
                 }
             })
             .catch(error => {
                 console.error('Error fetching preview:', error);
+                
+                // Reset tombol
                 event.target.textContent = 'Preview';
                 event.target.disabled = false;
-                alert('Terjadi kesalahan saat memuat preview.');
-                previewContainer.style.display = 'none';
+                
+                // Gunakan domain sebagai fallback
+                const domain = extractDomainForTitle(url);
+                previewTitle.textContent = domain;
+                judulInput.value = domain;
+                
+                // Tampilkan container preview tanpa gambar
+                previewContainer.style.display = 'block';
+                previewImg.style.display = 'none';
                 thumbnailUrlInput.value = '';
-                previewTitle.textContent = '';
             });
     }
 
-    // Auto-preview saat URL diubah
+    // Tambahkan event listener untuk input URL yang sudah ada
     const urlInputs = document.querySelectorAll('.referensi-url');
     urlInputs.forEach(input => {
+        // Event untuk update judul saat input diketik
+        input.addEventListener('input', function() {
+            const referensiItem = this.closest('.referensi-item');
+            updateJudulFromUrl(referensiItem);
+        });
+        
+        // Event untuk auto-preview
         input.addEventListener('change', function() {
             const referensiItem = this.closest('.referensi-item');
             const previewBtn = referensiItem.querySelector('.preview-btn');
@@ -443,6 +564,14 @@ document.addEventListener('DOMContentLoaded', function() {
             referensiContainer.removeChild(button.closest('.referensi-item'));
             updateRemoveButtons();
         });
+    });
+
+    // Inisialisasi judul dari URL untuk semua referensi yang sudah ada
+    urlInputs.forEach(input => {
+        if (input.value.trim()) {
+            const referensiItem = input.closest('.referensi-item');
+            updateJudulFromUrl(referensiItem);
+        }
     });
 
     // Inisialisasi tombol hapus

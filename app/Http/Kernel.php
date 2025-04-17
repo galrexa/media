@@ -7,8 +7,6 @@ use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
 {
-    // ...
-
     /**
      * The application's route middleware.
      *
@@ -19,5 +17,10 @@ class Kernel extends HttpKernel
         'role' => \App\Http\Middleware\RoleMiddleware::class,
     ];
 
-    // ...
+    protected function schedule(Schedule $schedule)
+    {
+        $schedule->call(function () {
+            (new \App\Http\Controllers\TrendingController())->fetchTrends24(true);
+        })->hourly();
+    }
 }

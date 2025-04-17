@@ -5,33 +5,26 @@
 
 @section('content')
 <div class="container">
-    <!-- <div class="row mb-3">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('home') }}">Beranda</a></li>
-                    <li class="breadcrumb-item">
-                        <a href="{{ route('isu.index') }}">{{ $isu->isu_strategis ? 'Isu Strategis' : 'Isu Lainnya' }}</a>
-                    </li>
-                    <li class="breadcrumb-item active">{{ $isu->judul }}</li>
-                </ol>
-            </nav>
-        </div>
-    </div> -->
 
     <div class="card mb-4">
         <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
             <div>
-                <h5 class="mb-0">{{ $isu->isu_strategis ? 'Isu Strategis' : 'Isu Lainnya' }}</h5>
+                <h5 class="mb-0">{{ $isu->isu_strategis ? 'Isu Strategis' : 'Isu Regional' }}</h5>
                 <h2 class="mb-0">{{ $isu->judul }}</h2>
             </div>
-            <div>
-                <span class="badge {{ $isu->refTone && $isu->refTone->nama == 'Positif' ? 'bg-success' : 'bg-danger' }} p-2">
-                    {{ $isu->refTone ? ucfirst($isu->refTone->nama) : ucfirst($isu->tone) }}
-                </span>
-                <span class="badge bg-warning p-2 ms-2">
-                    {{ $isu->refSkala ? $isu->refSkala->nama : $isu->skala }}
-                </span>
+            <div class="d-flex align-items-end">
+                <div class="d-flex flex-column align-items-center me-3">
+                    <span class="small mb-1">Tone</span>
+                    <span class="badge p-2 fs-4" style="background-color: {{ $isu->refTone ? $isu->refTone->warna : '#dc3545' }}">
+                        {{ $isu->refTone ? ucfirst($isu->refTone->nama) : ucfirst($isu->tone) }}
+                    </span>
+                </div>
+                <div class="d-flex flex-column align-items-center">
+                    <span class="small mb-1">Skala</span>
+                    <span class="badge p-2 fs-4" style="background-color: {{ $isu->refSkala ? $isu->refSkala->warna : '#ffc107' }}">
+                        {{ $isu->refSkala ? $isu->refSkala->nama : $isu->skala }}
+                    </span>
+                </div>
             </div>
         </div>
 

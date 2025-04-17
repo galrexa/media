@@ -52,41 +52,16 @@ class DocumentController extends Controller
 
     public function store(Request $request)
     {
-        //return $this->handleDocumentUpload($request);
-        $validated = $request->validate([
-            'judul' => 'required',
-            'isi' => 'required',
-        ]);
-    
-        $validated['isi'] = Purifier::clean($validated['isi']);
-    
-        Document::create($validated);
-        return redirect()->route('document.index');
+        return $this->handleDocumentUpload($request);
     }
-
-    // public function update(Request $request, $id)
-    // {
-    //     return $this->handleDocumentUpload($request, $id);
-    // }
 
     public function update(Request $request, Document $document)
     {
-    $validated = $request->validate([
-        'judul' => 'required|string|max:255',
-        'isi'   => 'required|string',
-    ]);
-
-    // Sanitize HTML jika diperlukan
-    $validated['isi'] = Purifier::clean($validated['isi']);
-
-    $document->update($validated);
-
-    return redirect()->route('document.index')
-                     ->with('success', 'Dokumen berhasil diperbarui.');
+        return $this->handleDocumentUpload($request, $document->id);
     }
 
     /**
-     * Menangani proses upload dan update gambar
+     * Menangani proses upload dan update dokumen
      */
     private function handleDocumentUpload(Request $request, $id = null)
     {
@@ -144,7 +119,7 @@ class DocumentController extends Controller
 
         $redirect = $id 
             ? redirect()->route('documents.edit', $image->tanggal->format('Y-m-d'))
-            : redirect()->route('home');
+            : redirect()->route('documents.index');
 
         return $redirect->with('success', $id 
             ? 'Dokumen berhasil diperbarui!' 
