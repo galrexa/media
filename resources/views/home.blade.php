@@ -1,7 +1,7 @@
 <!-- resources/views/home.blade.php -->
 @extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
-@section('title', 'Beranda - Kurasi Berita Terkini')
+@section('title', 'Beranda - Media Monitoring')
 
 @section('content')
 

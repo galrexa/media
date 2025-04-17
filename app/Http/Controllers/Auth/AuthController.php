@@ -52,10 +52,8 @@ class AuthController extends Controller
 
             // Redirect ke halaman yang sesuai berdasarkan role
             $user = Auth::user();
-            if ($user->isAdmin()) {
+            if ($user->isAdmin() || $user->isEditor()) {
                 return redirect()->intended('dashboard/admin');
-            } elseif ($user->isEditor()) {
-                return redirect()->intended('dashboard/editor');
             } else {
                 return redirect()->intended('/'); // Viewer diarahkan ke halaman beranda
             }
