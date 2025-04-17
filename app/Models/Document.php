@@ -20,7 +20,7 @@ class Document extends Model
         'image_1',
         'image_2',
         'image_3',
-        'dokumen_url',
+        'dokumen_url'
     ];
 
     /**

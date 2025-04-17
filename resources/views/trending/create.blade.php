@@ -5,18 +5,6 @@
 
 @section('content')
 <div class="container">
-    <div class="row mb-3">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('home') }}">Beranda</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('trending.index') }}">Trending</a></li>
-                    <li class="breadcrumb-item active">Tambah Trending Baru</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
-
     <div class="card">
         <div class="card-header bg-primary text-white">
             <h4 class="mb-0">Tambah Trending Baru</h4>

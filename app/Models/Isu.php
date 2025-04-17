@@ -66,7 +66,7 @@ class Isu extends Model
      */
     public function refSkala()
     {
-        return $this->belongsTo(RefSkala::class, 'skala', 'kode');
+        return $this->belongsTo(RefSkala::class, 'skala', 'id');
     }
 
     /**
@@ -76,6 +76,6 @@ class Isu extends Model
      */
     public function refTone()
     {
-        return $this->belongsTo(RefTone::class, 'tone', 'kode');
+        return $this->belongsTo(RefTone::class, 'tone', 'id');
     }
 }

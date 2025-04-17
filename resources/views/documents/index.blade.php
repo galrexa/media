@@ -5,22 +5,6 @@
 
 @section('content')
 <div class="container">
-    <div class="row mb-3">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('home') }}">Beranda</a></li>
-                    <li class="breadcrumb-item active">Daftar Dokumen Harian</li>
-                </ol>
-            </nav>
-        </div>
-    </div>
-
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @endif
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Daftar Dokumen Harian</h1>
@@ -75,7 +59,7 @@
                                     <td>
                                         @if($image->dokumen_url)
                                             <a href="{{ $image->dokumen_url }}" target="_blank" class="btn btn-sm btn-danger">
-                                                <i class="bi bi-file-earmark-pdf me-1"></i> Lihat
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>
                                             </a>
                                         @else
                                             <span class="text-muted">Tidak ada</span>
@@ -83,10 +67,10 @@
                                     </td>
                                     <td>
                                         <a href="{{ route('documents.edit', $image->tanggal->format('Y-m-d')) }}" class="btn btn-sm btn-warning">
-                                            <i class="bi bi-pencil me-1"></i> Edit
+                                            <i class="bi bi-pencil me-1"></i>
                                         </a>
                                         <a href="{{ route('home', ['day' => $image->tanggal->diffInDays(now(), false)]) }}" class="btn btn-sm btn-info">
-                                            <i class="bi bi-eye me-1"></i> Lihat
+                                            <i class="bi bi-eye me-1"></i>
                                         </a>
                                     </td>
                                 </tr>

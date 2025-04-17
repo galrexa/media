@@ -40,13 +40,13 @@
             <!-- Submenu Isu -->
             <li class="nav-item submenu">
                 <a class="nav-link {{ request()->routeIs('isu.index') ? 'active' : '' }}" href="{{ route('isu.index') }}">
-                    <!-- <span class="submenu-dash">-</span> -->
+                    
                     <span>Daftar Isu</span>
                 </a>
             </li>
             <li class="nav-item submenu">
                 <a class="nav-link {{ request()->routeIs('isu.create') ? 'active' : '' }}" href="{{ route('isu.create') }}">
-                    <!-- <span class="submenu-dash">-</span> -->
+                    
                     <span>Tambah Isu</span>
                 </a>
             </li>
@@ -62,13 +62,13 @@
             <!-- Submenu Dokumen -->
             <li class="nav-item submenu">
                 <a class="nav-link {{ request()->routeIs('documents.index') ? 'active' : '' }}" href="{{ route('documents.index') }}">
-                    <!-- <span class="submenu-dash">-</span> -->
+                    
                     <span>Daftar Dokumen</span>
                 </a>
             </li>
             <li class="nav-item submenu">
                 <a class="nav-link {{ request()->routeIs('documents.create') ? 'active' : '' }}" href="{{ route('documents.create') }}">
-                    <!-- <span class="submenu-dash">-</span> -->
+                    
                     <span>Upload Dokumen</span>
                 </a>
             </li>
@@ -83,15 +83,21 @@
             
             <!-- Submenu Trending -->
             <li class="nav-item submenu">
-                <a class="nav-link {{ request()->routeIs('trending.index') ? 'active' : '' }}" href="{{ route('trending.index') }}">
-                    <!-- <span class="submenu-dash">-</span> -->
+                <a class="nav-link {{ request()->routeIs('trending.selected') ? 'active' : '' }}" href="{{ route('trending.selected') }}">
+                    
                     <span>Daftar Trending</span>
                 </a>
             </li>
             <li class="nav-item submenu">
-                <a class="nav-link {{ request()->routeIs('trending.create') ? 'active' : '' }}" href="{{ route('trending.create') }}">
-                    <!-- <span class="submenu-dash">-</span> -->
-                    <span>Tambah Trending</span>
+                <a class="nav-link {{ request()->routeIs('trending.manageGoogleSelected') ? 'active' : '' }}" href="{{ route('trending.manageGoogleSelected') }}">
+                    
+                    <span>Trending Google</span>
+                </a>
+            </li>
+            <li class="nav-item submenu">
+                <a class="nav-link {{ request()->routeIs('trending.manageXSelected') ? 'active' : '' }}" href="{{ route('trending.manageXSelected') }}">
+                    
+                    <span>Trending X</span>
                 </a>
             </li>
             
