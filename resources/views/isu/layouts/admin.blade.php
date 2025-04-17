@@ -16,7 +16,7 @@
         <a class="nav-link active" data-bs-toggle="tab" href="#strategis">Isu Strategis</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link" data-bs-toggle="tab" href="#lainnya">Isu Lainnya</a>
+        <a class="nav-link" data-bs-toggle="tab" href="#lainnya">Isu Regional</a>
     </li>
 </ul>
 
@@ -122,7 +122,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center">Tidak ada isu lainnya untuk ditampilkan</td>
+                                    <td colspan="6" class="text-center">Tidak ada isu regional untuk ditampilkan</td>
                                 </tr>
                             @endforelse
                         </tbody>

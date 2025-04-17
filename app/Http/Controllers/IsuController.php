@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Stevebauman\Purify\Facades\Purify;
 use Carbon\Carbon;
 
@@ -33,51 +34,71 @@ class IsuController extends Controller
             'judul' => 'required|string|max:255',
             'tanggal' => 'required|date',
             'isu_strategis' => 'boolean',
-            'kategori' => 'required|string',
-            'skala' => 'required|string|max:255',
-            'tone' => 'required|string|exists:ref_tone,kode', // Ubah rule ini
-            'rangkuman' => 'required|string',
-            'narasi_positif' => 'required|string',
-            'narasi_negatif' => 'required|string',
+            'kategori' => 'nullable|string',
+            'skala' => 'nullable|string',
+            'tone' => 'nullable|string', 
+            'rangkuman' => 'nullable|string',
+            'narasi_positif' => 'nullable|string',
+            'narasi_negatif' => 'nullable|string',
             'referensi_judul.*' => 'nullable|string|max:255',
             'referensi_url.*' => 'nullable|url',
             'referensi_thumbnail_url.*' => 'nullable|url',
         ]);
 
-        $validated['rangkuman'] = Purify::clean($validated['rangkuman']);
-        $validated['narasi_positif'] = Purify::clean($validated['narasi_positif']);
-        $validated['narasi_negatif'] = Purify::clean($validated['narasi_negatif']);
+        // Bersihkan data dan tambahkan default jika kosong
+        $rangkuman = !empty($request->rangkuman) ? Purify::clean($request->rangkuman) : '<p>Tidak ada data</p>';
+        $narasi_positif = !empty($request->narasi_positif) ? Purify::clean($request->narasi_positif) : '<p>Tidak ada data</p>';
+        $narasi_negatif = !empty($request->narasi_negatif) ? Purify::clean($request->narasi_negatif) : '<p>Tidak ada data</p>';
+        
+        // Tetapkan nilai default untuk skala dan tone jika kosong
+        $skalaId = null;
+        if (!empty($validated['skala'])) {
+            // Cek apakah input adalah ID atau nama
+            if (is_numeric($validated['skala'])) {
+                $skalaId = (int)$validated['skala'];
+            } else {
+                // Jika nama, cari ID yang sesuai
+                $skalaRef = RefSkala::where('nama', $validated['skala'])->first();
+                $skalaId = $skalaRef ? $skalaRef->id : $this->getDefaultSkalaId();
+            }
+        } else {
+            $skalaId = $this->getDefaultSkalaId();
+        }
+
+        $tone = $validated['tone'] ?? $this->getDefaultToneId();
 
         // Simpan isu
         $isu = Isu::create([
             'judul' => $validated['judul'],
             'tanggal' => $validated['tanggal'],
             'isu_strategis' => $request->has('isu_strategis'),
-            'skala' => $validated['skala'],
-            'tone' => $validated['tone'],
-            'rangkuman' => $validated['rangkuman'],
-            'narasi_positif' => $validated['narasi_positif'],
-            'narasi_negatif' => $validated['narasi_negatif'],
-            ]);
+            'skala' => $skalaId,
+            'tone' => $tone,
+            'rangkuman' => $rangkuman,
+            'narasi_positif' => $narasi_positif,
+            'narasi_negatif' => $narasi_negatif,
+        ]);
 
         // Proses tags kategori
-        $kategoriInput = $validated['kategori'];
-        // Jika input adalah JSON dari Tagify, decode terlebih dahulu
-        if (json_decode($kategoriInput, true)) {
-            $tags = array_column(json_decode($kategoriInput, true), 'value');
-        } else {
-            // Jika sudah comma-separated
-            $tags = array_filter(array_map('trim', explode(',', $kategoriInput)));
-        }
+        if (!empty($validated['kategori'])) {
+            $kategoriInput = $validated['kategori'];
+            // Jika input adalah JSON dari Tagify, decode terlebih dahulu
+            if (json_decode($kategoriInput, true)) {
+                $tags = array_column(json_decode($kategoriInput, true), 'value');
+            } else {
+                // Jika sudah comma-separated
+                $tags = array_filter(array_map('trim', explode(',', $kategoriInput)));
+            }
 
-        $kategoriIds = [];
-        foreach ($tags as $tag) {
-            $kategori = Kategori::firstOrCreate(['nama' => $tag]); // Simpan hanya nama sebagai string
-            $kategoriIds[] = $kategori->id;
-        }
+            $kategoriIds = [];
+            foreach ($tags as $tag) {
+                $kategori = Kategori::firstOrCreate(['nama' => $tag]); // Simpan hanya nama sebagai string
+                $kategoriIds[] = $kategori->id;
+            }
 
-        // Simpan relasi ke tabel pivot
-        $isu->kategoris()->sync($kategoriIds);
+            // Simpan relasi ke tabel pivot
+            $isu->kategoris()->sync($kategoriIds);
+        }
         
         // Simpan referensi jika ada
         if ($request->has('referensi_judul')) {
@@ -118,20 +139,80 @@ class IsuController extends Controller
                          ->with('success', 'Isu berhasil dibuat!');
     }
 
-    public function index()
+    /**
+     * Mendapatkan nilai default untuk skala
+     * 
+     * @return string
+     */
+    private function getDefaultSkalaId()
     {
-        // Query untuk isu strategis
-        $isusStrategisQuery = Isu::with(['referensi', 'refSkala', 'refTone'])
-                                ->where('isu_strategis', true)
-                                ->orderBy('tanggal', 'desc');
+        // Ambil skala pertama dari database atau tetapkan nilai default tetap
+        $defaultSkala = RefSkala::where('aktif', true)->orderBy('urutan')->first();
+        return $defaultSkala ? $defaultSkala->id : 'N'; // N sebagai default jika tidak ada data
+    }
+
+    /**
+     * Mendapatkan nilai default untuk tone
+     * 
+     * @return string
+     */
+    private function getDefaultToneId()
+    {
+        // Ambil tone pertama dari database atau tetapkan nilai default tetap
+        $defaultTone = RefTone::where('aktif', true)->orderBy('urutan')->first();
+        return $defaultTone ? $defaultTone->id : 'N'; // N sebagai default jika tidak ada data
+    }
+
+    public function index(Request $request)
+    {
+        // Base queries dengan eager loading
+        $isusStrategisQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris'])
+                                ->where('isu_strategis', true);
         
-        // Query untuk isu lainnya
-        $isusLainnyaQuery = Isu::with(['referensi', 'refSkala', 'refTone'])
-                            ->where('isu_strategis', false)
-                            ->orderBy('tanggal', 'desc');
+        $isusLainnyaQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris'])
+                                ->where('isu_strategis', false);
+        
+        // Pencarian global
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            
+            // Cari berdasarkan judul atau kategori
+            $isusStrategisQuery->where(function($query) use ($searchTerm) {
+                $query->where('judul', 'like', '%' . $searchTerm . '%')
+                      ->orWhereHas('kategoris', function($q) use ($searchTerm) {
+                          $q->where('nama', 'like', '%' . $searchTerm . '%');
+                      });
+            });
+            
+            $isusLainnyaQuery->where(function($query) use ($searchTerm) {
+                $query->where('judul', 'like', '%' . $searchTerm . '%')
+                      ->orWhereHas('kategoris', function($q) use ($searchTerm) {
+                          $q->where('nama', 'like', '%' . $searchTerm . '%');
+                      });
+            });
+        }
+        
+        // Sorting
+        $sortField = $request->get('sort', 'tanggal');
+        $sortDirection = $request->get('direction', 'desc');
+        
+        // Whitelist kolom yang diizinkan untuk sorting
+        $allowedSortFields = ['tanggal', 'skala', 'tone'];
+        
+        if (!in_array($sortField, $allowedSortFields)) {
+            $sortField = 'tanggal';
+        }   
+        
+        // Sorting normal untuk judul dan tanggal
+        $isusStrategisQuery->orderBy($sortField, $sortDirection);
+        $isusLainnyaQuery->orderBy($sortField, $sortDirection);
         
         $isusStrategis = $isusStrategisQuery->paginate(10, ['*'], 'strategis');
         $isusLainnya = $isusLainnyaQuery->paginate(10, ['*'], 'lainnya');
+        
+        // Pastikan semua parameter disertakan di URL pagination
+        $isusStrategis->appends($request->except('strategis'));
+        $isusLainnya->appends($request->except('lainnya'));
         
         return view('isu.index', compact('isusStrategis', 'isusLainnya'));
     }
@@ -175,45 +256,59 @@ class IsuController extends Controller
             'judul' => 'required|string|max:255',
             'tanggal' => 'required|date',
             'isu_strategis' => 'boolean',
-            'kategori' => 'required|string',
-            'skala' => 'required|string|max:255',
-            'tone' => 'required|exists:ref_tone,kode',
-            'rangkuman' => 'required|string',
-            'narasi_positif' => 'required|string',
-            'narasi_negatif' => 'required|string',
+            'kategori' => 'nullable|string',
+            'skala' => 'nullable|string|max:255',
+            'tone' => 'nullable|string',
+            'rangkuman' => 'nullable|string',
+            'narasi_positif' => 'nullable|string',
+            'narasi_negatif' => 'nullable|string',
             'referensi_judul.*' => 'nullable|string|max:255',
             'referensi_url.*' => 'nullable|url',
             'referensi_id.*' => 'nullable|exists:referensi_isus,id',
             'referensi_thumbnail_url.*' => 'nullable|url',
         ]);
 
+        // Bersihkan data dan tambahkan default jika kosong
+        $rangkuman = !empty($request->rangkuman) ? Purify::clean($request->rangkuman) : '<p>Tidak ada data</p>';
+        $narasi_positif = !empty($request->narasi_positif) ? Purify::clean($request->narasi_positif) : '<p>Tidak ada data</p>';
+        $narasi_negatif = !empty($request->narasi_negatif) ? Purify::clean($request->narasi_negatif) : '<p>Tidak ada data</p>';
+        
+        // Tetapkan nilai default untuk skala dan tone jika kosong
+        $skala = $validated['skala'] ?? $isu->skala; // Gunakan nilai yang sudah ada atau default
+        $tone = $validated['tone'] ?? $isu->tone; // Gunakan nilai yang sudah ada atau default
+
         // Update isu
         $isu->update([
             'judul' => $validated['judul'],
             'tanggal' => $validated['tanggal'],
             'isu_strategis' => $request->has('isu_strategis'),
-            'skala' => $validated['skala'],
-            'tone' => $validated['tone'],
-            'narasi_positif' => $validated['narasi_positif'],
-            'narasi_negatif' => $validated['narasi_negatif'],
-            'dokumen_url' => 'nullable|url|max:255',       
+            'skala' => $skala,
+            'tone' => $tone,
+            'rangkuman' => $rangkuman,
+            'narasi_positif' => $narasi_positif,
+            'narasi_negatif' => $narasi_negatif,
         ]);
 
         // Proses tags kategori
-        $kategoriInput = $validated['kategori'];
-        if (json_decode($kategoriInput, true)) {
-            $tags = array_column(json_decode($kategoriInput, true), 'value');
+        if (!empty($validated['kategori'])) {
+            $kategoriInput = $validated['kategori'];
+            if (json_decode($kategoriInput, true)) {
+                $tags = array_column(json_decode($kategoriInput, true), 'value');
+            } else {
+                $tags = array_filter(array_map('trim', explode(',', $kategoriInput)));
+            }
+
+            $kategoriIds = [];
+            foreach ($tags as $tag) {
+                $kategori = Kategori::firstOrCreate(['nama' => $tag]);
+                $kategoriIds[] = $kategori->id;
+            }
+
+            $isu->kategoris()->sync($kategoriIds);
         } else {
-            $tags = array_filter(array_map('trim', explode(',', $kategoriInput)));
+            // Jika tidak ada kategori, hapus semua relasi
+            $isu->kategoris()->sync([]);
         }
-
-        $kategoriIds = [];
-        foreach ($tags as $tag) {
-            $kategori = Kategori::firstOrCreate(['nama' => $tag]);
-            $kategoriIds[] = $kategori->id;
-        }
-
-        $isu->kategoris()->sync($kategoriIds);  
 
         // Perbarui atau tambahkan referensi
         if ($request->has('referensi_judul')) {

@@ -20,6 +20,10 @@ class Trending extends Model
         'tanggal',
         'judul',
         'url',
+        'is_selected',
+        'display_order',
+        'display_order_google',
+        'display_order_x',
     ];
 
     /**
@@ -29,6 +33,10 @@ class Trending extends Model
      */
     protected $casts = [
         'tanggal' => 'datetime',
+        'is_selected' => 'boolean',
+        'display_order' => 'integer',
+        'display_order_google' => 'integer',
+        'display_order_x' => 'integer',
     ];
 
     // Relasi ke MediaSosial

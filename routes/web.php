@@ -1,6 +1,6 @@
 <?php
-// routes/web.php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IsuController;
@@ -8,7 +8,6 @@ use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\TrendingController;
 use App\Http\Controllers\UserController;
-use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,96 +15,116 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// Halaman beranda
-Route::get('/', function () {
-    if (auth()->check()) {
-        // Jika sudah login, arahkan sesuai peran
-        if (auth()->user()->isAdmin()) {
-            return redirect()->route('dashboard.admin');
-        } elseif (auth()->user()->isEditor()) {
-            return redirect()->route('dashboard.editor');
-        } else {
-            return app()->call([app(HomeController::class), 'index']); // Viewer melihat halaman beranda
-        }
-    }
-    // Jika belum login, arahkan ke login
-    return redirect()->route('login');
+// Home / Landing page 
+Route::get('/', function () { 
+    if (auth()->check()) { 
+        // Alih-alih mengarahkan ke dashboard, semua user diarahkan ke home
+        $request = request();
+        return app(HomeController::class)->index($request);
+    } 
+    return redirect()->route('login'); 
 })->name('home');
 
-// Route autentikasi
-Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('guest');
-Route::post('/login', [AuthController::class, 'login']);
+// Dashboard sebagai landing page untuk admin/editor
+Route::get('/dashboard-landing', function () { 
+    $user = auth()->user(); 
+    if ($user->isAdmin() || $user->isEditor()) { 
+        return redirect()->route('dashboard.admin'); 
+    } else { 
+        return redirect()->route('home');
+    } 
+})->middleware('auth')->name('dashboard.landing');
+
+// Route untuk halaman home
+Route::get('/home', [HomeController::class, 'index'])->name('home.index')->middleware('auth');
+
+// Autentikasi
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [AuthController::class, 'login']);
+});
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-
-// Route yang memerlukan autentikasi
-Route::middleware(['auth'])->group(function () {
-    
-    // Halaman dashboard berdasarkan role
+// Routes yang memerlukan autentikasi
+Route::middleware('auth')->group(function () {
+    // Dashboard
     Route::get('/dashboard', function () {
-        if (auth()->user()->isAdmin()) {
+        $user = auth()->user();
+        if ($user->isAdmin() || $user->isEditor()) {
             return redirect()->route('dashboard.admin');
-        } elseif (auth()->user()->isEditor()) {
-            return redirect()->route('dashboard.editor');
-        } else {
-            return redirect()->route('home'); // Viewer diarahkan ke halaman beranda
         }
+        return redirect()->route('home');
     })->name('dashboard');
 
-    // Tambahkan route ini di dalam grup middleware auth
-    Route::get('/', [HomeController::class, 'index'])->name('home');
+    Route::get('/dashboard/admin', fn() => view('dashboard.admin'))
+        ->middleware('role:admin,editor')->name('dashboard.admin');
 
-    // Dashboard admin
-    Route::get('/dashboard/admin', function () {
-        return view('dashboard.admin');
-    })->middleware('role:admin')->name('dashboard.admin');
+    // User Management - Admin Only
+    Route::middleware('role:admin')->resource('users', UserController::class);
 
-    // Routes untuk manajemen pengguna (hanya admin)
-    Route::middleware(['auth', 'role:admin'])->group(function () {
-        Route::resource('users', UserController::class);
+    // Isu Management
+    Route::prefix('isu')->name('isu.')->group(function () {
+        Route::get('/', [IsuController::class, 'index'])->name('index');
+        
+        Route::middleware('role:admin,editor')->group(function () {
+            Route::get('/create', [IsuController::class, 'create'])->name('create');
+            Route::post('/', [IsuController::class, 'store'])->name('store');
+            Route::get('/{isu}/edit', [IsuController::class, 'edit'])->name('edit');
+            Route::put('/{isu}', [IsuController::class, 'update'])->name('update');
+            Route::delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
+        });
+        
+        // Pindahkan rute dengan parameter ke bagian bawah
+        Route::get('/{isu}', [IsuController::class, 'show'])->name('show');
     });
 
-    // Dashboard editor
-    Route::get('/dashboard/editor', function () {
-        return view('dashboard.editor');
-    })->middleware('role:admin,editor')->name('dashboard.editor');
-
-    // Route yang dapat diakses semua user yang login
-    Route::get('/isu', [IsuController::class, 'index'])->name('isu.index');
-    Route::get('/trending', [TrendingController::class, 'index'])->name('trending.index');
-    
-    // PINDAHKAN route test sebelum route parameter trending/{trending}
-    Route::get('/trending/test', [TrendingController::class, 'test'])->name('trending.test');
-    
-    Route::get('/preview', [IsuController::class, 'preview'])->name('preview');
-
-
-    // Route yang hanya dapat diakses admin dan editor - PENTING: create harus sebelum wildcard {isu}
-    Route::middleware(['role:admin,editor'])->group(function () {
-        Route::get('/isu/create', [IsuController::class, 'create'])->name('isu.create');
-        Route::post('/isu', [IsuController::class, 'store'])->name('isu.store');
-        Route::get('/isu/{isu}/edit', [IsuController::class, 'edit'])->name('isu.edit');
-        Route::put('/isu/{isu}', [IsuController::class, 'update'])->name('isu.update');
-        Route::delete('/isu/{isu}', [IsuController::class, 'destroy'])->name('isu.destroy');
-
-        
-        Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
-        Route::get('/documents/upload', [DocumentController::class, 'create'])->name('documents.create');
-        Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
-        Route::get('/documents/edit/{date?}', [DocumentController::class, 'edit'])->name('documents.edit');
-        Route::put('/documents/{id}', [DocumentController::class, 'update'])->name('documents.update');
-        Route::get('/trending/create', [TrendingController::class, 'create'])->name('trending.create');
-        Route::post('/trending', [TrendingController::class, 'store'])->name('trending.store');
-        Route::post('/trending/edit/{date?}', [TrendingController::class, 'edit'])->name('trending.edit');
-        Route::post('/trending/save-from-feed', [TrendingController::class, 'saveFromFeed'])->name('trending.saveFromFeed');
-        
-        // Pastikan route ini SETELAH route /trending/test
-        Route::delete('/trending/{trending}', [TrendingController::class, 'destroy'])->name('trending.destroy');
-
-        // routes/web.php
-        Route::get('/preview', [PreviewController::class, 'getPreview'])->name('preview');
+    // Document Management
+    Route::middleware('role:admin,editor')->prefix('documents')->name('documents.')->group(function () {
+        Route::get('/', [DocumentController::class, 'index'])->name('index');
+        Route::get('/upload', [DocumentController::class, 'create'])->name('create');
+        Route::post('/', [DocumentController::class, 'store'])->name('store');
+        Route::get('/edit/{date?}', [DocumentController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [DocumentController::class, 'update'])->name('update');
     });
-    
-    // Route detail isu harus setelah create
-    Route::get('/isu/{isu}', [IsuController::class, 'show'])->name('isu.show');
+
+    // Trending Management
+    Route::prefix('trending')->name('trending.')->group(function () {
+        Route::get('/', [TrendingController::class, 'index'])->name('index');
+        Route::get('/selected', [TrendingController::class, 'selected'])->name('selected');
+
+        Route::middleware('role:admin,editor')->group(function () {
+            Route::get('/create', [TrendingController::class, 'create'])->name('create');
+            Route::post('/', [TrendingController::class, 'store'])->name('store');
+            Route::delete('/{trending}', [TrendingController::class, 'destroy'])->name('destroy');
+            Route::put('/{trending}/toggle-selected', [TrendingController::class, 'toggleSelected'])->name('toggleSelected');
+
+            Route::get('/manage-google', [TrendingController::class, 'manageGoogleSelected'])->name('manageGoogleSelected');
+            Route::get('/manage-x', [TrendingController::class, 'manageXSelected'])->name('manageXSelected');
+
+            Route::get('/refresh-google', [TrendingController::class, 'refreshGoogleTrends'])->name('refreshGoogleTrends');
+            Route::get('/refresh-x', [TrendingController::class, 'refreshXTrends'])->name('refreshXTrends');
+
+            Route::post('/save-google', [TrendingController::class, 'saveGoogleWithSelection'])->name('saveGoogleWithSelection');
+            Route::post('/save-x', [TrendingController::class, 'saveXWithSelection'])->name('saveXWithSelection');
+            Route::post('/save-with-selection', [TrendingController::class, 'saveFromFeedWithSelection'])->name('saveFromFeedWithSelection');
+            Route::post('/save-from-feed', [TrendingController::class, 'saveFromFeed'])->name('saveFromFeed');
+
+            Route::post('/update-google-order', [TrendingController::class, 'updateGoogleOrder'])->name('updateGoogleOrder');
+            Route::post('/update-x-order', [TrendingController::class, 'updateXOrder'])->name('updateXOrder');
+            Route::post('/update-order', [TrendingController::class, 'updateOrder'])->name('updateOrder');
+
+            Route::get('/getdaytrends', [TrendingController::class, 'getDayTrends'])->name('getdaytrends');
+            Route::post('/edit/{date?}', [TrendingController::class, 'edit'])->name('edit');
+            Route::get('/save-all-trends24', [TrendingController::class, 'saveAllTrends24'])->name('saveAllTrends24');
+            Route::get('/save-all-google-trends', [TrendingController::class, 'saveAllGoogleTrends'])->name('saveAllGoogleTrends');
+        });
+    });
+
+    // Preview
+    Route::get('/preview-isu', [IsuController::class, 'preview'])->name('preview.isu');
+    Route::get('/preview', [PreviewController::class, 'getPreview'])->name('preview.full');
+
+    // Public API-style endpoint (move to api.php if needed)
+    Route::get('/api/trending/selected', [TrendingController::class, 'getSelectedTrendings'])
+        ->name('api.trending.selected');
 });
