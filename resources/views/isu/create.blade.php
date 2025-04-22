@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="container">
+    <!-- Breadcrumb -->
     <div class="row mb-3">
         <div class="col-12">
             <nav aria-label="breadcrumb">
@@ -17,18 +18,20 @@
         </div>
     </div>
 
-    <div class="card">
+    <!-- Card Utama -->
+    <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
             <h4 class="mb-0">Tambah Isu Baru</h4>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <form action="{{ route('isu.store') }}" method="POST" enctype="multipart/form-data" id="isuForm">
                 @csrf
 
-                <div class="row mb-3">
+                <!-- Bagian Judul dan Tanggal -->
+                <div class="row mb-4">
                     <div class="col-md-8">
                         <div class="mb-3">
-                            <label for="judul" class="form-label">Judul Isu <span class="text-danger">*</span></label>
+                            <label for="judul" class="form-label fw-bold">Judul Isu <span class="text-danger">*</span></label>
                             <input type="text" class="form-control @error('judul') is-invalid @enderror" id="judul" name="judul" value="{{ old('judul') }}" required>
                             @error('judul')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -37,7 +40,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label for="tanggal" class="form-label">Tanggal</label>
+                            <label for="tanggal" class="form-label fw-bold">Tanggal</label>
                             <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal" name="tanggal" value="{{ old('tanggal') ?? date('Y-m-d') }}">
                             @error('tanggal')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -46,34 +49,35 @@
                     </div>
                 </div>
 
-                <div class="row mb-3">
+                <!-- Bagian Atribut Isu -->
+                <div class="row mb-4">
                     <!-- Checkbox Isu Strategis -->
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <div class="mb-3">
-                            <div class="form-check form-switch">
+                            <label for="isu_strategis" class="form-label fw-bold d-block">Isu Strategis</label>
+                            <div class="form-check form-switch mt-2">
                                 <input type="checkbox" class="form-check-input" id="isu_strategis" name="isu_strategis" value="1" {{ old('isu_strategis') ? 'checked' : '' }}>
-                                <label class="form-check-label" for="isu_strategis">Isu Strategis</label>
+                                <!-- <label class="form-check-label" for="isu_strategis">Isu Strategis</label> -->
                             </div>
-                            <small class="form-text text-muted">Centang jika isu ini bersifat strategis</small>
                         </div>
                     </div>
 
                     <!-- Kategori sebagai Tags Input -->
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="kategori" class="form-label">Kategori</label>
-                            <input type="text" class="form-control @error('kategori') is-invalid @enderror" id="kategori" name="kategori" value="{{ old('kategori') }}" placeholder="Masukkan kategori (pisahkan dengan koma)">
+                            <label for="kategori" class="form-label fw-bold">Kategori</label>
+                            <input type="text" class="form-control @error('kategori') is-invalid @enderror" id="kategori" name="kategori" value="{{ old('kategori') }}" placeholder="Pisahkan dengan koma">
                             @error('kategori')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <small class="form-text text-muted">Tambahkan beberapa kategori dengan menekan Enter atau koma</small>
+                            <small class="form-text text-muted">Contoh: Politik, Ekonomi, Sosial</small>
                         </div>
                     </div>
 
                     <!-- Skala -->
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="skala" class="form-label">Skala</label>
+                            <label for="skala" class="form-label fw-bold">Skala</label>
                             <select class="form-select @error('skala') is-invalid @enderror" id="skala" name="skala">
                                 <option value="">Pilih Skala</option>
                                 @foreach($skalaList as $skala)
@@ -87,43 +91,41 @@
                             @enderror
                         </div>
                     </div>
-                    </div>
-
+                    
                     <!-- Tone -->
-                    <div class="row mb-3">
-                        <div class="col-md-12">
-                            <div class="mb-3">
-                                <label for="tone" class="form-label">Tone Isu</label>
-                                <div class="d-flex gap-3">
-                                    @foreach($toneList as $tone)
-                                        <div class="form-check">
-                                            <input type="radio" class="form-check-input @error('tone') is-invalid @enderror" 
-                                                    id="tone_{{ $tone->id }}" name="tone" value="{{ $tone->id }}" 
-                                                    {{ old('tone') == $tone->id ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="tone_{{ $tone->id }}">{{ $tone->nama }}</label>
-                                        </div>
-                                    @endforeach
-                                </div>
-                                @error('tone')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label for="tone" class="form-label fw-bold">Tone Isu</label>
+                            <div class="tone-segment-rounded">
+                                @foreach($toneList as $tone)
+                                <input type="radio" class="tone-radio" id="tone_{{ $tone->id }}" name="tone" value="{{ $tone->id }}" 
+                                    {{ old('tone') == $tone->id ? 'checked' : '' }} data-color="{{ $tone->warna }}">
+                                <label for="tone_{{ $tone->id }}" {{ old('tone') == $tone->id ? 'style="background-color: '.$tone->warna.'; color: white;"' : '' }}>
+                                    {{ $tone->nama }}
+                                </label>
+                                @endforeach
                             </div>
+                            @error('tone')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
+                </div>
 
-                <!-- Editor untuk Rangkuman dan Narasi -->
-                <div class="mb-3">
-                    <label for="rangkuman" class="form-label">Rangkuman</label>
+                <!-- Editor untuk Rangkuman -->
+                <div class="mb-4">
+                    <label for="rangkuman" class="form-label fw-bold">Rangkuman</label>
                     <textarea class="form-control ckeditor @error('rangkuman') is-invalid @enderror" id="rangkuman" name="rangkuman" rows="5">{{ old('rangkuman') }}</textarea>
                     @error('rangkuman')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <div class="row mb-3">
+                <!-- Editor untuk Narasi -->
+                <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="narasi_positif" class="form-label">Narasi Positif</label>
+                            <label for="narasi_positif" class="form-label fw-bold">Narasi Positif</label>
                             <textarea class="form-control ckeditor @error('narasi_positif') is-invalid @enderror" id="narasi_positif" name="narasi_positif" rows="5">{{ old('narasi_positif') }}</textarea>
                             @error('narasi_positif')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -132,7 +134,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="narasi_negatif" class="form-label">Narasi Negatif</label>
+                            <label for="narasi_negatif" class="form-label fw-bold">Narasi Negatif</label>
                             <textarea class="form-control ckeditor @error('narasi_negatif') is-invalid @enderror" id="narasi_negatif" name="narasi_negatif" rows="5">{{ old('narasi_negatif') }}</textarea>
                             @error('narasi_negatif')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -141,49 +143,71 @@
                     </div>
                 </div>
 
-                <h5 class="mt-4 mb-3">Referensi</h5>
-                <div id="referensi-container">
-                    <div class="referensi-item border p-3 mb-3">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="mb-3">
-                                    <label class="form-label">URL</label>
-                                    <div class="input-group">
-                                        <input type="url" class="form-control referensi-url" name="referensi_url[]">
-                                        <button type="button" class="btn btn-outline-secondary preview-btn">Preview</button>
+                <!-- Bagian Referensi -->
+                <div class="card bg-light mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0 fw-bold">Referensi</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="referensi-container">
+                            <div class="referensi-item border rounded p-3 mb-3 bg-white">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">URL</label>
+                                            <div class="input-group">
+                                                <input type="url" class="form-control referensi-url" name="referensi_url[]">
+                                                <button type="button" class="btn btn-outline-primary preview-btn">
+                                                    <i class="bi bi-eye"></i> Preview
+                                                </button>
+                                            </div>
+                                            <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
+                                            <!-- Judul sebagai hidden input -->
+                                            <input type="hidden" class="referensi-judul" name="referensi_judul[]">
+                                        </div>
                                     </div>
-                                    <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
-                                    <!-- Judul sebagai hidden input -->
-                                    <input type="hidden" class="referensi-judul" name="referensi_judul[]">
+                                </div>
+                                
+                                <div class="preview-container mt-2" style="display: none;">
+                                    <div class="card border">
+                                        <div class="card-body p-2">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-4">
+                                                    <img src="" class="img-fluid preview-img" alt="Preview">
+                                                </div>
+                                                <div class="col-md-8">
+                                                    <p class="preview-title m-0 fw-bold"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url">
+                                </div>
+                                
+                                <div class="text-end mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-referensi">
+                                        <i class="bi bi-trash"></i> Hapus Referensi
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="preview-container mt-2" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <img src="" class="img-fluid preview-img" alt="Preview">
-                                </div>
-                                <div class="col-md-8">
-                                    <p class="preview-title"></p>
-                                </div>
-                            </div>
-                            <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url">
-                        </div>
-                        <div class="text-end">
-                            <button type="button" class="btn btn-sm btn-danger remove-referensi">Hapus Referensi</button>
+
+                        <div class="mb-3">
+                            <button type="button" id="add-referensi" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-circle"></i> Tambah Referensi
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <button type="button" id="add-referensi" class="btn btn-outline-secondary">
-                        <i class="bi bi-plus-circle"></i> Tambah Referensi
+                <!-- Tombol Aksi -->
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <a href="{{ route('isu.index') }}" class="btn btn-light border">
+                        <i class="bi bi-x-circle"></i> Batal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-floppy-disk"></i> Simpan
                     </button>
-                </div>
-
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <a href="{{ route('isu.index') }}" class="btn btn-secondary">Batal</a>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
                 </div>
             </form>
         </div>
@@ -194,6 +218,7 @@
 @section('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" href="{{ asset('vendor/ckeditor5/ckeditor5.css') }}">
 <style>
     .tagify {
         border: 1px solid #ced4da;
@@ -232,6 +257,78 @@
     .ck-content {
         font-size: 14px;
     }
+
+    /* Custom Badge */
+    .badge-custom {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.65rem;
+        border-radius: 5px;
+        color: white;
+    }
+
+    /* Tone Segment dengan Rounded Corners - Style 1 */
+    .tone-segment-rounded {
+        display: flex;
+        width: 100%;
+        max-width: 500px;
+        position: relative;
+        background-color: #f0f0f0;
+        padding: 2px;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .tone-segment-rounded input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .tone-segment-rounded label {
+        flex: 1;
+        text-align: center;
+        padding: 0.6rem 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 5px;
+        margin: 0 2px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #495057;
+        background-color: transparent;
+        position: relative;
+        z-index: 1;
+    }
+
+    .tone-segment-rounded input:checked + label {
+        color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    /* Hover effect */
+    .tone-segment-rounded label:hover {
+        background-color: rgba(0,0,0,0.03);
+    }
+
+    /* Active/pressed effect */
+    .tone-segment-rounded label:active {
+        transform: scale(0.98);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        .tone-segment-rounded {
+            max-width: 100%;
+        }
+        
+        .tone-segment-rounded label {
+            padding: 0.5rem 0;
+            font-size: 0.8rem;
+        }
+    }
 </style>
 @endsection
 
@@ -239,39 +336,85 @@
 <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- CKEditor 5 -->
-<script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
+<script type="importmap">
+{
+    "imports": {
+        "ckeditor5": "{{ asset('vendor/ckeditor5/ckeditor5.js') }}",
+        "ckeditor5/": "{{ asset('vendor/ckeditor5/') }}"
+    }
+}
+</script>
+<script type="module">
+    // Import harus ada di level teratas modul
+    import {
+        ClassicEditor,
+        Essentials,
+        Paragraph,
+        Bold,
+        Italic,
+        Link,
+        Heading,
+        List,
+        Alignment,
+        Underline
+    } from 'ckeditor5';
+
+    // Tunggu DOM selesai dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi CKEditor untuk setiap elemen dengan class ckeditor
+        document.querySelectorAll('.ckeditor').forEach(function(element) {
+            ClassicEditor
+                .create(element, {
+                    licenseKey: 'GPL', // Ganti dengan license key Anda atau 'GPL'
+                    plugins: [
+                        Essentials, 
+                        Paragraph, 
+                        Bold, 
+                        Italic, 
+                        Link, 
+                        Heading, 
+                        List, 
+                        Alignment,
+                        Underline
+                    ],
+                    toolbar: {
+                        items: [
+                            'heading', '|', 
+                            'bold', 'italic', 'underline', '|',
+                            'link', '|',
+                            'alignment', '|',
+                            'bulletedList', 'numberedList', '|',
+                            'undo', 'redo'
+                        ],
+                        shouldNotGroupWhenFull: true
+                    },
+                    alignment: {
+                        options: ['left', 'center', 'right', 'justify']
+                    },
+                    placeholder: 'Tulis di sini...',
+                    link: {
+                        defaultProtocol: 'https://',
+                        addTargetToExternalLinks: true
+                    }
+                })
+                .then(editor => {
+                    // Sinkronisasi konten dengan textarea asli
+                    editor.model.document.on('change:data', () => {
+                        element.value = editor.getData();
+                    });
+                    
+                    // Simpan referensi editor jika diperlukan kemudian
+                    window.editors = window.editors || {};
+                    window.editors[element.id] = editor;
+                })
+                .catch(error => {
+                    console.error('CKEditor error:', error);
+                });
+        });
+    });
+</script>
 <script>
 $(document).ready(function() {
-    // Inisialisasi CKEditor untuk setiap elemen dengan class ckeditor
-    document.querySelectorAll('.ckeditor').forEach(function(element) {
-        ClassicEditor
-            .create(element, {
-                toolbar: [
-                    'heading', '|', 
-                    'bold', 'italic', 'link', '|',
-                    'bulletedList', 'numberedList', '|',
-                    'undo', 'redo'
-                ],
-                placeholder: 'Tulis di sini...',
-                link: {
-                    // Otomatis tambahkan protokol jika tidak ada
-                    defaultProtocol: 'https://',
-                    // Konfigurasi tambahan jika diperlukan
-                    addTargetToExternalLinks: true // Tambahkan target="_blank" untuk link eksternal
-                }
-            })
-            .then(editor => {
-                // Sinkronisasi konten dengan textarea asli
-                editor.model.document.on('change:data', () => {
-                    element.value = editor.getData();
-                    console.log('CKEditor content updated for ' + element.id + ': ' + element.value.substring(0, 50) + '...');
-                });
-            })
-            .catch(error => {
-                console.error('CKEditor error:', error);
-            });
-        });
-
     const input = document.querySelector('#kategori');
     const tagify = new Tagify(input, {
         whitelist: @json($kategoriList->pluck('nama')->toArray()),
@@ -293,13 +436,53 @@ $(document).ready(function() {
     tagify.on('change', function(e) {
         input.value = tagify.value.map(tag => tag.value).join(',');
     });
-
 });
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const referensiContainer = document.getElementById('referensi-container');
     const addReferensiBtn = document.getElementById('add-referensi');
+
+    // Fungsi untuk mengatur warna segmen yang dipilih
+    function updateSegmentColor() {
+        const toneRadios = document.querySelectorAll('.tone-radio');
+        
+        toneRadios.forEach(radio => {
+            const label = radio.nextElementSibling;
+            if (radio.checked) {
+                // Ambil warna dari atribut data-color
+                const color = radio.getAttribute('data-color');
+                console.log('Radio checked:', radio.id, 'Color:', color); // Debugging
+                
+                // Pastikan warna tersedia
+                if (color) {
+                    label.style.backgroundColor = color;
+                    label.style.color = 'white';
+                }
+            } else {
+                label.style.backgroundColor = 'transparent';
+                label.style.color = '#495057';
+            }
+        });
+    }
+    
+    // Inisialisasi warna segmen saat halaman dimuat
+    updateSegmentColor();
+    
+    // Perbarui warna segmen saat pengguna memilih tone
+    const toneRadios = document.querySelectorAll('.tone-radio');
+    toneRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            console.log('Radio changed:', this.id); // Debugging
+            updateSegmentColor();
+        });
+    });
+    
+    // Debugging: Tampilkan semua radio button dan status checked-nya
+    console.log('All radio buttons:');
+    toneRadios.forEach(radio => {
+        console.log(radio.id, 'Checked:', radio.checked, 'Color:', radio.getAttribute('data-color'));
+    });    
 
     // Fungsi untuk mengatur tombol hapus
     function updateRemoveButtons() {
@@ -355,31 +538,59 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Tambah referensi baru
-    addReferensiBtn.addEventListener('click', function() {
-        const referensiItem = document.querySelector('.referensi-item').cloneNode(true);
-        
-        // Clear input values
-        const inputs = referensiItem.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.value = '';
-        });
-        
-        // Reset preview container
-        const previewContainer = referensiItem.querySelector('.preview-container');
-        if (previewContainer) {
-            previewContainer.style.display = 'none';
-            const previewImg = previewContainer.querySelector('.preview-img');
-            if (previewImg) {
-                previewImg.src = '';
+    // Fungsi untuk validasi URL
+    function isValidUrl(url) {
+        try {
+            // Menambahkan protokol jika belum ada
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
             }
-            const previewTitle = previewContainer.querySelector('.preview-title');
-            if (previewTitle) {
-                previewTitle.textContent = '';
-            }
+            
+            new URL(url);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Fungsi untuk menampilkan notifikasi
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} alert-dismissible fade show`;
+        notification.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Cek apakah container notifikasi sudah ada
+        let notificationContainer = document.getElementById('notification-container');
+        
+        if (!notificationContainer) {
+            // Buat container jika belum ada
+            notificationContainer = document.createElement('div');
+            notificationContainer.id = 'notification-container';
+            notificationContainer.style.position = 'fixed';
+            notificationContainer.style.top = '20px';
+            notificationContainer.style.right = '20px';
+            notificationContainer.style.zIndex = '9999';
+            notificationContainer.style.maxWidth = '350px';
+            document.body.appendChild(notificationContainer);
         }
         
-        // Tambahkan event listener untuk URL input
+        notificationContainer.appendChild(notification);
+        
+        // Otomatis hilangkan notifikasi setelah 5 detik
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 5000);
+    }
+
+    // Fungsi untuk menambahkan semua event listener ke item referensi
+    function addEventListenersToReferensiItem(referensiItem) {
+        // Event listener untuk URL input
         const urlInput = referensiItem.querySelector('.referensi-url');
         if (urlInput) {
             // Event saat input diketik untuk mengupdate judul secara realtime
@@ -393,25 +604,113 @@ document.addEventListener('DOMContentLoaded', function() {
                     previewBtn.click(); // Auto preview when URL is entered
                 }
             });
+            
+            // Validasi URL ketika focus keluar
+            urlInput.addEventListener('blur', function() {
+                const url = this.value.trim();
+                if (url && !isValidUrl(url)) {
+                    this.classList.add('is-invalid');
+                    const feedbackElement = this.nextElementSibling;
+                    if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                        feedbackElement.textContent = 'URL tidak valid';
+                    } else {
+                        const feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = 'URL tidak valid';
+                        this.after(feedback);
+                    }
+                } else {
+                    this.classList.remove('is-invalid');
+                }
+            });
         }
         
-        // Tambahkan event listener untuk tombol preview
+        // Event listener untuk tombol preview
         const previewBtn = referensiItem.querySelector('.preview-btn');
         if (previewBtn) {
             previewBtn.addEventListener('click', handlePreview);
         }
         
-        // Tambahkan event listener untuk tombol hapus
+        // Event listener untuk tombol hapus
         const removeBtn = referensiItem.querySelector('.remove-referensi');
         if (removeBtn) {
             removeBtn.addEventListener('click', function() {
-                referensiContainer.removeChild(referensiItem);
-                updateRemoveButtons();
+                // Tambahkan konfirmasi jika diperlukan
+                if (confirm('Apakah Anda yakin ingin menghapus referensi ini?')) {
+                    referensiContainer.removeChild(referensiItem);
+                    updateRemoveButtons();
+                }
             });
         }
+        
+        // Event listener untuk input judul
+        const judulInput = referensiItem.querySelector('.referensi-judul');
+        if (judulInput) {
+            judulInput.addEventListener('change', function() {
+                // Update judul pada preview jika preview container sudah ditampilkan
+                const previewContainer = referensiItem.querySelector('.preview-container');
+                const previewTitle = previewContainer?.querySelector('.preview-title');
+                
+                if (previewContainer && previewContainer.style.display !== 'none' && previewTitle) {
+                    previewTitle.textContent = this.value;
+                }
+            });
+        }
+    }
+
+    // Tambah referensi baru
+    addReferensiBtn.addEventListener('click', function() {
+        // Cek apakah ada template referensi
+        const referensiTemplate = document.querySelector('.referensi-item-template');
+        let referensiItem;
+        
+        if (referensiTemplate) {
+            referensiItem = referensiTemplate.cloneNode(true);
+            referensiItem.classList.remove('referensi-item-template');
+            referensiItem.classList.add('referensi-item');
+        } else {
+            referensiItem = document.querySelector('.referensi-item').cloneNode(true);
+            
+            // Clear input values
+            const inputs = referensiItem.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.value = '';
+                input.classList.remove('is-invalid');
+            });
+            
+            // Reset preview container
+            const previewContainer = referensiItem.querySelector('.preview-container');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+                const previewImg = previewContainer.querySelector('.preview-img');
+                if (previewImg) {
+                    previewImg.src = '';
+                }
+                const previewTitle = previewContainer.querySelector('.preview-title');
+                if (previewTitle) {
+                    previewTitle.textContent = '';
+                }
+            }
+        }
+        
+        // Tambahkan event listener
+        addEventListenersToReferensiItem(referensiItem);
 
         referensiContainer.appendChild(referensiItem);
         updateRemoveButtons();
+        
+        // Auto focus ke URL input
+        const urlInput = referensiItem.querySelector('.referensi-url');
+        if (urlInput) {
+            urlInput.focus();
+        }
+        
+        // Animasi highlight
+        referensiItem.style.transition = 'background-color 0.5s ease';
+        referensiItem.style.backgroundColor = '#f0f8ff';
+        setTimeout(() => {
+            referensiItem.style.backgroundColor = '';
+        }, 1000);
     });
 
     // Fungsi untuk menangani preview
@@ -426,21 +725,34 @@ document.addEventListener('DOMContentLoaded', function() {
         const thumbnailUrlInput = referensiItem.querySelector('.thumbnail-url');
         const judulInput = referensiItem.querySelector('.referensi-judul');
         
+        // Validasi URL
+        if (!url) {
+            event.target.textContent = 'Preview';
+            event.target.disabled = false;
+            urlInput.classList.add('is-invalid');
+            showNotification('Masukkan URL terlebih dahulu.', 'warning');
+            return;
+        }
+        
+        if (!isValidUrl(url)) {
+            event.target.textContent = 'Preview';
+            event.target.disabled = false;
+            urlInput.classList.add('is-invalid');
+            showNotification('URL tidak valid.', 'warning');
+            return;
+        }
+        
+        urlInput.classList.remove('is-invalid');
+        
         // Auto-fill judul dari domain jika masih kosong
         if (!judulInput.value && url) {
             judulInput.value = extractDomainForTitle(url);
         }
 
         // Tampilkan loading state
-        event.target.textContent = 'Loading...';
+        const originalBtnText = event.target.textContent;
+        event.target.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
         event.target.disabled = true;
-        
-        if (!url) {
-            event.target.textContent = 'Preview';
-            event.target.disabled = false;
-            alert('Masukkan URL terlebih dahulu.');
-            return;
-        }
         
         // Lakukan request ke endpoint preview
         fetch(`/preview?url=${encodeURIComponent(url)}`)
@@ -452,7 +764,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 // Reset tombol
-                event.target.textContent = 'Preview';
+                event.target.textContent = originalBtnText;
                 event.target.disabled = false;
                 
                 if (data.success && data.image) {
@@ -479,6 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Tampilkan container preview
                     previewContainer.style.display = 'block';
+                    showNotification('Preview berhasil dimuat', 'success');
                 } else {
                     // Tetap tampilkan preview dengan domain sebagai judul
                     const domain = extractDomainForTitle(url);
@@ -491,13 +804,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Tampilkan container preview
                     previewContainer.style.display = 'block';
+                    showNotification('Preview berhasil dimuat tanpa gambar', 'info');
                 }
             })
             .catch(error => {
                 console.error('Error fetching preview:', error);
                 
                 // Reset tombol
-                event.target.textContent = 'Preview';
+                event.target.textContent = originalBtnText;
                 event.target.disabled = false;
                 
                 // Gunakan domain sebagai fallback
@@ -509,6 +823,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 previewContainer.style.display = 'block';
                 previewImg.style.display = 'none';
                 thumbnailUrlInput.value = '';
+                
+                showNotification('Gagal memuat preview: ' + error.message, 'danger');
             });
     }
 
@@ -529,6 +845,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 previewBtn.click();
             }
         });
+        
+        // Validasi URL
+        input.addEventListener('blur', function() {
+            const url = this.value.trim();
+            if (url && !isValidUrl(url)) {
+                this.classList.add('is-invalid');
+                const feedbackElement = this.nextElementSibling;
+                if (feedbackElement && feedbackElement.classList.contains('invalid-feedback')) {
+                    feedbackElement.textContent = 'URL tidak valid';
+                } else {
+                    const feedback = document.createElement('div');
+                    feedback.className = 'invalid-feedback';
+                    feedback.textContent = 'URL tidak valid';
+                    this.after(feedback);
+                }
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
     });
 
     // Tambahkan event listener untuk tombol preview yang sudah ada
@@ -541,8 +876,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const removeButtons = document.querySelectorAll('.remove-referensi');
     removeButtons.forEach(button => {
         button.addEventListener('click', function() {
-            referensiContainer.removeChild(button.closest('.referensi-item'));
-            updateRemoveButtons();
+            // Tambahkan konfirmasi
+            if (confirm('Apakah Anda yakin ingin menghapus referensi ini?')) {
+                referensiContainer.removeChild(button.closest('.referensi-item'));
+                updateRemoveButtons();
+                showNotification('Referensi berhasil dihapus', 'info');
+            }
+        });
+    });
+
+    // Tambahkan event listener untuk input judul yang sudah ada
+    const judulInputs = document.querySelectorAll('.referensi-judul');
+    judulInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            // Update judul pada preview jika preview container sudah ditampilkan
+            const referensiItem = this.closest('.referensi-item');
+            const previewContainer = referensiItem.querySelector('.preview-container');
+            const previewTitle = previewContainer?.querySelector('.preview-title');
+            
+            if (previewContainer && previewContainer.style.display !== 'none' && previewTitle) {
+                previewTitle.textContent = this.value;
+            }
         });
     });
 
@@ -556,6 +910,105 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inisialisasi tombol hapus
     updateRemoveButtons();
+
+    // Tambahkan tombol sort jika belum ada
+    if (!document.getElementById('sort-referensi')) {
+        const sortButton = document.createElement('button');
+        sortButton.id = 'sort-referensi';
+        sortButton.className = 'btn btn-outline-secondary btn-sm ms-2';
+        sortButton.innerHTML = '<i class="bi bi-sort-alpha-down"></i> Urutkan';
+        sortButton.addEventListener('click', sortReferensiItems);
+        
+        // Tambahkan setelah tombol "Tambah Referensi"
+        addReferensiBtn.parentNode.insertBefore(sortButton, addReferensiBtn.nextSibling);
+    }
+
+    // Tambahkan tombol export/import jika belum ada
+    if (!document.getElementById('export-referensi')) {
+        const exportButton = document.createElement('button');
+        exportButton.id = 'export-referensi';
+        exportButton.className = 'btn btn-outline-primary btn-sm ms-2';
+        exportButton.innerHTML = '<i class="bi bi-download"></i> Export';
+        exportButton.addEventListener('click', exportReferensi);
+        
+        // Tambahkan setelah tombol sort
+        const sortButton = document.getElementById('sort-referensi');
+        if (sortButton) {
+            sortButton.parentNode.insertBefore(exportButton, sortButton.nextSibling);
+        } else {
+            addReferensiBtn.parentNode.insertBefore(exportButton, addReferensiBtn.nextSibling);
+        }
+    }
+
+    if (!document.getElementById('import-referensi')) {
+        const importContainer = document.createElement('div');
+        importContainer.className = 'import-container d-inline-block ms-2';
+        
+        const importLabel = document.createElement('label');
+        importLabel.htmlFor = 'import-file';
+        importLabel.className = 'btn btn-outline-secondary btn-sm';
+        importLabel.innerHTML = '<i class="bi bi-upload"></i> Import';
+        
+        const importInput = document.createElement('input');
+        importInput.type = 'file';
+        importInput.id = 'import-file';
+        importInput.accept = '.json';
+        importInput.style.display = 'none';
+        importInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    importReferensi(e.target.result);
+                };
+                reader.readAsText(file);
+                // Reset input agar bisa mengupload file yang sama berulang kali
+                event.target.value = '';
+            }
+        });
+        
+        importContainer.appendChild(importLabel);
+        importContainer.appendChild(importInput);
+        
+        // Tambahkan setelah tombol export
+        const exportButton = document.getElementById('export-referensi');
+        if (exportButton) {
+            exportButton.parentNode.insertBefore(importContainer, exportButton.nextSibling);
+        } else {
+            addReferensiBtn.parentNode.insertBefore(importContainer, addReferensiBtn.nextSibling);
+        }
+    }
+
+    // Tambahkan utilitas drag and drop jika diperlukan
+    // (Kode untuk drag and drop dapat ditambahkan di sini)
+    
+    // Tambahkan fitur validasi form sebelum submit
+    const form = referensiContainer.closest('form');
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            let hasError = false;
+            
+            // Validasi semua URL
+            const urlInputs = form.querySelectorAll('.referensi-url');
+            urlInputs.forEach(input => {
+                const url = input.value.trim();
+                if (url && !isValidUrl(url)) {
+                    input.classList.add('is-invalid');
+                    hasError = true;
+                }
+            });
+            
+            if (hasError) {
+                event.preventDefault();
+                showNotification('Harap perbaiki kesalahan pada form sebelum melanjutkan.', 'danger');
+                // Scroll ke input pertama yang error
+                const firstError = form.querySelector('.is-invalid');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    }
 });
 </script>
 @endsection

@@ -113,16 +113,16 @@
                 <div class="card-body">
                     <div class="isu-slider-container">
                         <div class="isu-slider">
-                            @php
-                                $nomorUrut = 1; // Mulai dari 1
-                            @endphp
+                            <!-- @php
+                                $nomorUrut = 1;
+                            @endphp -->
                             <!-- Halaman pertama -->
                             <div class="isu-slide active">
                                 <div class="list-group list-group-flush">
-                                    @forelse($isuStrategis->take(8) as $isu)
+                                    @forelse($isuStrategis->take(10) as $index => $isu)
                                         <div class="list-group-item border-bottom py-2">
                                             <a href="{{ route('isu.show', $isu) }}" class="text-decoration-none text-primary">
-                                                {{ $nomorUrut++ }}. {{ $isu->judul }}
+                                                {{ $index + 1 }}. {{ $isu->judul }}
                                             </a>
                                         </div>
                                     @empty
@@ -132,28 +132,13 @@
                             </div>
                             
                             <!-- Halaman kedua (jika ada) -->
-                            @if($isuStrategis->count() > 8)
+                            @if($isuStrategis->count() > 10)
                                 <div class="isu-slide">
                                     <div class="list-group list-group-flush">
-                                        @foreach($isuStrategis->slice(8, 8) as $isu)
+                                        @foreach($isuStrategis->slice(10, 10) as $index => $isu)
                                             <div class="list-group-item border-bottom py-2">
                                                 <a href="{{ route('isu.show', $isu) }}" class="text-decoration-none text-primary">
-                                                    {{ $nomorUrut++ }}. {{ $isu->judul }}
-                                                </a>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endif
-                            
-                            <!-- Halaman ketiga (jika ada) -->
-                            @if($isuStrategis->count() > 16)
-                                <div class="isu-slide">
-                                    <div class="list-group list-group-flush">
-                                        @foreach($isuStrategis->slice(16, 8) as $isu)
-                                            <div class="list-group-item border-bottom py-2">
-                                                <a href="{{ route('isu.show', $isu) }}" class="text-decoration-none text-primary">
-                                                    {{ $nomorUrut++ }}. {{ $isu->judul }}
+                                                    {{ $index + 1 }}. {{ $isu->judul }}
                                                 </a>
                                             </div>
                                         @endforeach
@@ -163,12 +148,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-footer p-0">
-                    <div class="slider-indicators d-flex justify-content-start p-2">
-                        @for ($i = 0; $i < ceil($isuStrategis->count() / 8); $i++)
-                            <span class="slider-dot {{ $i === 0 ? 'active' : '' }}" data-index="{{ $i }}"></span>
-                        @endfor
-                    </div>
+                <div class="slider-indicators d-flex justify-content-start p-2">
+                    @for ($i = 0; $i < ceil(count($isuStrategis) / 10); $i++)
+                        <span class="slider-dot isu-dot {{ $i === 0 ? 'active' : '' }}" data-index="{{ $i }}"></span>
+                    @endfor
                 </div>
             </div>
         </div>
@@ -181,10 +164,10 @@
                 <div class="card-header bg-info d-flex text-white justify-content-between align-items-center">
                     <h5 class="mb-0">Isu Regional</h5>
                     <div class="navigation-buttons">
-                        <button class="btn btn-sm btn-light prev-lainnya-slide">
+                        <button class="btn btn-sm btn-pill prev-lainnya-slide">
                             <i class="bi bi-chevron-left"></i>
                         </button>
-                        <button class="btn btn-sm btn-light next-lainnya-slide">
+                        <button class="btn btn-sm btn-pill next-lainnya-slide">
                             <i class="bi bi-chevron-right"></i>
                         </button>
                     </div>
@@ -195,7 +178,7 @@
                             <!-- Halaman pertama -->
                             <div class="lainnya-slide active">
                                 <div class="list-group list-group-flush">
-                                    @forelse($isuLainnya->take(8) as $index => $isu)
+                                    @forelse($isuLainnya->take(10) as $index => $isu)
                                         <div class="list-group-item border-bottom py-2">
                                             <a href="{{ route('isu.show', $isu) }}" class="text-decoration-none text-primary">
                                                 {{ $index + 1 }}. {{ $isu->judul }}
@@ -206,15 +189,15 @@
                                     @endforelse
                                 </div>
                             </div>
-                            
+
                             <!-- Halaman kedua (jika ada) -->
-                            @if(count($isuLainnya) > 8)
+                            @if(count($isuLainnya) > 10)
                                 <div class="lainnya-slide">
                                     <div class="list-group list-group-flush">
-                                        @foreach($isuLainnya->skip(8)->take(8) as $index => $isu)
+                                        @foreach($isuLainnya->skip(10)->take(10) as $index => $isu)
                                             <div class="list-group-item border-bottom py-2">
                                                 <a href="{{ route('isu.show', $isu) }}" class="text-decoration-none text-primary">
-                                                    {{ $index + 9 }}. {{ $isu->judul }}
+                                                    {{ $index + 1 }}. {{ $isu->judul }}
                                                 </a>
                                             </div>
                                         @endforeach
@@ -224,12 +207,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-footer p-0">
-                    <div class="slider-indicators d-flex justify-content-start p-2">
-                        @for ($i = 0; $i < ceil(count($isuLainnya) / 6); $i++)
-                            <span class="slider-dot lainnya-dot {{ $i === 0 ? 'active' : '' }}" data-index="{{ $i }}"></span>
-                        @endfor
-                    </div>
+                <div class="slider-indicators d-flex justify-content-start p-2">
+                    @for ($i = 0; $i < ceil(count($isuLainnya) / 10); $i++)
+                        <span class="slider-dot lainnya-dot {{ $i === 0 ? 'active' : '' }}" data-index="{{ $i }}"></span>
+                    @endfor
                 </div>
             </div>
         </div>
@@ -504,8 +485,9 @@
             }
         }
         
-        initializeSlider('prev-isu-slide', 'next-isu-slide', 'isu-slide', 'slider-dot:not(.lainnya-dot):not(.google-dot):not(.x-dot)');
+        initializeSlider('prev-isu-slide', 'next-isu-slide', 'isu-slide', 'isu-dot');
         initializeSlider('prev-lainnya-slide', 'next-lainnya-slide', 'lainnya-slide', 'lainnya-dot');
+
         // Inisialisasi slider untuk Google Trends yang dipilih
         initializeSlider('prev-google-selected-slide', 'next-google-selected-slide', 'google-selected-slide', 'google-selected-dot');
 

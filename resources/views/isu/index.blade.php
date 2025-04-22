@@ -89,7 +89,7 @@
                                         <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
                                     @endif
                                 </th>
-                                <th width="150">Kategori</th>
+                                <th width="100">Kategori</th>
                                 <th width="100" class="sortable" data-sort="tone">
                                     Tone
                                     @if(request('sort') == 'tone')
@@ -124,16 +124,16 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge-custom" style="background-color: {{ $isu->refTone->warna ?? ($isu->tone == '1' ? '#0cce6b' : '#e5383b') }}">
-                                            <i class="fas {{ $isu->refTone && $isu->refTone->icon ? $isu->refTone->icon : ($isu->tone == '1' ? 'fa-thumbs-up' : 'fa-thumbs-down') }} me-1"></i>
-                                            {{ $isu->refTone->nama ?? ($isu->tone == '1' ? 'Positif' : 'Negatif') }}
+                                        <span class="badge-custom" style="background-color: {{ $isu->refTone && $isu->tone ? $isu->refTone->warna : '#d3d3d3' }}">
+                                                {{ $isu->refTone && $isu->tone ? $isu->refTone->nama : '-' }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge-custom" style="background-color: {{ $isu->refSkala->warna ?? '#4361ee' }}">
-                                            {{ $isu->refSkala->nama ?? $isu->skala }}
+                                        <span class="badge-custom" style="background-color: {{ $isu->refSkala && $isu->skala ? $isu->refSkala->warna : '#d3d3d3' }}">
+                                                {{ $isu->refSkala && $isu->skala ? $isu->refSkala->nama : '-' }}
                                         </span>
                                     </td>
+ 
                                     <td>
                                         <div class="action-buttons">
                                             <a href="{{ route('isu.show', $isu) }}" class="btn-action btn-view" title="Lihat Detail">
@@ -144,6 +144,9 @@
                                                     <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
+                                                    <!-- <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat">
+                                                        <i class="fas fa-clock-rotate-left"></i>
+                                                    </a> -->
                                                     <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         @method('DELETE')
@@ -191,7 +194,7 @@
                                         <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
                                     @endif
                                 </th>
-                                <th width="150">Kategori</th>
+                                <th width="100">Kategori</th>
                                 <th width="100" class="sortable" data-sort="tone">
                                     Tone
                                     @if(request('sort') == 'tone')
@@ -226,14 +229,13 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge-custom" style="background-color: {{ $isu->refTone->warna ?? ($isu->tone == '1' ? '#0cce6b' : '#e5383b') }}">
-                                                <i class="fas {{ $isu->refTone && $isu->refTone->icon ? $isu->refTone->icon : ($isu->tone == '1' ? 'fa-thumbs-up' : 'fa-thumbs-down') }} me-1"></i>
-                                                {{ $isu->refTone->nama ?? ($isu->tone == '1' ? 'Positif' : 'Negatif') }}
+                                            <span class="badge-custom" style="background-color: {{ $isu->refTone && $isu->tone ? $isu->refTone->warna : '#d3d3d3' }}">
+                                                {{ $isu->refTone && $isu->tone ? $isu->refTone->nama : '-' }}
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge-custom" style="background-color: {{ $isu->refSkala->warna ?? '#4361ee' }}">
-                                                {{ $isu->refSkala->nama ?? $isu->skala }}
+                                            <span class="badge-custom" style="background-color: {{ $isu->refSkala && $isu->skala ? $isu->refSkala->warna : '#d3d3d3' }}">
+                                                {{ $isu->refSkala && $isu->skala ? $isu->refSkala->nama : '-' }}
                                             </span>
                                         </td>
                                         <td>
@@ -242,10 +244,13 @@
                                                     <i class="fas fa-eye"></i>
                                                 </a>
                                                 @auth
-                                                    @if(auth()->user()->isAdmin() || (auth()->user()->isEditor() && $isu->created_by == auth()->id()))
+                                                    @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
                                                         <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
+                                                        <!-- <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat">
+                                                            <i class="fas fa-clock-rotate-left"></i>
+                                                        </a> -->
                                                         <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             @method('DELETE')

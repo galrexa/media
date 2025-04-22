@@ -101,25 +101,29 @@
                 </a>
             </li>
             
-            <!-- Kategori Administrasi -->
-            @if(Auth::user()->isAdmin())
+            <!-- Kategori Pengaturan -->
+            @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
             <li class="nav-item category">
-                <span class="nav-category">ADMINISTRASI</span>
+                <span class="nav-category">PENGATURAN</span>
             </li>
+            @endif
             
             <!-- Manajemen User -->
+            @if(Auth::user()->isAdmin())
             <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" href="{{ route('users.index') }}">
                     <i class="bi bi-people"></i>
                     <span>Manajemen User</span>
                 </a>
             </li>
+            @endif
             
-            <!-- Pengaturan -->
+            <!-- Pengaturan Aplikasi-->
+            @if(Auth::user()->isAdmin() || Auth::user()->isEditor()) 
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.index') }}">
                     <i class="bi bi-gear"></i>
-                    <span>Pengaturan</span>
+                    <span>Pengaturan Aplikasi</span>
                 </a>
             </li>
             @endif
@@ -131,7 +135,7 @@
             
             <!-- Profil -->
             <li class="nav-item">
-                <a class="nav-link" href="#">
+                <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.index') }}">
                     <i class="bi bi-person-circle"></i>
                     <span>Profil</span>
                 </a>

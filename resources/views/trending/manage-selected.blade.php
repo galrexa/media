@@ -85,7 +85,7 @@
                     
                     <div class="d-grid mt-3">
                         <button id="save-order" class="btn btn-success">
-                            <i class="bi bi-save"></i> Simpan Urutan
+                            <i class="fas fa-floppy-disk"></i> Simpan Urutan
                         </button>
                     </div>
                 </div>

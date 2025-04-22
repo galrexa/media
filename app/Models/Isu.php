@@ -33,8 +33,28 @@ class Isu extends Model
         'tone',
         'rangkuman',
         'narasi_positif',
-        'narasi_negatif',        
+        'narasi_negatif',
+        'created_by',
+        'updated_by'        
     ];
+
+    // Relasi ke User pembuat
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    
+    // Relasi ke User yang terakhir edit
+    public function editor()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+    
+    // Relasi ke log
+    public function logs()
+    {
+        return $this->hasMany(LogIsu::class, 'isu_id')->orderBy('created_at', 'desc');
+    }
 
     /**
      * Atribut yang harus dikonversi.
@@ -56,7 +76,8 @@ class Isu extends Model
 
     public function kategoris()
     {
-        return $this->belongsToMany(Kategori::class, 'isu_kategori', 'isu_id', 'kategori_id');
+        return $this->belongsToMany(Kategori::class, 'isu_kategori', 'isu_id', 'kategori_id')
+                    ->withTimestamps();
     }
 
         /**

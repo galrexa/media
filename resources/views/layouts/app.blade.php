@@ -11,6 +11,9 @@
     <!-- Font Awesome untuk ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    
     <!-- Google Fonts - Poppins & Inter (Update) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
@@ -22,26 +25,7 @@
 <body>
 
     <!-- Splash screen dengan animasi modern -->
-    <div class="modal fade" id="welcomeModal" tabindex="-1" aria-labelledby="welcomeModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header border-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center p-4">
-                    <h2 class="fw-bold mb-4">Tentang Media Monitoring</h2>
-                    <ul class="text-start">
-                        <li>Laporan Monitoring Isu Strategis Nasional ini disusun oleh Tim Pengelolaan Media sebagai upaya untuk memahami perspektif media terhadap berbagai kebijakan, isu, dan topik yang berkembang di Indonesia pada <span id="current-date">{{ session('latestIsuDate', now()->format('d F Y')) }}</span>.</li>
-                        <li>Isu-isu strategis yang disajikan dalam laporan ini bersumber dari penelitian kualitatif yang dikaji Tim Pengelolaan Media KSP melalui pemberitaan di media cetak dan media online.</li>
-                        <li>Analisis yang dilakukan bertujuan untuk memberikan wawasan bagi insan Kantor Staf Presiden (KSP) dalam mencermati dinamika pemberitaan di media massa. Selain itu, laporan ini diharapkan dapat menjadi referensi dalam diskusi serta landasan dalam menindaklanjuti isu-isu yang berkembang.</li>
-                    </ul>
-                </div>
-                <div class="modal-footer justify-content-center border-0">
-                    <button type="button" class="btn btn-dark px-4" data-bs-dismiss="modal">Mengerti</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('partials.modal') 
 
     <!-- Navbar dengan Glassmorphism effect -->
     <nav class="navbar navbar-expand-lg navbar-dark mb-4 custom-navbar">
@@ -72,8 +56,8 @@
                                 <i class="fas fa-user"></i>{{ Auth::user()->name }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a href="#" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
-                                <li><a href="#" class="dropdown-item"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
+                            <li><a href="{{ route('profile.index') }}" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
+                                <li><a href="{{ route('settings.index') }}" class="dropdown-item"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
                                 <li><a class="dropdown-item" href="#" id="showAboutModal"><i class="fas fa-info-circle me-2"></i>Tentang</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li>

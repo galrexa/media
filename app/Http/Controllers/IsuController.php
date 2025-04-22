@@ -7,6 +7,7 @@ use App\Models\ReferensiIsu;
 use App\Models\RefSkala;
 use App\Models\RefTone;
 use App\Models\Kategori;
+use App\Helpers\LogHelper;
 use App\Helpers\ThumbnailHelper;
 use Embed\Embed;
 use Illuminate\Http\Request;
@@ -21,6 +22,12 @@ use Carbon\Carbon;
 
 class IsuController extends Controller
 {
+    /**
+     * Menyimpan isu baru ke database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     /**
      * Menyimpan isu baru ke database.
      *
@@ -45,122 +52,137 @@ class IsuController extends Controller
             'referensi_thumbnail_url.*' => 'nullable|url',
         ]);
 
-        // Bersihkan data dan tambahkan default jika kosong
-        $rangkuman = !empty($request->rangkuman) ? Purify::clean($request->rangkuman) : '<p>Tidak ada data</p>';
-        $narasi_positif = !empty($request->narasi_positif) ? Purify::clean($request->narasi_positif) : '<p>Tidak ada data</p>';
-        $narasi_negatif = !empty($request->narasi_negatif) ? Purify::clean($request->narasi_negatif) : '<p>Tidak ada data</p>';
+        // Begin transaction
+        DB::beginTransaction();
         
-        // Tetapkan nilai default untuk skala dan tone jika kosong
-        $skalaId = null;
-        if (!empty($validated['skala'])) {
-            // Cek apakah input adalah ID atau nama
-            if (is_numeric($validated['skala'])) {
-                $skalaId = (int)$validated['skala'];
-            } else {
-                // Jika nama, cari ID yang sesuai
-                $skalaRef = RefSkala::where('nama', $validated['skala'])->first();
-                $skalaId = $skalaRef ? $skalaRef->id : $this->getDefaultSkalaId();
-            }
-        } else {
-            $skalaId = $this->getDefaultSkalaId();
-        }
-
-        $tone = $validated['tone'] ?? $this->getDefaultToneId();
-
-        // Simpan isu
-        $isu = Isu::create([
-            'judul' => $validated['judul'],
-            'tanggal' => $validated['tanggal'],
-            'isu_strategis' => $request->has('isu_strategis'),
-            'skala' => $skalaId,
-            'tone' => $tone,
-            'rangkuman' => $rangkuman,
-            'narasi_positif' => $narasi_positif,
-            'narasi_negatif' => $narasi_negatif,
-        ]);
-
-        // Proses tags kategori
-        if (!empty($validated['kategori'])) {
-            $kategoriInput = $validated['kategori'];
-            // Jika input adalah JSON dari Tagify, decode terlebih dahulu
-            if (json_decode($kategoriInput, true)) {
-                $tags = array_column(json_decode($kategoriInput, true), 'value');
-            } else {
-                // Jika sudah comma-separated
-                $tags = array_filter(array_map('trim', explode(',', $kategoriInput)));
-            }
-
-            $kategoriIds = [];
-            foreach ($tags as $tag) {
-                $kategori = Kategori::firstOrCreate(['nama' => $tag]); // Simpan hanya nama sebagai string
-                $kategoriIds[] = $kategori->id;
-            }
-
-            // Simpan relasi ke tabel pivot
-            $isu->kategoris()->sync($kategoriIds);
-        }
-        
-        // Simpan referensi jika ada
-        if ($request->has('referensi_judul')) {
-            foreach ($request->referensi_judul as $key => $judul) {
-                if ($judul && isset($request->referensi_url[$key])) {
-                    $url = $request->referensi_url[$key];
-                    
-                    // Gunakan thumbnail URL langsung dari form jika tersedia
-                    $thumbnail = $request->referensi_thumbnail_url[$key] ?? null;
-                    
-                    // Jika thumbnail tidak tersedia, coba ambil dari URL dengan Embed
-                    if (!$thumbnail) {
-                        try {
-                            // Gunakan embed/embed untuk mendapatkan metadata
-                            $embed = new Embed();
-                            $info = $embed->get($url);
-                            
-                            // Ambil URL thumbnail/gambar dari metadata
-                            $thumbnail = $info->image;
-                        } catch (\Exception $e) {
-                            // Log error, tapi jangan batalkan proses
-                            \Log::error('Error fetching thumbnail: ' . $e->getMessage());
-                        }
-                    }
-                    
-                    // Simpan referensi dengan thumbnail URL (bukan path storage)
-                    ReferensiIsu::create([
-                        'isu_id' => $isu->id,
-                        'judul' => $judul,
-                        'url' => $url,
-                        'thumbnail' => $thumbnail, // Simpan URL langsung
-                    ]);
+        try {
+            // Bersihkan data dan tambahkan default jika kosong
+            $rangkuman = !empty($request->rangkuman) ? Purify::clean($request->rangkuman) : '<p>Tidak ada data</p>';
+            $narasi_positif = !empty($request->narasi_positif) ? Purify::clean($request->narasi_positif) : '<p>Tidak ada data</p>';
+            $narasi_negatif = !empty($request->narasi_negatif) ? Purify::clean($request->narasi_negatif) : '<p>Tidak ada data</p>';
+            
+            // Tetapkan nilai default untuk skala dan tone jika kosong
+            $skalaId = null;
+            if (!empty($validated['skala'])) {
+                // Cek apakah input adalah ID atau nama
+                if (is_numeric($validated['skala'])) {
+                    $skalaId = (int)$validated['skala'];
+                } else {
+                    // Jika nama, cari ID yang sesuai
+                    $skalaRef = RefSkala::where('nama', $validated['skala'])->first();
+                    $skalaId = $skalaRef ? $skalaRef->id : null; // Ubah ke null
                 }
             }
+
+            $tone = !empty($validated['tone']) ? $validated['tone'] : null;
+
+            // Simpan isu
+            $isu = Isu::create([
+                'judul' => $validated['judul'],
+                'tanggal' => $validated['tanggal'],
+                'isu_strategis' => $request->has('isu_strategis'),
+                'skala' => $skalaId,
+                'tone' => $tone,
+                'rangkuman' => $rangkuman,
+                'narasi_positif' => $narasi_positif,
+                'narasi_negatif' => $narasi_negatif,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id()
+            ]);
+
+            // Variabel untuk menyimpan string kategori
+            $kategoriString = '';
+            
+            // Proses tags kategori
+            if (!empty($validated['kategori'])) {
+                $kategoriInput = $validated['kategori'];
+                // Jika input adalah JSON dari Tagify, decode terlebih dahulu
+                if (json_decode($kategoriInput, true)) {
+                    $tags = array_column(json_decode($kategoriInput, true), 'value');
+                    $kategoriString = implode(',', $tags);
+                } else {
+                    // Jika sudah comma-separated
+                    $tags = array_filter(array_map('trim', explode(',', $kategoriInput)));
+                    $kategoriString = implode(',', $tags);
+                }
+
+                $kategoriIds = [];
+                foreach ($tags as $tag) {
+                    $kategori = Kategori::firstOrCreate(['nama' => $tag]); // Simpan hanya nama sebagai string
+                    $kategoriIds[] = $kategori->id;
+                }
+
+                // Simpan relasi ke tabel pivot
+                $isu->kategoris()->sync($kategoriIds);
+            }
+            
+            // Simpan referensi jika ada
+            if ($request->has('referensi_judul')) {
+                foreach ($request->referensi_judul as $key => $judul) {
+                    if ($judul && isset($request->referensi_url[$key])) {
+                        $url = $request->referensi_url[$key];
+                        
+                        // Gunakan thumbnail URL langsung dari form jika tersedia
+                        $thumbnail = $request->referensi_thumbnail_url[$key] ?? null;
+                        
+                        // Jika thumbnail tidak tersedia, coba ambil dari URL dengan Embed
+                        if (!$thumbnail) {
+                            try {
+                                // Gunakan embed/embed untuk mendapatkan metadata
+                                $embed = new Embed();
+                                $info = $embed->get($url);
+                                
+                                // Ambil URL thumbnail/gambar dari metadata
+                                $thumbnail = $info->image;
+                            } catch (\Exception $e) {
+                                // Log error, tapi jangan batalkan proses
+                                \Log::error('Error fetching thumbnail: ' . $e->getMessage());
+                            }
+                        }
+                        
+                        // Simpan referensi dengan thumbnail URL (bukan path storage)
+                        ReferensiIsu::create([
+                            'isu_id' => $isu->id,
+                            'judul' => $judul,
+                            'url' => $url,
+                            'thumbnail' => $thumbnail, // Simpan URL langsung
+                        ]);
+                    }
+                }
+            }
+
+            // Log aktivitas pembuatan isu
+            LogHelper::logIsuActivity(
+                $isu->id,
+                'CREATE',
+                null,
+                null,
+                json_encode($isu->toArray()),
+                $request
+            );
+            
+            // Log kategori jika ada
+            if (!empty($kategoriString)) {
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'CREATE',
+                    'kategori',
+                    null,
+                    $kategoriString,
+                    $request
+                );
+            }
+                
+            DB::commit();
+                
+            return redirect()->route('isu.show', $isu)
+                            ->with('success', 'Isu berhasil dibuat!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
-
-        return redirect()->route('isu.show', $isu)
-                         ->with('success', 'Isu berhasil dibuat!');
-    }
-
-    /**
-     * Mendapatkan nilai default untuk skala
-     * 
-     * @return string
-     */
-    private function getDefaultSkalaId()
-    {
-        // Ambil skala pertama dari database atau tetapkan nilai default tetap
-        $defaultSkala = RefSkala::where('aktif', true)->orderBy('urutan')->first();
-        return $defaultSkala ? $defaultSkala->id : 'N'; // N sebagai default jika tidak ada data
-    }
-
-    /**
-     * Mendapatkan nilai default untuk tone
-     * 
-     * @return string
-     */
-    private function getDefaultToneId()
-    {
-        // Ambil tone pertama dari database atau tetapkan nilai default tetap
-        $defaultTone = RefTone::where('aktif', true)->orderBy('urutan')->first();
-        return $defaultTone ? $defaultTone->id : 'N'; // N sebagai default jika tidak ada data
     }
 
     public function index(Request $request)
@@ -257,37 +279,47 @@ class IsuController extends Controller
             'tanggal' => 'required|date',
             'isu_strategis' => 'boolean',
             'kategori' => 'nullable|string',
-            'skala' => 'nullable|string|max:255',
+            'skala' => 'nullable|string',
             'tone' => 'nullable|string',
             'rangkuman' => 'nullable|string',
             'narasi_positif' => 'nullable|string',
             'narasi_negatif' => 'nullable|string',
             'referensi_judul.*' => 'nullable|string|max:255',
-            'referensi_url.*' => 'nullable|url',
+            'referensi_url.*' => 'nullable|url|max:255',
             'referensi_id.*' => 'nullable|exists:referensi_isus,id',
             'referensi_thumbnail_url.*' => 'nullable|url',
         ]);
+
+        // Simpan data asli untuk log perubahan
+        $originalData = $isu->toArray();
 
         // Bersihkan data dan tambahkan default jika kosong
         $rangkuman = !empty($request->rangkuman) ? Purify::clean($request->rangkuman) : '<p>Tidak ada data</p>';
         $narasi_positif = !empty($request->narasi_positif) ? Purify::clean($request->narasi_positif) : '<p>Tidak ada data</p>';
         $narasi_negatif = !empty($request->narasi_negatif) ? Purify::clean($request->narasi_negatif) : '<p>Tidak ada data</p>';
         
-        // Tetapkan nilai default untuk skala dan tone jika kosong
-        $skala = $validated['skala'] ?? $isu->skala; // Gunakan nilai yang sudah ada atau default
-        $tone = $validated['tone'] ?? $isu->tone; // Gunakan nilai yang sudah ada atau default
+        // Tetapkan nilai untuk skala dan tone
+        // Gunakan null jika tidak ada nilai yang dipilih
+        $skala = !empty($validated['skala']) ? $validated['skala'] : null;
+        $tone = !empty($validated['tone']) ? $validated['tone'] : null;
+
+        // Begin transaction
+        DB::beginTransaction();
 
         // Update isu
-        $isu->update([
-            'judul' => $validated['judul'],
-            'tanggal' => $validated['tanggal'],
-            'isu_strategis' => $request->has('isu_strategis'),
-            'skala' => $skala,
-            'tone' => $tone,
-            'rangkuman' => $rangkuman,
-            'narasi_positif' => $narasi_positif,
-            'narasi_negatif' => $narasi_negatif,
-        ]);
+        try {
+            // Update isu dengan user tracking
+            $isu->update([
+                'judul' => $validated['judul'],
+                'tanggal' => $validated['tanggal'],
+                'isu_strategis' => $request->has('isu_strategis'),
+                'skala' => $skala,
+                'tone' => $tone,
+                'rangkuman' => $rangkuman,
+                'narasi_positif' => $narasi_positif,
+                'narasi_negatif' => $narasi_negatif,
+                'updated_by' => Auth::id(), // Update dengan user id yang mengedit
+            ]);
 
         // Proses tags kategori
         if (!empty($validated['kategori'])) {
@@ -383,9 +415,26 @@ class IsuController extends Controller
             $isu->referensi()->delete();
         }
 
+            // Log perubahan field-by-field
+            LogHelper::logIsuChanges(
+                $isu->id,
+                $originalData,
+                $request->all(),
+                $request
+            );
+            
+            DB::commit();
+
         return redirect()->route('isu.show', $isu)
                          ->with('success', 'Isu berhasil diperbarui!');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
     }
+}
 
     public function show(Isu $isu)
     {
@@ -428,6 +477,25 @@ class IsuController extends Controller
     }
 
     /**
+     * Menampilkan riwayat perubahan isu.
+     *
+     * @param  \App\Models\Isu  $isu
+     * @return \Illuminate\View\View
+     */
+    public function history(Isu $isu)
+    {
+        // Cek izin akses
+        if (!auth()->user()->isAdmin() && !auth()->user()->isEditor() && $isu->created_by != auth()->id()) {
+            abort(403, 'Unauthorized');
+        }
+        
+        // Ambil log dengan eager loading user
+        $logs = $isu->logs()->with('user')->paginate(20);
+        
+        return view('isu.history', compact('isu', 'logs'));
+    }
+
+    /**
      * Menghapus isu dari database.
      *
      * @param  \App\Models\Isu  $isu
@@ -439,13 +507,30 @@ class IsuController extends Controller
         if (!auth()->user()->isAdmin() && !auth()->user()->isEditor() && $isu->created_by != auth()->id()) {
             abort(403, 'Unauthorized');
         }
-    
-        // Tidak perlu menghapus file thumbnail karena kita tidak menyimpannya di storage lagi
-    
+
+        DB::beginTransaction();
+        try {
+            // Log penghapusan sebelum menghapus data
+            LogHelper::logIsuActivity(
+                $isu->id,
+                'DELETE',
+                null,
+                json_encode($isu->toArray()),
+                null,
+                request()
+            );        
         $isu->delete();
+
+        DB::commit();
+
         return redirect()->route('isu.index')
                          ->with('success', 'Isu berhasil dihapus!');
-    }
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                            return redirect()->back()
+                                            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+                        }
+                    }
 
     /**
      * Mengambil preview dari URL untuk referensi.

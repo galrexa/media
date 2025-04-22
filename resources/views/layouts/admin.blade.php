@@ -23,44 +23,45 @@
 <body>
     <!-- Navbar fixed di atas (Simpel Tanpa Search & Notification) -->
     <header class="top-navbar">
-        <div class="navbar-container">
-            <!-- Brand/logo dengan toggle sidebar -->
-            <div class="navbar-brand">
-                <button class="toggle-sidebar d-none d-md-flex" id="toggleSidebar" aria-label="Toggle Sidebar">
-                    <i class="bi bi-list"></i>
-                </button>
-                <span class="brand-text">Media Monitoring</span>
-            </div>
-            
-            <!-- User Profile Dropdown - diperbarui agar mirip dengan app.css -->
-            <div class="navbar-actions">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item dropdown user-dropdown">
-                        <a class="nav-link dropdown-toggle text-white user-dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-1"></i>{{ Auth::user()->name ?? 'Admin' }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a href="#" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
-                            <li><a href="#" class="dropdown-item"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i>Tentang</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="{{ route('logout') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
-            </div>
+    <div class="navbar-container">
+        <!-- Brand/logo dengan toggle sidebar -->
+        <div class="navbar-brand">
+            <button class="toggle-sidebar d-none d-md-flex" id="toggleSidebar" aria-label="Toggle Sidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="brand-text">Media Monitoring</span>
         </div>
-    </header>
+        
+        <!-- User Profile Dropdown - diperbarui agar mirip dengan app.css -->
+        <div class="navbar-actions">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item dropdown user-dropdown">
+                    <a class="nav-link dropdown-toggle text-white user-dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user-circle me-1"></i>{{ Auth::user()->name ?? 'Admin' }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <li><a href="{{ route('profile.index') }}" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
+                        <li><a href="#" class="dropdown-item"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i>Tentang</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>
     <!-- Sidebar dengan Glassmorphism Effect -->
     <nav id="sidebar" class="sidebar">
         <div class="sidebar-content">
+            
             <div class="sidebar-menu">
                 @include('partials.sidebar')
             </div>

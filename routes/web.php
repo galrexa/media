@@ -7,7 +7,9 @@ use App\Http\Controllers\IsuController;
 use App\Http\Controllers\PreviewController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\TrendingController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +47,23 @@ Route::middleware('guest')->group(function () {
 });
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+// Routes untuk pengaturan aplikasi - hanya untuk admin
+Route::middleware(['auth', 'role:admin,editor'])->prefix('admin')->group(function () {
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
+    Route::put('/settings/{id}', [SettingsController::class, 'update'])->name('settings.update');
+    Route::delete('/settings/{id}', [SettingsController::class, 'destroy'])->name('settings.destroy');
+});
+
+
+// Route untuk profil pengguna
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::get('/profile/password', [ProfileController::class, 'editPassword'])->name('profile.password');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+});
+
 // Routes yang memerlukan autentikasi
 Route::middleware('auth')->group(function () {
     // Dashboard
@@ -72,6 +91,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/{isu}/edit', [IsuController::class, 'edit'])->name('edit');
             Route::put('/{isu}', [IsuController::class, 'update'])->name('update');
             Route::delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
+            Route::get('/{isu}/history', [IsuController::class, 'history'])->name('history');
         });
         
         // Pindahkan rute dengan parameter ke bagian bawah

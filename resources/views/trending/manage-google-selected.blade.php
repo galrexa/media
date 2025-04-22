@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    @if(session('success'))
+    <!-- @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -29,7 +29,7 @@
             {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-    @endif
+    @endif -->
 
     <!-- Filter Tanggal -->
     <div class="row mb-4">
@@ -167,7 +167,7 @@
                     @if($selectedGoogleTrendings->count() > 0)
                         <div class="d-grid mt-3">
                             <button id="save-google-order" class="btn btn-success">
-                                <i class="bi bi-save me-2"></i> Simpan Urutan
+                                <i class="fas fa-floppy-disk me-2"></i> Simpan Urutan
                             </button>
                         </div>
                     @endif
@@ -287,12 +287,18 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    // Tampilkan notifikasi sukses
-                    alert('Urutan trending Google berhasil disimpan!');
-                } else {
-                    alert('Terjadi kesalahan saat menyimpan urutan trending Google.');
-                }
+                // Buat elemen notifikasi
+                const alertDiv = document.createElement('div');
+                
+                // Atur kelas dan pesan berdasarkan status respons
+                alertDiv.className = data.success ? 'alert alert-success' : 'alert alert-danger';
+                alertDiv.textContent = data.success ? 'Urutan trending Google berhasil disimpan!' : 'Terjadi kesalahan saat menyimpan urutan trending Google.';
+                
+                // Tambahkan notifikasi ke halaman
+                document.querySelector('.container').prepend(alertDiv); // Sesuaikan selector container
+                
+                // Otomatis hilangkan notifikasi setelah 3 detik
+                setTimeout(() => alertDiv.remove(), 3000);
             })
             .catch(error => {
                 console.error('Error:', error);
