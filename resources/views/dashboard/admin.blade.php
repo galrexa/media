@@ -19,7 +19,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ App\Models\Isu::count() }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="bi bi-file-text fa-2x text-gray-300"></i>
+                        <i class="fas fa-file-alt fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -36,7 +36,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ App\Models\Isu::where('isu_strategis', true)->count() }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="bi bi-star fa-2x text-gray-300"></i>
+                        <i class="fas fa-star fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -53,7 +53,7 @@
                         <div class="h5 mb-0 font-weight-bold text-gray-800">{{ App\Models\User::count() }}</div>
                     </div>
                     <div class="col-auto">
-                        <i class="bi bi-people fa-2x text-gray-300"></i>
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -94,26 +94,26 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <a href="{{ route('isu.create') }}" class="btn btn-primary w-100 py-3 d-flex flex-column align-items-center justify-content-center">
-                            <i class="bi bi-file-text fs-4 mb-2"></i>
+                            <i class="fas fa-file-alt fs-4 mb-2"></i>
                             <span>Tambah Isu Baru</span>
                         </a>
                     </div>
                     <div class="col-md-6 mb-3">
                         <a href="{{ route('documents.create') }}" class="btn btn-success w-100 py-3 d-flex flex-column align-items-center justify-content-center">
-                            <i class="bi bi-image fs-4 mb-2"></i>
+                            <i class="fas fa-image fs-4 mb-2"></i>
                             <span>Upload Dokumen</span>
                         </a>
                     </div>
                     <div class="col-md-6 mb-3">
                         <a href="{{ route('trending.index') }}" class="btn btn-info w-100 py-3 d-flex flex-column align-items-center justify-content-center">
-                            <i class="bi bi-graph-up fs-4 mb-2"></i>
+                            <i class="fas fa-chart-line fs-4 mb-2"></i>
                             <span>Kelola Trending</span>
                         </a>
                     </div>
                     @if(Auth::user()->isAdmin())
                     <div class="col-md-6 mb-3">
                         <a href="{{ route('users.index') }}" class="btn btn-secondary w-100 py-3 d-flex flex-column align-items-center justify-content-center">
-                            <i class="bi bi-people fs-4 mb-2"></i>
+                            <i class="fas fa-users fs-4 mb-2"></i>
                             <span>Kelola Pengguna</span>
                         </a>
                     </div>

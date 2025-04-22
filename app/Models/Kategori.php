@@ -11,12 +11,14 @@ class Kategori extends Model
 
     protected $table = 'kategoris';
 
-    protected $fillable = ['nama','deskripsi'];
-
-    public $timestamps = false;
+    protected $fillable = [
+        'nama',
+        'deskripsi',
+    ];
 
     public function isus()
     {
-        return $this->belongsToMany(Isu::class, 'isu_kategori', 'kategori_id', 'isu_id');
+        return $this->belongsToMany(Isu::class, 'isu_kategori', 'kategori_id', 'isu_id')
+                    ->withTimestamps();
     }
 }

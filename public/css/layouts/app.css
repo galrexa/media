@@ -64,7 +64,7 @@ body {
 
 .navbar-brand {
     display: flex;
-    flex-direction: column;
+    /* flex-direction: column; */
     align-items: center;
 }
 
@@ -788,6 +788,18 @@ section > div, .content-text {
     transform: translateY(-2px);
 }
 
+.btn-log {
+    background-color: rgba(23, 162, 184, 0.1);
+    color: #138496;
+    border: 1px solid rgba(23, 162, 184, 0.3);
+}
+
+.btn-log:hover {
+    background-color: rgba(23, 162, 184, 0.2);
+    color: #117a8b;
+    transform: translateY(-2px);
+}
+
 .btn-delete {
     background-color: rgba(229, 56, 59, 0.1);
     color: var(--danger-color);
@@ -839,6 +851,11 @@ section > div, .content-text {
     overflow: hidden;
 }
 
+.isu-slide:not(.active),
+.lainnya-slide:not(.active) {
+    display: none !important;
+}
+
 /* Styling untuk semua slider */
 .isu-slider,
 .lainnya-slider,
@@ -876,6 +893,22 @@ section > div, .content-text {
 /* Styling untuk tombol navigasi */
 .navigation-buttons {
     display: flex;
+}
+
+.navigation-buttons .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+}
+
+.navigation-buttons .btn i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
 }
 
 .prev-isu-slide, .next-isu-slide,

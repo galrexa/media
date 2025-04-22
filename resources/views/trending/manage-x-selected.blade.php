@@ -167,7 +167,7 @@
                     @if($selectedXTrendings->count() > 0)
                         <div class="d-grid mt-3">
                             <button id="save-x-order" class="btn btn-success">
-                                <i class="bi bi-save me-2"></i> Simpan Urutan
+                                <i class="fa-floppy-disk me-2"></i> Simpan Urutan
                             </button>
                         </div>
                     @endif

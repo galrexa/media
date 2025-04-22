@@ -15,14 +15,14 @@
             <div class="d-flex align-items-end">
                 <div class="d-flex flex-column align-items-center me-3">
                     <span class="small mb-1">Tone</span>
-                    <span class="badge p-2 fs-4" style="background-color: {{ $isu->refTone ? $isu->refTone->warna : '#dc3545' }}">
-                        {{ $isu->refTone ? ucfirst($isu->refTone->nama) : ucfirst($isu->tone) }}
+                    <span class="badge p-2 fs-4" style="background-color: {{ $isu->refTone && $isu->tone ? $isu->refTone->warna : '#d3d3d3' }}">
+                        {{ $isu->refTone && $isu->tone ? ucfirst($isu->refTone->nama) : '-' }}
                     </span>
                 </div>
                 <div class="d-flex flex-column align-items-center">
                     <span class="small mb-1">Skala</span>
-                    <span class="badge p-2 fs-4" style="background-color: {{ $isu->refSkala ? $isu->refSkala->warna : '#ffc107' }}">
-                        {{ $isu->refSkala ? $isu->refSkala->nama : $isu->skala }}
+                    <span class="badge p-2 fs-4" style="background-color: {{ $isu->refSkala && $isu->skala ? $isu->refSkala->warna : '#d3d3d3' }}">
+                        {{ $isu->refSkala && $isu->skala ? $isu->refSkala->nama : '-' }}
                     </span>
                 </div>
             </div>
@@ -117,11 +117,15 @@
                 </div>
                 @if(Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isEditor()))
                     <div>
-                        <a href="{{ route('isu.edit', $isu) }}" class="btn btn-warning btn-sm me-2">Edit</a>
+                        <a href="{{ route('isu.edit', $isu) }}" class="btn btn-warning btn-sm me-2">
+                            <i class="fas fa-pencil-alt"></i>Edit
+                        </a>
                         <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">Hapus</button>
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
+                                <i class="fas fa-trash"></i>Hapus
+                            </button>
                         </form>
                     </div>
                 @endif

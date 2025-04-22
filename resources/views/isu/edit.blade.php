@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="container">
+    <!-- Breadcrumb -->
     <div class="row mb-3">
         <div class="col-12">
             <nav aria-label="breadcrumb">
@@ -17,19 +18,21 @@
         </div>
     </div>
 
-    <div class="card">
+    <!-- Card Utama -->
+    <div class="card shadow-sm">
         <div class="card-header bg-warning text-dark">
             <h4 class="mb-0">Edit Isu</h4>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <form action="{{ route('isu.update', $isu) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
 
-                <div class="row mb-3">
+                <!-- Bagian Judul dan Tanggal -->
+                <div class="row mb-4">
                     <div class="col-md-8">
                         <div class="mb-3">
-                            <label for="judul" class="form-label">Judul Isu</label>
+                            <label for="judul" class="form-label fw-bold">Judul Isu <span class="text-danger">*</span></label>
                             <input type="text" class="form-control @error('judul') is-invalid @enderror" id="judul" name="judul" value="{{ old('judul', $isu->judul) }}" required>
                             @error('judul')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -38,7 +41,7 @@
                     </div>
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label for="tanggal" class="form-label">Tanggal</label>
+                            <label for="tanggal" class="form-label fw-bold">Tanggal</label>
                             <input type="date" class="form-control @error('tanggal') is-invalid @enderror" id="tanggal" name="tanggal" value="{{ old('tanggal', $isu->tanggal->format('Y-m-d')) }}">
                             @error('tanggal')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -47,26 +50,35 @@
                     </div>
                 </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <div class="form-check form-switch">
-                            <input type="checkbox" class="form-check-input" id="isu_strategis" name="isu_strategis" value="1" {{ old('isu_strategis', $isu->isu_strategis) ? 'checked' : '' }}>
-                            <label class="form-check-label" for="isu_strategis">Isu Strategis</label>
+                <!-- Bagian Atribut Isu -->
+                <div class="row mb-4">
+                    <!-- Checkbox Isu Strategis -->
+                    <div class="col-md-2">
+                        <div class="mb-3">
+                            <label for="isu_strategis" class="form-label fw-bold d-block">Isu Strategis</label>
+                            <div class="form-check form-switch mt-2">
+                                <input type="checkbox" class="form-check-input" id="isu_strategis" name="isu_strategis" value="1" {{ old('isu_strategis', $isu->isu_strategis) ? 'checked' : '' }}>
+                                <!-- <label class="form-check-label" for="isu_strategis">Isu Strategis</label> -->
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+
+                    <!-- Kategori sebagai Tags Input -->
+                    <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="kategori" class="form-label">Kategori</label>
-                            <input type="text" class="form-control @error('kategori') is-invalid @enderror" id="kategori" name="kategori" value="{{ old('kategori', $isu->kategoris->pluck('nama')->implode(',')) }}" placeholder="Tambah kategori">
+                            <label for="kategori" class="form-label fw-bold">Kategori</label>
+                            <input type="text" class="form-control @error('kategori') is-invalid @enderror" id="kategori" name="kategori" value="{{ old('kategori', $isu->kategoris->pluck('nama')->implode(',')) }}" placeholder="Pisahkan dengan koma">
                             @error('kategori')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            <small class="form-text text-muted">Ketik dan tekan Enter atau koma untuk menambah tag</small>
+                            <small class="form-text text-muted">Contoh: Politik, Ekonomi, Sosial</small>
                         </div>
                     </div>
-                    <div class="col-md-4">
+
+                    <!-- Skala -->
+                    <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="skala" class="form-label">Skala</label>
+                            <label for="skala" class="form-label fw-bold">Skala</label>
                             <select class="form-select @error('skala') is-invalid @enderror" id="skala" name="skala">
                                 <option value="">Pilih Skala</option>
                                 @foreach($skalaList as $skala)
@@ -80,37 +92,43 @@
                             @enderror
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    
+                    <!-- Tone -->
+                    <div class="col-md-3">
                         <div class="mb-3">
-                            <label for="tone" class="form-label">Tone Isu</label>
-                            <select class="form-select @error('tone') is-invalid @enderror" id="tone" name="tone">
-                                <option value="">Pilih Tone</option>
-                                @foreach($toneList as $tone)
-                                    <option value="{{ $tone->id }}" {{ old('tone', $isu->tone) == $tone->id ? 'selected' : '' }}>
-                                        {{ $tone->nama }}
-                                    </option>
+                            <label for="tone" class="form-label fw-bold">Tone Isu</label>
+                            <div class="tone-segment-rounded">
+                                @foreach($toneList as $tone)                               
+                                <input type="radio" class="tone-radio" id="tone_{{ $tone->id }}" name="tone" value="{{ $tone->id }}" 
+                                    {{ old('tone', $isu->tone) == $tone->id ? 'checked' : '' }} data-color="{{ $tone->warna }}">
+                                <label for="tone_{{ $tone->id }}" {{ old('tone') == $tone->id ? 'style="background-color: '.$tone->warna.'; color: white;"' : '' }}>
+                                    {{ $tone->nama }}
+                                </label>
                                 @endforeach
-                            </select>
+                            </div>
                             @error('tone')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label for="rangkuman" class="form-label">Rangkuman</label>
-                    <textarea class="form-control ckeditor @error('rangkuman') is-invalid @enderror" id="rangkuman" name="rangkuman" rows="5" >{{ old('rangkuman', $isu->rangkuman) }}</textarea>
+                <!-- Editor untuk Rangkuman -->
+                <div class="mb-4">
+                    <label for="rangkuman" class="form-label fw-bold">Rangkuman</label>
+                    <textarea class="form-control ckeditor @error('rangkuman') is-invalid @enderror" id="rangkuman" name="rangkuman" rows="5">{{ old('rangkuman', $isu->rangkuman) }}</textarea>
+                    <small class="form-text text-muted">Masukkan ringkasan singkat mengenai isu yang diangkat</small>
                     @error('rangkuman')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <div class="row mb-3">
+                <!-- Editor untuk Narasi -->
+                <div class="row mb-4">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="narasi_positif" class="form-label">Narasi Positif</label>
-                            <textarea class="form-control ckeditor @error('narasi_positif') is-invalid @enderror" id="narasi_positif" name="narasi_positif" rows="5" >{{ old('narasi_positif', $isu->narasi_positif) }}</textarea>
+                            <label for="narasi_positif" class="form-label fw-bold">Narasi Positif</label>
+                            <textarea class="form-control ckeditor @error('narasi_positif') is-invalid @enderror" id="narasi_positif" name="narasi_positif" rows="5">{{ old('narasi_positif', $isu->narasi_positif) }}</textarea>
                             @error('narasi_positif')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -118,8 +136,8 @@
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label for="narasi_negatif" class="form-label">Narasi Negatif</label>
-                            <textarea class="form-control ckeditor @error('narasi_negatif') is-invalid @enderror" id="narasi_negatif" name="narasi_negatif" rows="5" >{{ old('narasi_negatif', $isu->narasi_negatif) }}</textarea>
+                            <label for="narasi_negatif" class="form-label fw-bold">Narasi Negatif</label>
+                            <textarea class="form-control ckeditor @error('narasi_negatif') is-invalid @enderror" id="narasi_negatif" name="narasi_negatif" rows="5">{{ old('narasi_negatif', $isu->narasi_negatif) }}</textarea>
                             @error('narasi_negatif')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -127,84 +145,116 @@
                     </div>
                 </div>
 
-                <h5 class="mt-4 mb-3">Referensi</h5>
-                <div id="referensi-container">
-                    @foreach ($isu->referensi ?? [] as $index => $ref)
-                        <div class="referensi-item border p-3 mb-3">
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="mb-3">
-                                        <label class="form-label">URL</label>
-                                        <div class="input-group">
-                                            <input type="url" class="form-control referensi-url" name="referensi_url[]" value="{{ old('referensi_url.' . $index, $ref->url) }}">
-                                            <button type="button" class="btn btn-outline-secondary preview-btn">Preview</button>
+                <!-- Bagian Referensi -->
+                <div class="card bg-light mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0 fw-bold">Referensi</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="referensi-container">
+                            @foreach ($isu->referensi ?? [] as $index => $ref)
+                                <div class="referensi-item border rounded p-3 mb-3 bg-white">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold">URL</label>
+                                                <div class="input-group">
+                                                    <input type="url" class="form-control referensi-url" name="referensi_url[]" value="{{ old('referensi_url.' . $index, $ref->url) }}">
+                                                    <button type="button" class="btn btn-outline-primary preview-btn">
+                                                        <i class="bi bi-eye"></i> Preview
+                                                    </button>
+                                                </div>
+                                                <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
+                                                <!-- Judul sebagai hidden input -->
+                                                <input type="hidden" class="referensi-judul" name="referensi_judul[]" value="{{ old('referensi_judul.' . $index, $ref->judul) }}">
+                                                <input type="hidden" name="referensi_id[]" value="{{ $ref->id }}">
+                                            </div>
                                         </div>
-                                        <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
-                                        <!-- Judul sebagai hidden input -->
-                                        <input type="hidden" class="referensi-judul" name="referensi_judul[]" value="{{ old('referensi_judul.' . $index, $ref->judul) }}">
-                                        <input type="hidden" name="referensi_id[]" value="{{ $ref->id }}">
+                                    </div>
+                                    
+                                    <div class="preview-container mt-2" style="{{ $ref->thumbnail ? 'display: block;' : 'display: none;' }}">
+                                        <div class="card border">
+                                            <div class="card-body p-2">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-4">
+                                                        <img src="{{ $ref->thumbnail ?? '' }}" class="img-fluid preview-img" alt="Preview" style="{{ $ref->thumbnail ? '' : 'display: none;' }}">
+                                                    </div>
+                                                    <div class="col-md-8">
+                                                        <p class="preview-title m-0 fw-bold">{{ $ref->judul ?? '' }}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url" value="{{ old('referensi_thumbnail_url.' . $index, $ref->thumbnail) }}">
+                                    </div>
+                                    
+                                    <div class="text-end mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-danger remove-referensi">
+                                            <i class="bi bi-trash"></i> Hapus Referensi
+                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="preview-container mt-2" style="{{ $ref->thumbnail ? 'display: block;' : 'display: none;' }}">
+                            @endforeach
+                            
+                            <!-- Item referensi kosong untuk tambahan baru -->
+                            <div class="referensi-item border rounded p-3 mb-3 bg-white" style="display: none;" id="referensi-template">
                                 <div class="row">
-                                    <div class="col-md-4">
-                                        <img src="{{ $ref->thumbnail ?? '' }}" class="img-fluid preview-img" alt="Preview" style="{{ $ref->thumbnail ? '' : 'display: none;' }}">
-                                    </div>
-                                    <div class="col-md-8">
-                                        <p class="preview-title">{{ $ref->judul ?? '' }}</p>
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">URL</label>
+                                            <div class="input-group">
+                                                <input type="url" class="form-control referensi-url" name="referensi_url[]">
+                                                <button type="button" class="btn btn-outline-primary preview-btn">
+                                                    <i class="bi bi-eye"></i> Preview
+                                                </button>
+                                            </div>
+                                            <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
+                                            <!-- Judul sebagai hidden input -->
+                                            <input type="hidden" class="referensi-judul" name="referensi_judul[]">
+                                        </div>
                                     </div>
                                 </div>
-                                <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url" value="{{ old('referensi_thumbnail_url.' . $index, $ref->thumbnail) }}">
-                            </div>
-                            <div class="text-end">
-                                <button type="button" class="btn btn-sm btn-danger remove-referensi">Hapus Referensi</button>
+                                
+                                <div class="preview-container mt-2" style="display: none;">
+                                    <div class="card border">
+                                        <div class="card-body p-2">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-4">
+                                                    <img src="" class="img-fluid preview-img" alt="Preview">
+                                                </div>
+                                                <div class="col-md-8">
+                                                    <p class="preview-title m-0 fw-bold"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url">
+                                </div>
+                                
+                                <div class="text-end mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-referensi">
+                                        <i class="bi bi-trash"></i> Hapus Referensi
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    @endforeach
-                    
-                    <!-- Item referensi kosong untuk tambahan baru -->
-                    <div class="referensi-item border p-3 mb-3" style="display: none;" id="referensi-template">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="mb-3">
-                                    <label class="form-label">URL</label>
-                                    <div class="input-group">
-                                        <input type="url" class="form-control referensi-url" name="referensi_url[]">
-                                        <button type="button" class="btn btn-outline-secondary preview-btn">Preview</button>
-                                    </div>
-                                    <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
-                                    <!-- Judul sebagai hidden input -->
-                                    <input type="hidden" class="referensi-judul" name="referensi_judul[]">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="preview-container mt-2" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <img src="" class="img-fluid preview-img" alt="Preview">
-                                </div>
-                                <div class="col-md-8">
-                                    <p class="preview-title"></p>
-                                </div>
-                            </div>
-                            <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url">
-                        </div>
-                        <div class="text-end">
-                            <button type="button" class="btn btn-sm btn-danger remove-referensi">Hapus Referensi</button>
+
+                        <div class="mb-3">
+                            <button type="button" id="add-referensi" class="btn btn-outline-primary">
+                                <i class="bi bi-plus-circle"></i> Tambah Referensi
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <button type="button" id="add-referensi" class="btn btn-outline-secondary">
-                        <i class="bi bi-plus-circle"></i> Tambah Referensi
+                <!-- Tombol Aksi -->
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{{ route('isu.index') }}" class="btn btn-light border">
+                        <i class="bi bi-x-circle"></i> Batal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
                     </button>
-                </div>
-
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <a href="{{ route('isu.index') }}" class="btn btn-secondary">Batal</a>
-                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
                 </div>
             </form>
         </div>
@@ -215,6 +265,7 @@
 @section('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 <link href="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.css" rel="stylesheet" type="text/css" />
+<link rel="stylesheet" href="{{ asset('vendor/ckeditor5/ckeditor5.css') }}">
 <style>
     .tagify {
     border: 1px solid #ced4da;
@@ -250,6 +301,78 @@
     .ck-content {
         font-size: 14px;
     }
+    /* Custom Badge */
+    .badge-custom {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.65rem;
+        border-radius: 5px;
+        color: white;
+    }
+
+    /* Tone Segment dengan Rounded Corners - Style 1 */
+    .tone-segment-rounded {
+        display: flex;
+        width: 100%;
+        max-width: 500px;
+        position: relative;
+        background-color: #f0f0f0;
+        padding: 2px;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .tone-segment-rounded input {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .tone-segment-rounded label {
+        flex: 1;
+        text-align: center;
+        padding: 0.6rem 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 5px;
+        margin: 0 2px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #495057;
+        background-color: transparent;
+        position: relative;
+        z-index: 1;
+    }
+
+    .tone-segment-rounded input:checked + label {
+        color: white;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+
+    /* Hover effect */
+    .tone-segment-rounded label:hover {
+        background-color: rgba(0,0,0,0.03);
+    }
+
+    /* Active/pressed effect */
+    .tone-segment-rounded label:active {
+        transform: scale(0.98);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        .tone-segment-rounded {
+            max-width: 100%;
+        }
+        
+        .tone-segment-rounded label {
+            padding: 0.5rem 0;
+            font-size: 0.8rem;
+        }
+    }
+
 </style>
 @endsection
 
@@ -257,41 +380,85 @@
 <script src="https://cdn.jsdelivr.net/npm/@yaireo/tagify/dist/tagify.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <!-- CKEditor 5 -->
-<script src="https://cdn.ckeditor.com/ckeditor5/36.0.1/classic/ckeditor.js"></script>
+<script type="importmap">
+{
+    "imports": {
+        "ckeditor5": "{{ asset('vendor/ckeditor5/ckeditor5.js') }}",
+        "ckeditor5/": "{{ asset('vendor/ckeditor5/') }}"
+    }
+}
+</script>
+<script type="module">
+    // Import harus ada di level teratas modul
+    import {
+        ClassicEditor,
+        Essentials,
+        Paragraph,
+        Bold,
+        Italic,
+        Link,
+        Heading,
+        List,
+        Alignment,
+        Underline
+    } from 'ckeditor5';
+
+    // Tunggu DOM selesai dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi CKEditor untuk setiap elemen dengan class ckeditor
+        document.querySelectorAll('.ckeditor').forEach(function(element) {
+            ClassicEditor
+                .create(element, {
+                    licenseKey: 'GPL', // Ganti dengan license key Anda atau 'GPL'
+                    plugins: [
+                        Essentials, 
+                        Paragraph, 
+                        Bold, 
+                        Italic, 
+                        Link, 
+                        Heading, 
+                        List, 
+                        Alignment,
+                        Underline
+                    ],
+                    toolbar: {
+                        items: [
+                            'heading', '|', 
+                            'bold', 'italic', 'underline', '|',
+                            'link', '|',
+                            'alignment', '|',
+                            'bulletedList', 'numberedList', '|',
+                            'undo', 'redo'
+                        ],
+                        shouldNotGroupWhenFull: true
+                    },
+                    alignment: {
+                        options: ['left', 'center', 'right', 'justify']
+                    },
+                    placeholder: 'Tulis di sini...',
+                    link: {
+                        defaultProtocol: 'https://',
+                        addTargetToExternalLinks: true
+                    }
+                })
+                .then(editor => {
+                    // Sinkronisasi konten dengan textarea asli
+                    editor.model.document.on('change:data', () => {
+                        element.value = editor.getData();
+                    });
+                    
+                    // Simpan referensi editor jika diperlukan kemudian
+                    window.editors = window.editors || {};
+                    window.editors[element.id] = editor;
+                })
+                .catch(error => {
+                    console.error('CKEditor error:', error);
+                });
+        });
+    });
+</script>
 <script>
 $(document).ready(function() {
-    // Inisialisasi CKEditor untuk setiap elemen dengan class ckeditor
-    document.querySelectorAll('.ckeditor').forEach(function(element) {
-        // Untuk halaman edit
-        ClassicEditor
-            .create(element, {
-                toolbar: [
-                    'heading', '|', 
-                    'bold', 'italic', 'link', '|',
-                    'bulletedList', 'numberedList', '|',
-                    'undo', 'redo'
-                ],
-                placeholder: 'Tulis di sini...',
-                link: {
-                    defaultProtocol: 'https://',
-                    addTargetToExternalLinks: true
-                }
-            })
-            .then(editor => {
-                // Pastikan konten HTML di-render dengan benar
-                // Jika data sudah ada, pastikan HTML tidak dianggap sebagai string biasa
-                editor.setData(element.value);
-                
-                // Tambahkan event listener untuk sinkronisasi konten
-                editor.model.document.on('change:data', () => {
-                    element.value = editor.getData();
-                });
-            })
-            .catch(error => {
-                console.error('CKEditor error:', error);
-            });
-        });
-
     const input = document.querySelector('#kategori');
     const tagify = new Tagify(input, {
         whitelist: @json($kategoriList->pluck('nama')->toArray()),
@@ -313,13 +480,48 @@ $(document).ready(function() {
     tagify.on('change', function(e) {
         input.value = tagify.value.map(tag => tag.value).join(',');
     });
-
 });
 </script>
+<!-- Perbaikan pada bagian script di @section('scripts') -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const referensiContainer = document.getElementById('referensi-container');
     const addReferensiBtn = document.getElementById('add-referensi');
+
+    // Fungsi untuk mengatur warna segmen yang dipilih
+    function updateSegmentColor() {
+        const toneRadios = document.querySelectorAll('.tone-radio');
+        
+        toneRadios.forEach(radio => {
+            const label = radio.nextElementSibling;
+            if (radio.checked) {
+                // Ambil warna dari atribut data-color
+                const color = radio.getAttribute('data-color');
+                console.log('Radio checked:', radio.id, 'Color:', color); // Debugging
+                
+                // Pastikan warna tersedia
+                if (color) {
+                    label.style.backgroundColor = color;
+                    label.style.color = 'white';
+                }
+            } else {
+                label.style.backgroundColor = 'transparent';
+                label.style.color = '#495057';
+            }
+        });
+    }
+    
+    // Inisialisasi warna segmen saat halaman dimuat
+    updateSegmentColor();
+    
+    // Perbarui warna segmen saat pengguna memilih tone
+    const toneRadios = document.querySelectorAll('.tone-radio');
+    toneRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            console.log('Radio changed:', this.id); // Debugging
+            updateSegmentColor();
+        });
+    });
 
     // Fungsi untuk mengatur tombol hapus
     function updateRemoveButtons() {
@@ -377,25 +579,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Tambah referensi baru
     addReferensiBtn.addEventListener('click', function() {
-        const referensiItem = document.querySelector('.referensi-item').cloneNode(true);
+        // Cek apakah ada template referensi
+        const referensiTemplate = document.getElementById('referensi-template');
+        let referensiItem;
         
-        // Clear input values
-        const inputs = referensiItem.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.value = '';
-        });
-        
-        // Reset preview container
-        const previewContainer = referensiItem.querySelector('.preview-container');
-        if (previewContainer) {
-            previewContainer.style.display = 'none';
-            const previewImg = previewContainer.querySelector('.preview-img');
-            if (previewImg) {
-                previewImg.src = '';
-            }
-            const previewTitle = previewContainer.querySelector('.preview-title');
-            if (previewTitle) {
-                previewTitle.textContent = '';
+        if (referensiTemplate) {
+            referensiItem = referensiTemplate.cloneNode(true);
+            referensiItem.id = '';
+            referensiItem.style.display = 'block';
+        } else {
+            referensiItem = document.querySelector('.referensi-item').cloneNode(true);
+            
+            // Clear input values
+            const inputs = referensiItem.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            
+            // Reset preview container
+            const previewContainer = referensiItem.querySelector('.preview-container');
+            if (previewContainer) {
+                previewContainer.style.display = 'none';
+                const previewImg = previewContainer.querySelector('.preview-img');
+                if (previewImg) {
+                    previewImg.src = '';
+                }
+                const previewTitle = previewContainer.querySelector('.preview-title');
+                if (previewTitle) {
+                    previewTitle.textContent = '';
+                }
             }
         }
         
@@ -452,11 +664,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Tampilkan loading state
-        event.target.textContent = 'Loading...';
+        const originalBtnText = event.target.innerHTML;
+        event.target.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
         event.target.disabled = true;
         
         if (!url) {
-            event.target.textContent = 'Preview';
+            event.target.innerHTML = originalBtnText;
             event.target.disabled = false;
             alert('Masukkan URL terlebih dahulu.');
             return;
@@ -472,7 +685,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .then(data => {
                 // Reset tombol
-                event.target.textContent = 'Preview';
+                event.target.innerHTML = originalBtnText;
                 event.target.disabled = false;
                 
                 if (data.success && data.image) {
@@ -517,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error fetching preview:', error);
                 
                 // Reset tombol
-                event.target.textContent = 'Preview';
+                event.target.innerHTML = originalBtnText;
                 event.target.disabled = false;
                 
                 // Gunakan domain sebagai fallback

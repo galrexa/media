@@ -64,13 +64,13 @@ class HomeController extends Controller
         $isuStrategis = Isu::where('isu_strategis', true)
             ->whereDate('tanggal', $selectedDate->format('Y-m-d'))
             ->orderByDesc('tanggal')
-            ->limit(10)
+            ->limit(20)
             ->get();
             
         $isuLainnya = Isu::where('isu_strategis', false)
             ->whereDate('tanggal', $selectedDate->format('Y-m-d'))
             ->orderByDesc('tanggal')
-            ->limit(12)
+            ->limit(20)
             ->get();
             
         // Gunakan TrendingController untuk mengambil data trending
@@ -82,7 +82,7 @@ class HomeController extends Controller
         $trendingX = Trending::whereHas('mediaSosial', fn($query) => $query->where('nama', 'X'))
             ->whereBetween('tanggal', [$startDate, $endDate])
             ->orderByDesc('tanggal')
-            ->limit(6)
+            ->limit(20)
             ->get();
             
         // Ambil data trending X dari Trends24.in dan simpan ke database
@@ -107,36 +107,6 @@ class HomeController extends Controller
             ->orderBy('display_order_x', 'asc')
             ->with('mediaSosial')
             ->get();
-
-    // Jika tidak ada trending di tanggal tersebut, ambil yang terbaru
-    /* if ($selectedGoogleTrendings->isEmpty() && $selectedXTrendings->isEmpty()) {
-        // Ambil tanggal terakhir yang memiliki trending
-        $latestTrendingDate = Trending::where('is_selected', true)
-            ->latest('tanggal')
-            ->value('tanggal');
-        
-        if ($latestTrendingDate) {
-            // Ambil trending Google dari tanggal terakhir
-            $selectedGoogleTrendings = Trending::where('is_selected', true)
-                ->whereHas('mediaSosial', function($query) {
-                    $query->where('nama', 'Google');
-                })
-                ->whereDate('tanggal', $latestTrendingDate)
-                ->orderBy('display_order_google', 'asc')
-                ->with('mediaSosial')
-                ->get();
-                
-            // Ambil trending X dari tanggal terakhir
-            $selectedXTrendings = Trending::where('is_selected', true)
-                ->whereHas('mediaSosial', function($query) {
-                    $query->where('nama', 'X');
-                })
-                ->whereDate('tanggal', $latestTrendingDate)
-                ->orderBy('display_order_x', 'asc')
-                ->with('mediaSosial')
-                ->get();
-        }
-    } */
         
         // Data untuk view
         $viewData = compact(
