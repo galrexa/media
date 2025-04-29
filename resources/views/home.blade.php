@@ -257,7 +257,7 @@
                                     <ul class="trend-list">
                                         @forelse($selectedGoogleTrendings->take(5) as $index => $trend)
                                             <li class="trend-item">
-                                                <span class="trend-rank {{ $index < 3 ? 'top-'.($index+1) : '' }}">{{ $index + 1 }}</span>
+                                                //<span class="trend-rank {{ $index < 3 ? 'top-'.($index+1) : '' }}">{{ $index + 1 }}</span>
                                                 <div class="trend-content">
                                                     <div class="trend-title">
                                                         <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
@@ -283,7 +283,7 @@
                                         <ul class="trend-list">
                                             @foreach($selectedGoogleTrendings->skip(5)->take(5) as $index => $trend)
                                                 <li class="trend-item">
-                                                    <span class="trend-rank">{{ $index + 6 }}</span>
+                                                    //<span class="trend-rank">{{ $index + 6 }}</span>
                                                     <div class="trend-content">
                                                         <div class="trend-title">
                                                             <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
@@ -339,7 +339,7 @@
                                         <ul class="trend-list">
                                             @forelse($selectedXTrendings->take(5) as $index => $trend)
                                                 <li class="trend-item">
-                                                    <span class="trend-rank {{ $index < 3 ? 'top-'.($index+1) : '' }}">{{ $index + 1 }}</span>
+                                                    //<span class="trend-rank {{ $index < 3 ? 'top-'.($index+1) : '' }}">{{ $index + 1 }}</span>
                                                     <div class="trend-content">
                                                         <div class="trend-title">
                                                             <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
@@ -366,7 +366,7 @@
                                             <ul class="trend-list">
                                                 @foreach($selectedXTrendings->skip(5)->take(5) as $index => $trend)
                                                     <li class="trend-item">
-                                                        <span class="trend-rank">{{ $index + 6 }}</span>
+                                                        //<span class="trend-rank">{{ $index + 6 }}</span>
                                                         <div class="trend-content">
                                                             <div class="trend-title">
                                                                 <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
@@ -388,7 +388,7 @@
                                             <ul class="trend-list">
                                                 @foreach($selectedXTrendings->skip(10)->take(5) as $index => $trend)
                                                     <li class="trend-item">
-                                                        <span class="trend-rank">{{ $index + 11 }}</span>
+                                                        //<span class="trend-rank">{{ $index + 11 }}</span>
                                                         <div class="trend-content">
                                                             <div class="trend-title">
                                                                 <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
