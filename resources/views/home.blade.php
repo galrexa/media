@@ -366,7 +366,29 @@
                                             <ul class="trend-list">
                                                 @foreach($selectedXTrendings->skip(5)->take(5) as $index => $trend)
                                                     <li class="trend-item">
-                                                        <span class="trend-rank">{{ $index + 1 }}</span>
+                                                        <span class="trend-rank {{ ($index + 5) < 8 ? 'top-'.($index+6) : '' }}">{{ $index + 6 }}</span>
+                                                        <div class="trend-content">
+                                                            <div class="trend-title">
+                                                                <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
+                                                            </div>
+                                                            <div class="trend-info">
+                                                                <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                                <!-- <span class="trend-source"><i class="bi bi-twitter-x"></i> Terpilih</span> -->
+                                                            </div>
+                                                        </div>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+                                    
+                                    <!-- Halaman ketiga (jika ada) -->
+                                    @if($selectedXTrendings->count() > 10)
+                                        <div class="x-selected-slide">
+                                            <ul class="trend-list">
+                                                @foreach($selectedXTrendings->skip(10)->take(5) as $index => $trend)
+                                                    <li class="trend-item">
+                                                        <span class="trend-rank">{{ $index + 11 }}</span>
                                                         <div class="trend-content">
                                                             <div class="trend-title">
                                                                 <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
