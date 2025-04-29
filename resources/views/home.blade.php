@@ -366,7 +366,7 @@
                                             <ul class="trend-list">
                                                 @foreach($selectedXTrendings->skip(5)->take(5) as $index => $trend)
                                                     <li class="trend-item">
-                                                        <span class="trend-rank">{{ $index + 6 }}</span>
+                                                        <span class="trend-rank">{{ $index + 1 }}</span>
                                                         <div class="trend-content">
                                                             <div class="trend-title">
                                                                 <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
