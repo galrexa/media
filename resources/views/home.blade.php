@@ -319,9 +319,12 @@
                                 @if($selectedGoogleTrendings->count() > 10)
                                     <div class="google-selected-slide">
                                         <ul class="trend-list">
-                                            @foreach($selectedGoogleTrendings->skip(10)->take(5) as $index => $trend)
+                                            @php
+                                                $counterGoogle = 11; // Mulai dari 11 untuk halaman ketiga
+                                            @endphp
+                                            @foreach($selectedGoogleTrendings->skip(10)->take(5) as $trend)
                                                 <li class="trend-item">
-                                                    <span class="trend-rank">{{ $index + 11 }}</span>
+                                                    <span class="trend-rank">{{ $counterGoogle++ }}</span>
                                                     <div class="trend-content">
                                                         <div class="trend-title">
                                                             <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
@@ -423,27 +426,29 @@
                                             </ul>
                                         </div>
                                     @endif
-
+                                    
                                     <!-- Halaman ketiga (jika ada) -->
                                     @if($selectedXTrendings->count() > 10)
                                         <div class="x-selected-slide">
-                                            <ul class="trend-list">
-                                                @foreach($selectedXTrendings->skip(10)->take(5) as $index => $trend)
-                                                    <li class="trend-item">
-                                                        <!-- <span class="trend-rank">{{ $index + 11 }}</span> -->
-                                                        <div class="trend-content">
-                                                            <div class="trend-title">
-                                                                <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
+                                                <ul class="trend-list">
+                                                    @php
+                                                        $counterX = 11; // Mulai dari 11 untuk halaman ketiga
+                                                    @endphp
+                                                    @foreach($selectedXTrendings->skip(10)->take(5) as $trend)
+                                                        <li class="trend-item">
+                                                            <span class="trend-rank">{{ $counterX++ }}</span>
+                                                            <div class="trend-content">
+                                                                <div class="trend-title">
+                                                                    <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
+                                                                </div>
+                                                                <div class="trend-info">
+                                                                    <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                                </div>
                                                             </div>
-                                                            <div class="trend-info">
-                                                                <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
-                                                                <!-- <span class="trend-source"><i class="bi bi-twitter-x"></i> Terpilih</span> -->
-                                                            </div>
-                                                        </div>
-                                                    </li>
-                                                @endforeach
-                                            </ul>
-                                        </div>
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
                                     @endif
                                 </div>
                             </div>
