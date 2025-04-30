@@ -21,8 +21,8 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label for="tanggal" class="form-label">Tanggal</label>
-                            <input type="date" class="form-control @error('tanggal') is-invalid @enderror" 
-                                id="tanggal" name="tanggal" 
+                            <input type="date" class="form-control @error('tanggal') is-invalid @enderror"
+                                id="tanggal" name="tanggal"
                                 value="{{ old('tanggal', isset($date) ? $date->format('Y-m-d') : today()->format('Y-m-d')) }}" required>
                             @error('tanggal')
                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -128,7 +128,7 @@
                             </div>
                         </div>
                     </div>
-                
+
                     <!-- Tambahkan setelah bagian gambar dalam file resources/views/documents/create.blade.php -->
                 <div class="row mb-3">
                     <div class="col-md-12">
@@ -140,9 +140,9 @@
                                 <div class="mb-3">
                                     <label for="dokumen_url" class="form-label">URL Dokumen PDF</label>
                                     <div class="input-group">
-                                        <span class="input-group-text"><i class="bi bi-file-earmark-pdf"></i></span>
-                                        <input type="url" class="form-control @error('dokumen_url') is-invalid @enderror" id="dokumen_url" name="dokumen_url" 
-                                            value="{{ old('dokumen_url', isset($existingImage) ? $existingImage->dokumen_url : '') }}" 
+                                        <span class="input-group-text"><i class="fas fa-file"></i></span>
+                                        <input type="url" class="form-control @error('dokumen_url') is-invalid @enderror" id="dokumen_url" name="dokumen_url"
+                                            value="{{ old('dokumen_url', isset($existingImage) ? $existingImage->dokumen_url : '') }}"
                                             placeholder="https://example.com/laporan-harian.pdf">
                                     </div>
                                     <small class="form-text text-muted">Masukkan URL dokumen PDF laporan harian (opsional)</small>
@@ -156,7 +156,7 @@
                                             <div class="card-body p-2">
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
-                                                        <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
+                                                        <i class="fas fa-file fs-4"></i>
                                                         <a href="{{ $existingImage->dokumen_url }}" target="_blank" class="ms-2">Lihat Dokumen</a>
                                                     </div>
                                                 </div>
@@ -188,11 +188,11 @@
     .card-header h6 {
         font-weight: 600;
     }
-    
+
     .form-check-label.text-danger {
         font-size: 0.9rem;
     }
-    
+
     .card {
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
@@ -203,7 +203,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Ambil elemen input tanggal
     const tanggalInput = document.getElementById('tanggal');
-    
+
     // Event listener untuk perubahan tanggal
     tanggalInput.addEventListener('change', function() {
         // Redirect ke halaman create dengan parameter tanggal baru

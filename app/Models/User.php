@@ -1,6 +1,5 @@
 <?php
 // app/Models/User.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,10 +18,10 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
-        'username', // Tambahkan ini
+        'username',
         'email',
         'password',
-        'role',
+        'role_id',
     ];
 
     /**
@@ -36,56 +35,112 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be cast.
+     * Get the attributes that should be cast.
      *
-     * @var array<string, string>
+     * @return array<string, string>
      */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
 
     /**
-     * Check if user is admin
+     * Relasi ke tabel role
+     */
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Mendapatkan nama role dari user.
+     *
+     * @return string
+     */
+    public function getHighestRoleName()
+    {
+        if ($this->role) {
+            return $this->role->name;
+        } else {
+            // Jika tidak ada relasi role, cek apakah ada string role (legacy)
+            if (isset($this->attributes['role']) && !empty($this->attributes['role'])) {
+                return $this->attributes['role'];
+            }
+            return 'viewer';
+        }
+    }
+
+    /**
+     * Cek apakah user memiliki role tertentu.
+     *
+     * @param string $roleName
+     * @return bool
+     */
+    public function hasRole($roleName)
+    {
+        // Cek via relasi
+        if ($this->role && $this->role->name === $roleName) {
+            return true;
+        }
+
+        // Cek via string role (legacy)
+        if (isset($this->attributes['role']) && $this->attributes['role'] === $roleName) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Cek apakah user adalah admin.
      *
      * @return bool
      */
     public function isAdmin()
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin');
     }
 
     /**
-     * Check if user is editor
+     * Cek apakah user adalah editor.
      *
      * @return bool
      */
     public function isEditor()
     {
-        return $this->role === 'editor';
+        return $this->hasRole('editor');
     }
 
     /**
-     * Check if user is viewer
+     * Cek apakah user adalah verifikator level 1.
+     *
+     * @return bool
+     */
+    public function isVerifikator1()
+    {
+        return $this->hasRole('verifikator1');
+    }
+
+    /**
+     * Cek apakah user adalah verifikator level 2.
+     *
+     * @return bool
+     */
+    public function isVerifikator2()
+    {
+        return $this->hasRole('verifikator2');
+    }
+
+    /**
+     * Cek apakah user adalah viewer.
      *
      * @return bool
      */
     public function isViewer()
     {
-        return $this->role === 'viewer';
-    }
-
-    /**
-     * Check if user has a specific role or one of multiple roles
-     *
-     * @param string|array $role
-     * @return bool
-     */
-    public function hasRole($role)
-    {
-        if (is_array($role)) {
-            return in_array($this->role, $role);
-        }
-        return $this->role === $role;
+        return $this->hasRole('viewer') || (!$this->role_id && !isset($this->attributes['role']));
     }
 }
