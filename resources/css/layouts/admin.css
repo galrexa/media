@@ -38,7 +38,7 @@
 }
 
 body {
-    font-family: 'Inter', 'Poppins', sans-serif;
+    font-family: "Inter", "Poppins", sans-serif;
     background-color: var(--bg-color);
     margin: 0;
     color: var(--text-color);
@@ -47,7 +47,7 @@ body {
 }
 
 /* Perbaikan Navbar - Simpel tanpa search & notification */
-.top-navbar {
+/* .top-navbar {
     position: fixed;
     top: 0;
     left: 0;
@@ -57,9 +57,13 @@ body {
     z-index: 1100;
     color: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+} */
+
+.top-navbar {
+    padding: 0.5rem 0;
 }
 
-.navbar-container {
+/* .navbar-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -67,6 +71,11 @@ body {
     padding: 0 24px;
     max-width: 1920px;
     margin: 0 auto;
+} */
+
+.navbar-container {
+    max-width: 100%;
+    padding: 0 15px;
 }
 
 .navbar-brand {
@@ -95,11 +104,21 @@ body {
     transform: scale(1.05);
 }
 
-.brand-text {
+/* .brand-text {
     font-size: 1.25rem;
     font-weight: 700;
     color: white;
     letter-spacing: 0.5px;
+} */
+
+.brand-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .navbar-actions {
@@ -316,44 +335,44 @@ body {
     margin-left: var(--sidebar-collapsed-width);
 }
 
-    /* Style khusus untuk card header narasi */
-    .narasi-card .card-body {
-        padding: 1.5rem;
-    }
+/* Style khusus untuk card header narasi */
+.narasi-card .card-body {
+    padding: 1.5rem;
+}
 
-    .narasi-card .card-header {
-        display: flex;
-        align-items: center;
-        padding: 1rem 1.5rem;
-    }
+.narasi-card .card-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+}
 
-    .narasi-card .card-header.bg-success {
-        background: linear-gradient(135deg, #28a745, #20c997) !important;
-        border-bottom: none;
-    }
+.narasi-card .card-header.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+    border-bottom: none;
+}
 
-    .narasi-card .card-header.bg-danger {
-        background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
-        border-bottom: none;
-    }
+.narasi-card .card-header.bg-danger {
+    background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
+    border-bottom: none;
+}
 
-    .narasi-card .card-header i {
-        color: rgba(255, 255, 255, 0.9);
-        margin-right: 0.75rem;
-        font-size: 1.1rem;
-    }
+.narasi-card .card-header i {
+    color: rgba(255, 255, 255, 0.9);
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+}
 
-    .narasi-card .card-header h5 {
-        margin-bottom: 0;
-        font-weight: 600;
-        font-size: 1.8rem;
-        letter-spacing: 0.3px;
-    }
+.narasi-card .card-header h5 {
+    margin-bottom: 0;
+    font-weight: 600;
+    font-size: 1.8rem;
+    letter-spacing: 0.3px;
+}
 
-    .narasi-card .content-text {
-        font-size: 1.5rem; /* Memperbesar font narasi */
-        line-height: 1.5;
-    }
+.narasi-card .content-text {
+    font-size: 1.5rem; /* Memperbesar font narasi */
+    line-height: 1.5;
+}
 
 /* Alert Design */
 .alert {
@@ -409,13 +428,21 @@ body {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    background: linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--primary-dark)
+    );
     border: none;
     box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+    background: linear-gradient(
+        135deg,
+        var(--primary-dark),
+        var(--primary-color)
+    );
     transform: translateY(-2px);
     box-shadow: 0 6px 15px rgba(67, 97, 238, 0.3);
 }
@@ -468,7 +495,11 @@ body {
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    background: linear-gradient(
+        135deg,
+        var(--primary-color),
+        var(--primary-dark)
+    );
     color: white;
     display: none; /* Hidden by default, shown on mobile */
     align-items: center;
@@ -501,8 +532,14 @@ body {
 }
 
 @keyframes dropdownFade {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dropdown-menu .dropdown-item {
@@ -589,13 +626,17 @@ body {
 }
 
 .stat-card::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     width: 5px;
     height: 100%;
-    background: linear-gradient(to bottom, var(--primary-color), var(--primary-light));
+    background: linear-gradient(
+        to bottom,
+        var(--primary-color),
+        var(--primary-light)
+    );
 }
 
 .stat-card .stat-icon {
@@ -747,8 +788,14 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* Modern Scrollbar */
@@ -799,6 +846,10 @@ body {
         transform: translateX(0);
     }
 
+    .brand-text {
+        font-size: 1rem;
+    }
+
     .main-content {
         margin-left: 0;
         padding: 16px;
@@ -810,6 +861,10 @@ body {
 
     .main-content.expanded {
         margin-left: 0;
+    }
+
+    .user-dropdown-toggle {
+        padding: 0.5rem;
     }
 
     .user-dropdown .user-info {
@@ -826,9 +881,13 @@ body {
     }
 
     .card-header {
-        background: linear-gradient(135deg, var(--primary-color, #4361ee), var(--accent-color, #4cc9f0));
+        background: linear-gradient(
+            135deg,
+            var(--primary-color, #4361ee),
+            var(--accent-color, #4cc9f0)
+        );
         background-color: white;
-        border-bottom: 1px solid rgba(0,0,0,0.05);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         font-weight: 600;
         padding: 1.2rem 1.5rem;
         display: flex;
@@ -839,5 +898,18 @@ body {
         margin-right: 0.5rem;
         color: var(--primary-color);
     }
+}
 
+@media (max-width: 576px) {
+    .top-navbar {
+        padding: 0.4rem 0;
+    }
+
+    .brand-text {
+        font-size: 0.9rem;
+    }
+
+    .navbar-actions {
+        margin-left: 0.5rem !important;
+    }
 }
