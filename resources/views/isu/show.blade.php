@@ -129,7 +129,15 @@
                         </form>
                     </div>
                 @endif
+
+
             </div>
+            @if($isu->status && $isu->status->nama == 'Ditolak' && $isu->alasan_penolakan)
+                <div class="alert alert-danger mt-3">
+                    <h5 class="alert-heading"><i class="fas fa-times-circle me-2"></i>Alasan Penolakan: </h5>
+                    <p class="mb-0">{{ $isu->alasan_penolakan }}</p>
+                </div>
+            @endif
         </div>
     </div>
 </div>
