@@ -62,36 +62,37 @@ class User extends Authenticatable
      */
     public function getHighestRoleName()
     {
-        if ($this->role) {
+        // Cek apakah role adalah objek hasil relasi
+        if (is_object($this->role) && isset($this->role->name)) {
             return $this->role->name;
-        } else {
-            // Jika tidak ada relasi role, cek apakah ada string role (legacy)
-            if (isset($this->attributes['role']) && !empty($this->attributes['role'])) {
-                return $this->attributes['role'];
-            }
-            return 'viewer';
+        } 
+        
+        // Jika tidak ada relasi role, cek apakah ada string role (legacy)
+        if (isset($this->attributes['role']) && !empty($this->attributes['role'])) {
+            return $this->attributes['role'];
         }
+        
+        return 'viewer';
     }
 
     /**
      * Cek apakah user memiliki role tertentu.
      *
-     * @param string $roleName
+     * @param string|array $roleName Role name atau array of role names
      * @return bool
      */
     public function hasRole($roleName)
     {
-        // Cek via relasi
-        if ($this->role && $this->role->name === $roleName) {
-            return true;
+        // Dapatkan role name dari user
+        $userRoleName = $this->getHighestRoleName();
+        
+        // Jika parameter adalah array, cek apakah role user ada dalam array tersebut
+        if (is_array($roleName)) {
+            return in_array($userRoleName, $roleName);
         }
-
-        // Cek via string role (legacy)
-        if (isset($this->attributes['role']) && $this->attributes['role'] === $roleName) {
-            return true;
-        }
-
-        return false;
+        
+        // Jika parameter adalah string, bandingkan langsung
+        return $userRoleName === $roleName;
     }
 
     /**
@@ -142,5 +143,16 @@ class User extends Authenticatable
     public function isViewer()
     {
         return $this->hasRole('viewer') || (!$this->role_id && !isset($this->attributes['role']));
+    }
+    
+    /**
+     * Metode helper untuk memeriksa apakah user memiliki salah satu dari beberapa role.
+     *
+     * @param array $roles Array dari role names
+     * @return bool
+     */
+    public function hasAnyRole(array $roles)
+    {
+        return $this->hasRole($roles);
     }
 }
