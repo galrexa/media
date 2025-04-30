@@ -187,7 +187,7 @@
             </li>
 
             <li class="nav-item submenu">
-                <a href="{{ route('trending.manual.create') }}" class="nav-link {{ Request::routeIs('trending.manual.create') ? 'active' : '' }}">
+                <a href="{{ route('trending.manual-create') }}" class="nav-link {{ Request::routeIs('trending.manual-create') ? 'active' : '' }}">
                     <span>Tambah Trending Manual</span>
                 </a>
             </li>
