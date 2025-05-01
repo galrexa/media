@@ -1,16 +1,5 @@
 <!-- resources/views/home.blade.php -->
-@extends(
-    auth()->check() &&
-    (
-        auth()->user()->isAdmin() ||
-        auth()->user()->isEditor() ||
-        auth()->user()->isVerifikator1() ||
-        auth()->user()->isVerifikator2()
-    )
-    ? 'layouts.admin'
-    : 'layouts.app'
-)
-
+@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Beranda - Media Monitoring')
 
@@ -25,7 +14,7 @@
                 <div class="date-nav-controls">
                     <!-- Tombol navigasi hari sebelumnya (panah saja) -->
                     <a href="{{ route('home', ['offset' => ($offset ?? 0) - 1]) }}" class="nav-arrow prev-arrow">
-                        <i class="fa fa-chevron-left"></i>
+                        <i class="bi bi-chevron-left"></i>
                     </a>
 
                     <!-- Dua hari sebelumnya -->
@@ -39,7 +28,7 @@
                         <div class="date-month">{{ strtoupper($prevDate2->format('M')) }}</div>
                         <div class="date-year">{{ $prevDate2->format('Y') }}</div>
                     </a>
-
+                    
                     <!-- Satu hari sebelumnya -->
                     @php
                         $prevOffset1 = ($offset ?? 0) - 1;
@@ -51,7 +40,7 @@
                         <div class="date-month">{{ strtoupper($prevDate1->format('M')) }}</div>
                         <div class="date-year">{{ $prevDate1->format('Y') }}</div>
                     </a>
-
+                        
                     <!-- Tanggal yang aktif/dipilih (lebih besar) -->
                     @php
                         $currentDate = Carbon\Carbon::now()->addDays($offset ?? 0);
@@ -62,10 +51,10 @@
                         <div class="date-month">{{ strtoupper($currentDate->format('M')) }}</div>
                         <div class="date-year">{{ $currentDate->format('Y') }}</div>
                     </div>
-
+                        
                     <!-- Tombol navigasi hari berikutnya (panah saja) -->
                     <a href="{{ route('home', ['offset' => ($offset ?? 0) + 1]) }}" class="nav-arrow next-arrow">
-                        <i class="fa fa-chevron-right"></i>
+                        <i class="bi bi-chevron-right"></i>
                     </a>
 
                     <!-- Tombol kembali ke hari ini (desain baru) -->
@@ -83,11 +72,11 @@
         <div class="col-md-3 d-flex align-items-center justify-content-end">
             @if($dailyImages && $dailyImages->dokumen_url)
                 <a href="{{ $dailyImages->dokumen_url }}" class="download-report-btn" target="_blank">
-                    <i class="fa fa-file"></i>
+                    <i class="bi bi-file-earmark-pdf"></i>
                     <span>Laporan Harian Kompas</span>
                 </a>
             @endif
-        </div>
+        </div>    
     </div>
 
     <!-- Isu Strategis Section -->
@@ -114,10 +103,10 @@
                     <h5 class="mb-0">Isu Strategis</h5>
                     <div class="navigation-buttons">
                         <button class="btn btn-sm btn-light prev-isu-slide">
-                            <i class="fa fa-chevron-left"></i>
+                            <i class="bi bi-chevron-left"></i>
                         </button>
                         <button class="btn btn-sm btn-light next-isu-slide">
-                            <i class="fa fa-chevron-right"></i>
+                            <i class="bi bi-chevron-right"></i>
                         </button>
                     </div>
                 </div>
@@ -141,7 +130,7 @@
                                     @endforelse
                                 </div>
                             </div>
-
+                            
                             <!-- Halaman kedua (jika ada) -->
                             @if($isuStrategis->count() > 10)
                                 <div class="isu-slide">
@@ -176,10 +165,10 @@
                     <h5 class="mb-0">Isu Regional</h5>
                     <div class="navigation-buttons">
                         <button class="btn btn-sm btn-pill prev-lainnya-slide">
-                            <i class="fa fa-chevron-left"></i>
+                            <i class="bi bi-chevron-left"></i>
                         </button>
                         <button class="btn btn-sm btn-pill next-lainnya-slide">
-                            <i class="fa fa-chevron-right"></i>
+                            <i class="bi bi-chevron-right"></i>
                         </button>
                     </div>
                 </div>
@@ -266,12 +255,9 @@
                                 <!-- Halaman pertama -->
                                 <div class="google-selected-slide active">
                                     <ul class="trend-list">
-                                        @php
-                                            $counterGoogle = 1; // Mulai dari 1 untuk halaman pertama
-                                        @endphp
                                         @forelse($selectedGoogleTrendings->take(5) as $index => $trend)
                                             <li class="trend-item">
-                                                <span class="trend-rank {{ $counterGoogle <= 3 ? 'top-'.$counterGoogle : '' }}">{{ $counterGoogle++ }}</span>
+                                                <span class="trend-rank {{ $index < 3 ? 'top-'.($index+1) : '' }}">{{ $index + 1 }}</span>
                                                 <div class="trend-content">
                                                     <div class="trend-title">
                                                         <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
@@ -290,39 +276,15 @@
                                         @endforelse
                                     </ul>
                                 </div>
-
+                                
                                 <!-- Halaman kedua (jika ada) -->
-@if($selectedGoogleTrendings->count() > 5)
-    <div class="google-selected-slide">
-        <ul class="trend-list">
-            @php
-                $counterGoogle = 6; // Mulai dari 6 untuk halaman kedua
-            @endphp
-            @foreach($selectedGoogleTrendings->skip(5)->take(5) as $trend)
-                <li class="trend-item">
-                    <span class="trend-rank">{{ $counterGoogle++ }}</span>
-                    <div class="trend-content">
-                        <div class="trend-title">
-                            <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
-                        </div>
-                        <div class="trend-info">
-                            <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
-                        </div>
-                    </div>
-                </li>
-            @endforeach
-        </ul>
-    </div>
-@endif
-
-                                <!-- Halaman ketiga (jika ada) -->
-                                @if($selectedGoogleTrendings->count() > 10)
+                                @if($selectedGoogleTrendings->count() > 5)
                                     <div class="google-selected-slide">
                                         <ul class="trend-list">
                                             @php
-                                                $counterGoogle = 11; // Mulai dari 11 untuk halaman ketiga
+                                                $counterGoogle = 6; // Mulai dari 6 untuk halaman kedua
                                             @endphp
-                                            @foreach($selectedGoogleTrendings->skip(10)->take(5) as $trend)
+                                            @foreach($selectedGoogleTrendings->skip(5)->take(5) as $trend)
                                                 <li class="trend-item">
                                                     <span class="trend-rank">{{ $counterGoogle++ }}</span>
                                                     <div class="trend-content">
@@ -347,7 +309,7 @@
                                 @php
                                     $totalGoogleSlides = ceil($selectedGoogleTrendings->count() / 5);
                                 @endphp
-
+                                
                                 @for ($i = 0; $i < $totalGoogleSlides; $i++)
                                     <span class="slider-dot google-selected-dot {{ $i === 0 ? 'active' : '' }}" data-index="{{ $i }}"></span>
                                 @endfor
@@ -356,11 +318,11 @@
                     @endif
                 </div>
             </div>
-
+                
                 <!-- Trending X yang dipilih (urutan terpisah) -->
                 <div class="col-md-6">
                     <div class="card h-100 {{ $noImages ? 'full-width-card' : '' }}">
-                    <div class="card-header glassmorphic-dark text-white d-flex justify-content-between align-items-center">
+                    <div class="card-header glassmorphic-dark text-white d-flex justify-content-between align-items-center">    
                     <!-- <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center"> -->
                             <h5 class="mb-0"><i class="bi bi-x" style="color: white;"></i>Trend X</h5>
                             <div class="navigation-buttons">
@@ -378,31 +340,29 @@
                                     <!-- Halaman pertama -->
                                     <div class="x-selected-slide active">
                                         <ul class="trend-list">
-                                            @php
-                                                $counterX = 1; // Mulai dari 1 untuk halaman pertama
-                                            @endphp
                                             @forelse($selectedXTrendings->take(5) as $index => $trend)
                                                 <li class="trend-item">
-                                                    <span class="trend-rank {{ $counterX <= 3 ? 'top-'.$counterX : '' }}">{{ $counterX++ }}</span>
+                                                    <span class="trend-rank {{ $index < 3 ? 'top-'.($index+1) : '' }}">{{ $index + 1 }}</span>
                                                     <div class="trend-content">
                                                         <div class="trend-title">
                                                             <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
                                                         </div>
                                                         <div class="trend-info">
                                                             <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                            <!-- <span class="trend-source"><i class="bi bi-twitter-x"></i> Terpilih</span> -->
                                                         </div>
                                                     </div>
                                                 </li>
                                             @empty
                                                 <li class="trend-item empty-trend">
-                                                    <div class="text-center w-100 py-3">
-                                                        <p class="text-muted mb-0">Belum ada trending X untuk tanggal {{ $selectedDate->format('d M Y') }}</p>
-                                                    </div>
+                                                <div class="text-center w-100 py-3">
+                                                    <p class="text-muted mb-0">Belum ada trending X untuk tanggal {{ $selectedDate->format('d M Y') }}</p>
+                                                </div>
                                                 </li>
                                             @endforelse
                                         </ul>
                                     </div>
-
+                                    
                                     <!-- Halaman kedua (jika ada) -->
                                     @if($selectedXTrendings->count() > 5)
                                         <div class="x-selected-slide">
@@ -432,9 +392,9 @@
                                         <div class="x-selected-slide">
                                                 <ul class="trend-list">
                                                     @php
-                                                        $counterX = 11; // Mulai dari 11 untuk halaman ketiga
+                                                        $counterX = 11; // Mulai dari 6 untuk halaman kedua
                                                     @endphp
-                                                    @foreach($selectedXTrendings->skip(10)->take(5) as $trend)
+                                                    @foreach($selectedXTrendings->skip(5)->take(5) as $trend)
                                                         <li class="trend-item">
                                                             <span class="trend-rank">{{ $counterX++ }}</span>
                                                             <div class="trend-content">
@@ -459,7 +419,7 @@
                                     @php
                                         $totalXSlides = ceil($selectedXTrendings->count() / 5);
                                     @endphp
-
+                                    
                                     @for ($i = 0; $i < $totalXSlides; $i++)
                                         <span class="slider-dot x-selected-dot {{ $i === 0 ? 'active' : '' }}" data-index="{{ $i }}"></span>
                                     @endfor
@@ -490,7 +450,7 @@
 @endsection
 @section('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-<link rel="stylesheet" href="{{ asset('css/layouts/app.css') }}">
+<link rel="stylesheet" href="{{ asset('css/layouts/app.css') }}">  
 @endsection
 
 @section('scripts')
@@ -501,21 +461,21 @@
             const nextBtn = document.querySelector(`.${nextBtnClass}`);
             const slides = document.querySelectorAll(`.${slideClass}`);
             const dots = document.querySelectorAll(`.${dotClass}`);
-
+            
             if (slides.length > 0) {
                 let currentSlide = 0;
-
+                
                 function updateButtons() {
                     if(prevBtn) prevBtn.disabled = currentSlide === 0;
                     if(nextBtn) nextBtn.disabled = currentSlide === slides.length - 1;
                 }
-
+                
                 function updateDots() {
                     dots.forEach((dot, index) => {
                         dot.classList.toggle('active', index === currentSlide);
                     });
                 }
-
+                
                 function showSlide(index) {
                     slides.forEach(slide => {
                         slide.classList.remove('active');
@@ -524,7 +484,7 @@
                     updateButtons();
                     updateDots();
                 }
-
+                
                 if (nextBtn) {
                     nextBtn.addEventListener('click', function() {
                         if (currentSlide < slides.length - 1) {
@@ -533,7 +493,7 @@
                         }
                     });
                 }
-
+                
                 if (prevBtn) {
                     prevBtn.addEventListener('click', function() {
                         if (currentSlide > 0) {
@@ -542,18 +502,18 @@
                         }
                     });
                 }
-
+                
                 dots.forEach((dot, index) => {
                     dot.addEventListener('click', function() {
                         currentSlide = index;
                         showSlide(currentSlide);
                     });
                 });
-
+                
                 updateButtons();
             }
         }
-
+        
         initializeSlider('prev-isu-slide', 'next-isu-slide', 'isu-slide', 'isu-dot');
         initializeSlider('prev-lainnya-slide', 'next-lainnya-slide', 'lainnya-slide', 'lainnya-dot');
 
@@ -566,16 +526,16 @@
         // Batasan offset berdasarkan data yang tersedia
         const minOffset = {{ $minOffset ?? -30 }}; // Default -30 hari ke belakang
         const maxOffset = {{ $maxOffset ?? 30 }}; // Default 30 hari ke depan
-
+        
         // Jika link navigasi perlu dinonaktifkan pada batas tertentu
         const prevLink = document.querySelector('.nav-arrow:first-child');
         const nextLink = document.querySelector('.nav-arrow:last-child');
-
+        
         if ({{ $offset }} <= minOffset) {
             prevLink.classList.add('disabled');
             prevLink.href = 'javascript:void(0)';
         }
-
+        
         if ({{ $offset }} >= maxOffset) {
             nextLink.classList.add('disabled');
             nextLink.href = 'javascript:void(0)';
@@ -583,11 +543,11 @@
 
         // Tampilkan modal splash screen jika login baru berhasil
         const welcomeModal = new bootstrap.Modal(document.getElementById('welcomeModal'));
-
+        
         @if(session('login_success'))
             welcomeModal.show();
         @endif
-
+        
         // Update tanggal dengan latestIsuDate jika tersedia
         @if(session('latestIsuDate'))
             document.getElementById('current-date').innerText = '{{ session('latestIsuDate') }}';
@@ -597,10 +557,10 @@
         dot.addEventListener('click', function() {
             const slides = document.querySelectorAll('.selected-trending-slide');
             const dots = document.querySelectorAll('.selected-trending-dot');
-
+            
             slides.forEach(slide => slide.classList.remove('active'));
             dots.forEach(dot => dot.classList.remove('active'));
-
+            
             slides[index].classList.add('active');
             dot.classList.add('active');
         });

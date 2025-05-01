@@ -1,90 +1,43 @@
 <!-- resources/views/isu/index.blade.php -->
-@extends(
-    auth()->check() &&
-    (
-        auth()->user()->isAdmin() ||
-        auth()->user()->isEditor() ||
-        auth()->user()->isVerifikator1() ||
-        auth()->user()->isVerifikator2()
-    )
-    ? 'layouts.admin'
-    : 'layouts.app'
-)
+@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Daftar Isu')
 
 @section('content')
 <div class="container-fluid">
-    <!-- Header Section -->
-    <div class="row mb-4 align-items-center">
+    <div class="row mb-4">
         <div class="col-md-6">
-            <h2 class="page-title fw-bold mb-0">Daftar Isu</h2>
+            <h2 class="page-title mb-0">Daftar Isu</h2>
         </div>
-        <div class="col-md-6 text-md-end">
+        <div class="col-md-6 text-end">
             @auth
                 @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
                     <a href="{{ route('isu.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus-circle me-2"></i> Tambah Isu Baru
+                        <i class="fas fa-plus-circle me-1"></i> Tambah Isu Baru
                     </a>
                 @endif
             @endauth
         </div>
     </div>
-
-    <!-- Filter dan Pencarian -->
+    
+    <!-- Tambahkan field pencarian global -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-body py-3">
+            <div class="card">
+                <div class="card-body">
                     <form action="{{ route('isu.index') }}" method="GET" id="searchForm">
                         <input type="hidden" name="active_tab" id="search_active_tab" value="{{ request('active_tab', 'strategis') }}">
-                        @if(request()->has('filter_status'))
-                            <input type="hidden" name="filter_status" value="{{ request('filter_status') }}">
-                        @endif
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0">
-                                        <i class="fas fa-search text-muted"></i>
-                                    </span>
-                                    <input type="text" class="form-control border-start-0" name="search"
-                                           placeholder="Cari judul isu atau kategori..."
-                                           value="{{ request('search') }}"
-                                           aria-label="Cari">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <select name="status" class="form-select" aria-label="Filter berdasarkan status">
-                                    <option value="">- Semua Status -</option>
-                                    @foreach($statusList as $status)
-                                        <option value="{{ $status->id }}" {{ request('status') == $status->id ? 'selected' : '' }}>
-                                            {{ $status->nama }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <!-- <div class="col-md-3">
-                                <div class="input-group">
-                                    <input type="date" class="form-control" name="date_from"
-                                           aria-label="Dari Tanggal"
-                                           value="{{ request('date_from') }}">
-                                    <span class="input-group-text bg-light">s/d</span>
-                                    <input type="date" class="form-control" name="date_to"
-                                           aria-label="Sampai Tanggal"
-                                           value="{{ request('date_to') }}">
-                                </div>
-                            </div> -->
-                            <div class="col-md-2 d-flex">
-                                <button type="submit" class="btn btn-primary me-2 flex-grow-1">
-                                    <i class="fas fa-filter me-1"></i> Filter
-                                </button>
-                                @if(request('search') || request('status') || request('filter_status') || request('date_from') || request('date_to'))
-                                    <a href="{{ route('isu.index') }}" class="btn btn-outline-secondary"
-                                       aria-label="Reset filter">
-                                        <i class="fas fa-times-circle"></i>
-                                    </a>
-                                @endif
-                            </div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light">
+                                <i class="fas fa-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control" name="search" placeholder="Cari judul isu atau kategori..." value="{{ request('search') }}">
+                            <button type="submit" class="btn btn-primary">Cari</button>
+                            @if(request('search'))
+                                <a href="{{ route('isu.index') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i> Reset
+                                </a>
+                            @endif
                         </div>
                     </form>
                 </div>
@@ -94,23 +47,19 @@
 
     <!-- Hidden input untuk menyimpan tab aktif -->
     <input type="hidden" id="active_tab_input" value="{{ request('active_tab', 'strategis') }}">
-
+    
     <!-- Modern Filter Tabs -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="custom-tab-container">
                 <ul class="custom-tabs" id="issuTabs" role="tablist">
-                    <li class="custom-tab-item nav-item" role="presentation">
-                        <button class="custom-tab-link nav-link active" id="strategis-tab"
-                                data-bs-toggle="tab" data-bs-target="#strategis" type="button"
-                                role="tab" aria-controls="strategis" aria-selected="true">
+                    <li class="custom-tab-item" role="presentation">
+                        <button class="custom-tab-link active" id="strategis-tab" data-bs-toggle="pill" data-bs-target="#strategis" type="button" role="tab">
                             <i class="fas fa-chart-line me-2"></i>Isu Strategis
                         </button>
                     </li>
-                    <li class="custom-tab-item nav-item" role="presentation">
-                        <button class="custom-tab-link nav-link" id="lainnya-tab"
-                                data-bs-toggle="tab" data-bs-target="#lainnya" type="button"
-                                role="tab" aria-controls="lainnya" aria-selected="false">
+                    <li class="custom-tab-item" role="presentation">
+                        <button class="custom-tab-link" id="lainnya-tab" data-bs-toggle="pill" data-bs-target="#lainnya" type="button" role="tab">
                             <i class="fas fa-list-alt me-2"></i>Isu Regional
                         </button>
                     </li>
@@ -119,151 +68,294 @@
         </div>
     </div>
 
-    <!-- Tab Content -->
+    <!-- Tab Content dengan style modern -->
     <div class="tab-content" id="issueTabsContent">
         <!-- Tab Isu Strategis -->
         <div class="tab-pane fade show active" id="strategis" role="tabpanel" aria-labelledby="strategis-tab">
-            @include('partials._isu_table', [
-                'isus' => $isusStrategis,
-                'tabId' => 'strategis',
-                'emptyMessage' => 'Tidak ada isu strategis untuk ditampilkan.'
-            ])
+            @if($isusStrategis->isNotEmpty())
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover custom-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Judul
+                                </th>
+                                <th width="120" class="sortable" data-sort="tanggal">
+                                    Tanggal
+                                    @if(request('sort') == 'tanggal')
+                                        <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                                    @else
+                                        <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                                    @endif
+                                </th>
+                                <th width="100">Kategori</th>
+                                <th width="100" class="sortable" data-sort="tone">
+                                    Tone
+                                    @if(request('sort') == 'tone')
+                                        <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                                    @else
+                                        <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                                    @endif
+                                </th>
+                                <th width="100" class="sortable" data-sort="skala">
+                                    Skala
+                                    @if(request('sort') == 'skala')
+                                        <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                                    @else
+                                        <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                                    @endif
+                                </th>
+                                <th width="120" class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                            <tbody>
+                            @foreach($isusStrategis as $isu)
+                                <tr>
+                                    <td class="fw-medium">{{ $isu->judul }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($isu->tanggal)->format('d/m/Y') }}</td>
+                                    <td>
+                                        @if($isu->kategoris->isNotEmpty())
+                                            @foreach($isu->kategoris as $kategori)
+                                                <span class="badge bg-secondary me-1">{{ $kategori->nama }}</span>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge-custom" style="background-color: {{ $isu->refTone && $isu->tone ? $isu->refTone->warna : '#d3d3d3' }}">
+                                                {{ $isu->refTone && $isu->tone ? $isu->refTone->nama : '-' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge-custom" style="background-color: {{ $isu->refSkala && $isu->skala ? $isu->refSkala->warna : '#d3d3d3' }}">
+                                                {{ $isu->refSkala && $isu->skala ? $isu->refSkala->nama : '-' }}
+                                        </span>
+                                    </td>
+ 
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="{{ route('isu.show', $isu) }}" class="btn-action btn-view" title="Lihat Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            @auth
+                                                @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
+                                                    <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <!-- <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat">
+                                                        <i class="fas fa-clock-rotate-left"></i>
+                                                    </a> -->
+                                                    <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn-action btn-delete" title="Hapus" onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            @endauth
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="pagination-container mt-4">
+                    {{ $isusStrategis->appends(['lainnya' => request()->input('lainnya')])->links() }}
+                </div>
+            @else
+                <div class="empty-state">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Tidak ada isu strategis untuk ditampilkan.</p>
+                </div>
+            @endif
         </div>
 
-        <!-- Tab Isu Regional -->
+        <!-- Tab Isu Lainnya -->
         <div class="tab-pane fade" id="lainnya" role="tabpanel" aria-labelledby="lainnya-tab">
-            @include('partials._isu_table', [
-                'isus' => $isusLainnya,
-                'tabId' => 'lainnya',
-                'emptyMessage' => 'Tidak ada isu regional untuk ditampilkan.'
-            ])
+            @if($isusLainnya->isNotEmpty())
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-hover custom-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    Judul
+                                </th>
+                                <th width="120" class="sortable" data-sort="tanggal">
+                                    Tanggal
+                                    @if(request('sort') == 'tanggal')
+                                        <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                                    @else
+                                        <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                                    @endif
+                                </th>
+                                <th width="100">Kategori</th>
+                                <th width="100" class="sortable" data-sort="tone">
+                                    Tone
+                                    @if(request('sort') == 'tone')
+                                        <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                                    @else
+                                        <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                                    @endif
+                                </th>
+                                <th width="100" class="sortable" data-sort="skala">
+                                    Skala
+                                    @if(request('sort') == 'skala')
+                                        <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                                    @else
+                                        <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                                    @endif
+                                </th>
+                                <th width="120" class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                            <tbody>
+                                @foreach($isusLainnya as $isu)
+                                    <tr>
+                                        <td class="fw-medium">{{ $isu->judul }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($isu->tanggal)->format('d/m/Y') }}</td>
+                                        <td>
+                                            @if($isu->kategoris->isNotEmpty())
+                                                @foreach($isu->kategoris as $kategori)
+                                                    <span class="badge bg-secondary me-1">{{ $kategori->nama }}</span>
+                                                @endforeach
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge-custom" style="background-color: {{ $isu->refTone && $isu->tone ? $isu->refTone->warna : '#d3d3d3' }}">
+                                                {{ $isu->refTone && $isu->tone ? $isu->refTone->nama : '-' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge-custom" style="background-color: {{ $isu->refSkala && $isu->skala ? $isu->refSkala->warna : '#d3d3d3' }}">
+                                                {{ $isu->refSkala && $isu->skala ? $isu->refSkala->nama : '-' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <a href="{{ route('isu.show', $isu) }}" class="btn-action btn-view" title="Lihat Detail">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                @auth
+                                                    @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
+                                                        <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </a>
+                                                        <!-- <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat">
+                                                            <i class="fas fa-clock-rotate-left"></i>
+                                                        </a> -->
+                                                        <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn-action btn-delete" title="Hapus" onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    @endif
+                                                @endauth
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="pagination-container mt-4">
+                    {{ $isusLainnya->appends(['strategis' => request()->input('strategis')])->links() }}
+                </div>
+            @else
+                <div class="empty-state">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Tidak ada isu regional untuk ditampilkan.</p>
+                </div>
+            @endif
         </div>
     </div>
 </div>
 @endsection
 
-<!-- Form untuk aksi massal -->
-<form id="mass-action-form" action="{{ route('isu.massAction') }}" method="POST" style="display: none;">
-    @csrf
-    <input type="hidden" name="action" id="mass-action">
-    <input type="hidden" name="selected_ids" id="selected-ids">
-    <input type="hidden" name="rejection_reason" id="rejection-reason">
-</form>
-
-<!-- Modal untuk Alasan Penolakan -->
-<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="rejectModalLabel">Alasan Penolakan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="rejection-reason-input" class="form-label">Alasan Penolakan <span class="text-danger">*</span></label>
-                    <textarea class="form-control" id="rejection-reason-input" rows="4"
-                              placeholder="Masukkan alasan penolakan..." required></textarea>
-                    <div class="invalid-feedback">
-                        Alasan penolakan harus diisi.
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
-                <button type="button" class="btn btn-danger" id="confirm-reject">
-                    <i class="fas fa-times-circle me-1"></i> Tolak
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @section('styles')
-<link rel="stylesheet" href="{{ asset('css/layouts/app.css') }}">
-<style>
-
-    /* Custom styles for this page */
-    .badge-custom {
-        display: inline-block;
-        padding: 0.35em 0.65em;
-        font-size: 0.75em;
-        font-weight: 500;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        border-radius: 0.5rem;
-        color: #fff;
-    }
-
-    .custom-table th {
-        background-color: #f8f9fa;
-        font-weight: 600;
-    }
-
-    .action-buttons {
-        display: flex;
-        justify-content: center;
-        gap: 0.5rem;
-    }
-
-    .btn-action {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: none;
-        background: none;
-        transition: all 0.2s;
-    }
-
-    .btn-view { color: var(--bs-primary); }
-    .btn-edit { color: var(--bs-warning); }
-    .btn-log { color: var(--bs-info); }
-    .btn-delete { color: var(--bs-danger); }
-
-    .btn-action:hover {
-        background-color: rgba(0,0,0,0.05);
-    }
-
-    .sortable {
-        cursor: pointer;
-    }
-
-    .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 3rem;
-        background-color: #f8f9fa;
-        border-radius: 0.5rem;
-        text-align: center;
-    }
-
-    .empty-state i {
-        font-size: 3rem;
-        color: #adb5bd;
-        margin-bottom: 1rem;
-    }
-
-    .selected-actions {
-        padding: 0.75rem 1rem;
-        background-color: #f8f9fa;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
-        border: 1px solid #dee2e6;
-    }
-
-    .form-check-input:checked {
-        background-color: var(--bs-primary);
-        border-color: var(--bs-primary);
-    }
-</style>
+<link rel="stylesheet" href="{{ asset('css/layouts/app.css') }}"> 
 @endsection
 
 @section('scripts')
-<script src="{{ asset('js/isu/index.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tangkap perubahan tab
+        const tabs = document.querySelectorAll('#issuTabs button');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Simpan tab yang aktif ke session storage
+                sessionStorage.setItem('activeIsuTab', this.id);
+            });
+        });
+        
+        // Cek dan set tab aktif dari session storage
+        const activeTab = sessionStorage.getItem('activeIsuTab');
+        if (activeTab) {
+            const tabToActivate = document.getElementById(activeTab);
+            if (tabToActivate) {
+                const tabInstance = new bootstrap.Tab(tabToActivate);
+                tabInstance.show();
+            }
+        }
+        
+        // Cek jika ada parameter URL untuk tab
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('lainnya') && !urlParams.has('strategis')) {
+            document.getElementById('lainnya-tab').click();
+        }
+
+        // Saat user mengklik tab, update juga hidden input di form pencarian
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Simpan tab yang aktif ke session storage
+                sessionStorage.setItem('activeIsuTab', this.id);
+                
+                // Update hidden input dengan nilai tab aktif
+                const tabValue = this.id.replace('-tab', '');
+                document.getElementById('active_tab_input').value = tabValue;
+                
+                // Update juga di form pencarian
+                if (document.getElementById('search_active_tab')) {
+                    document.getElementById('search_active_tab').value = tabValue;
+                }
+            });
+        });
+
+        // Tangani klik pada header kolom untuk sorting
+        const sortableHeaders = document.querySelectorAll('.sortable');
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const sortField = this.getAttribute('data-sort');
+                let direction = 'asc';
+                
+                // Jika sudah di-sort dengan field yang sama, balik arahnya
+                if (new URLSearchParams(window.location.search).get('sort') === sortField) {
+                    direction = new URLSearchParams(window.location.search).get('direction') === 'asc' ? 'desc' : 'asc';
+                }
+                
+                // Buat URL baru dengan parameter sort
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('sort', sortField);
+                urlParams.set('direction', direction);
+                
+                // Pastikan parameter active_tab disertakan
+                const activeTab = document.querySelector('#issuTabs button.active').id.replace('-tab', '');
+                urlParams.set('active_tab', activeTab);
+                
+                // Redirect ke URL dengan parameter sorting
+                window.location.href = `${window.location.pathname}?${urlParams.toString()}`;
+            });
+        });       
+    });
+</script>
 @endsection
