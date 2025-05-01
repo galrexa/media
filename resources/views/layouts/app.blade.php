@@ -7,16 +7,16 @@
     <meta name="description" content="Aplikasi pemantauan media untuk analisis konten">
     <meta name="theme-color" content="#0d6efd">
     <title>@yield('title', 'Media Monitoring')</title>
-
+    
     <!-- Font Awesome untuk ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
-
+    
     <!-- Google Fonts - Poppins & Inter (Update) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/layouts/app.css') }}">
@@ -25,31 +25,23 @@
 <body>
 
     <!-- Splash screen dengan animasi modern -->
-    @include('partials.modal')
+    @include('partials.modal') 
 
     <!-- Navbar dengan Glassmorphism effect -->
     <nav class="navbar navbar-expand-lg navbar-dark mb-4 custom-navbar">
-        <div class="container-fluid px-3">
-            <!-- Mobile Layout Group -->
-            <div class="d-flex align-items-center justify-content-between w-100">
-                <!-- Logo -->
-                <a href="{{ route('home') }}" class="navbar-logo-link">
-                    <img src="/header.png" alt="Logo KSP" class="navbar-logo-left">
-                </a>
-
-                <!-- Mobile Brand - Responsive Text -->
-                <div class="navbar-brand-mobile text-center mx-2 flex-grow-1">
-                    <div class="navbar-title-mobile">MEDIA MONITORING</div>
-                    <div class="navbar-subtitle-mobile">Kantor Staf Presiden</div>
-                </div>
-
-                <!-- Toggle Button -->
-                <button class="navbar-toggler ms-2" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
+        <div class="container d-flex align-items-center">
+            <!-- Logo Kiri dengan animasi hover -->
+            <a href="{{ route('home') }}" class="d-flex align-items-center">
+                <img src="/header.png" alt="Logo KSP" class="navbar-logo-left">
+            </a>
+            
+            <!-- Teks Tengah dengan bayangan text modern -->
+            <div class="navbar-brand text-center navbar-brand-center">
+                <div class="navbar-title">MEDIA MONITORING</div>
+                <div class="navbar-subtitle">KANTOR STAF PRESIDEN</div>
             </div>
-
-            <!-- Collapsible Menu -->
+            
+            <!-- Dropdown Pengguna dengan animasi -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     @guest
@@ -61,10 +53,10 @@
                     @else
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-white" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user me-1"></i>{{ Auth::user()->name }}
+                                <i class="fas fa-user"></i>{{ Auth::user()->name }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a href="{{ route('profile.index') }}" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
+                            <li><a href="{{ route('profile.index') }}" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
                                 <li><a href="{{ route('settings.index') }}" class="dropdown-item"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
                                 <li><a class="dropdown-item" href="#" id="showAboutModal"><i class="fas fa-info-circle me-2"></i>Tentang</a></li>
                                 <li><hr class="dropdown-divider"></li>
@@ -81,6 +73,11 @@
                     @endguest
                 </ul>
             </div>
+            
+            <!-- Tombol Toggle untuk Mobile dengan animasi -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
         </div>
     </nav>
 
@@ -107,7 +104,7 @@
     <footer class="py-3">
         <div class="container text-center">
             <p class="mb-0">
-                Media Monitoring <i class="fas fa-copyright me-1"></i>KSP {{ date('Y') }}
+                Media Monitoring <i class="fas fa-copyright me-1"></i>Kantor Staf Presiden {{ date('Y') }} 
             </p>
         </div>
     </footer>
@@ -126,7 +123,7 @@
                 welcomeModal.show();
             });
         }
-
+        
         // Animasi smooth scroll untuk date-nav
         const dateNav = document.querySelector('.date-nav');
         if (dateNav) {
@@ -137,27 +134,27 @@
                 }, 300);
             }
         }
-
+        
         // Tambahkan efek ripple pada tombol
         const buttons = document.querySelectorAll('.btn');
         buttons.forEach(button => {
             button.addEventListener('click', function(e) {
                 const x = e.clientX - e.target.offsetLeft;
                 const y = e.clientY - e.target.offsetTop;
-
+                
                 const ripple = document.createElement('span');
                 ripple.style.left = `${x}px`;
                 ripple.style.top = `${y}px`;
-
+                
                 this.appendChild(ripple);
-
+                
                 setTimeout(() => {
                     ripple.remove();
                 }, 600);
             });
         });
     });
-    </script>
+    </script>    
     @yield('scripts')
 </body>
 </html>

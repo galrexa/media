@@ -50,16 +50,16 @@
                                     </td>
                                     <td>
                                         <a href="{{ route('isu.show', $isu) }}" class="btn btn-sm btn-info">
-                                            <i class="fa fa-eye"></i>
+                                            <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="{{ route('isu.edit', $isu) }}" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-pencil"></i>
+                                            <i class="bi bi-pencil"></i>
                                         </a>
                                         <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
-                                                <i class="fas fa-trash"></i>
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                     </td>
@@ -76,7 +76,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="tab-pane fade" id="lainnya">
         <div class="card">
             <div class="card-body">
@@ -106,16 +106,16 @@
                                     </td>
                                     <td>
                                         <a href="{{ route('isu.show', $isu) }}" class="btn btn-sm btn-info">
-                                            <i class="fa fa-eye"></i>
+                                            <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="{{ route('isu.edit', $isu) }}" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-pencil"></i>
+                                            <i class="bi bi-pencil"></i>
                                         </a>
                                         <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
-                                                <i class="fas fa-trash"></i>
+                                                <i class="bi bi-trash"></i>
                                             </button>
                                         </form>
                                     </td>

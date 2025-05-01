@@ -1,16 +1,5 @@
 <!-- resources/views/profile/index.blade.php -->
-@extends(
-    auth()->check() &&
-    (
-        auth()->user()->isAdmin() ||
-        auth()->user()->isEditor() ||
-        auth()->user()->isVerifikator1() ||
-        auth()->user()->isVerifikator2()
-    )
-    ? 'layouts.admin'
-    : 'layouts.app'
-)
-
+@extends(auth()->user()->isAdmin() || auth()->user()->isEditor() ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Profil Pengguna')
 
@@ -25,13 +14,11 @@
                         <i class="bi bi-person-circle profile-avatar-icon"></i>
                     </div>
                     <h5 class="card-title mb-1">{{ $user->name }}</h5>
-                    <p class="text-muted">
-                        {{ $user->getHighestRoleName() === 'admin' ? 'Administrator' : ucfirst($user->getHighestRoleName()) }}
-                    </p>
+                    <p class="text-muted">{{ ucfirst($user->role) }}</p>
                     <p class="card-text text-muted mt-2">{{ $user->email }}</p>
                 </div>
             </div>
-
+            
             <!-- Menu Navigasi -->
             <div class="card profile-menu-card">
                 <div class="list-group list-group-flush">
@@ -44,7 +31,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div class="col-lg-9">
             <!-- Card Informasi Profil -->
             <div class="card">
@@ -58,11 +45,11 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     @endif
-
+                    
                     <form action="{{ route('profile.update') }}" method="POST">
                         @csrf
                         @method('PUT')
-
+                        
                         <div class="mb-3">
                             <label for="name" class="form-label">Nama Lengkap</label>
                             <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $user->name) }}">
@@ -70,7 +57,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-
+                        
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}">
@@ -78,19 +65,19 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-
+                        
                         <div class="mb-3">
                             <label for="username" class="form-label">Username</label>
                             <input type="text" class="form-control" id="username" value="{{ $user->username }}" disabled>
                             <div class="form-text text-muted">Username tidak dapat diubah</div>
                         </div>
-
+                        
                         <div class="mb-3">
                             <label for="role" class="form-label">Peran</label>
-                            <input type="text" class="form-control" id="role" value="{{ $user->getHighestRoleName() === 'admin' ? 'Administrator' : ucfirst($user->getHighestRoleName()) }}" disabled>
+                            <input type="text" class="form-control" id="role" value="{{ ucfirst($user->role) }}" disabled>
                             <div class="form-text text-muted">Peran hanya dapat diubah oleh administrator</div>
                         </div>
-
+                        
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fa-solid fa-floppy-disk"></i> Simpan
@@ -112,11 +99,11 @@
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         transition: all 0.3s ease;
     }
-
+    
     .profile-card:hover {
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }
-
+    
     .profile-avatar-container {
         width: 100px;
         height: 100px;
@@ -128,34 +115,34 @@
         justify-content: center;
         border: 5px solid #e9ecef;
     }
-
+    
     .profile-avatar-icon {
         font-size: 3.5rem;
         color: #6c757d;
     }
-
+    
     .profile-menu-card {
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
-
+    
     .profile-menu-card .list-group-item {
         border-left: 0;
         border-right: 0;
         padding: 0.75rem 1.25rem;
         transition: all 0.2s ease;
     }
-
+    
     .profile-menu-card .list-group-item:first-child {
         border-top: 0;
     }
-
+    
     .profile-menu-card .list-group-item.active {
         background-color: var(--bs-primary);
         border-color: var(--bs-primary);
     }
-
+    
     .profile-menu-card .list-group-item:not(.active):hover {
         background-color: #f8f9fa;
     }

@@ -59,7 +59,7 @@
                                     <td>
                                         @if($image->dokumen_url)
                                             <a href="{{ $image->dokumen_url }}" target="_blank" class="btn btn-sm btn-danger">
-                                                <i class="fas fa-file me-1"></i>
+                                                <i class="bi bi-file-earmark-pdf me-1"></i>
                                             </a>
                                         @else
                                             <span class="text-muted">Tidak ada</span>
@@ -67,10 +67,10 @@
                                     </td>
                                     <td>
                                         <a href="{{ route('documents.edit', $image->tanggal->format('Y-m-d')) }}" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-pencil me-1"></i>
+                                            <i class="bi bi-pencil me-1"></i>
                                         </a>
                                         <a href="{{ route('home', ['day' => $image->tanggal->diffInDays(now(), false)]) }}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-pencil me-1"></i>
+                                            <i class="bi bi-eye me-1"></i>
                                         </a>
                                     </td>
                                 </tr>
@@ -78,7 +78,7 @@
                         </tbody>
                     </table>
                 </div>
-
+                
                 <div class="d-flex justify-content-center mt-4">
                     {{ $images->links() }}
                 </div>
@@ -101,37 +101,37 @@
     .badge {
         font-size: 0.8em;
     }
-
+    
     .table thead th {
         background-color: rgba(0,0,0,0.03);
     }
-
+    
     .card {
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         border: none;
         margin-bottom: 1.5rem;
     }
-
+    
     .card-header {
         border-bottom: 1px solid rgba(0,0,0,0.125);
         padding: 0.75rem 1.25rem;
     }
-
+    
     .card-header h5 {
         font-weight: 600;
     }
-
+    
     .btn-sm {
         padding: 0.25rem 0.5rem;
         font-size: 0.875rem;
     }
-
+    
     .img-thumbnail {
         border-radius: 0.25rem;
         border: 1px solid #dee2e6;
         transition: transform 0.2s;
     }
-
+    
     .img-thumbnail:hover {
         transform: scale(1.1);
     }
