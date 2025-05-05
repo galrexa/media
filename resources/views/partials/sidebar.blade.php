@@ -68,7 +68,7 @@
                     <ul class="nav flex-column sub-submenu">
 
                         <!-- Sub-sub menu Draft - Hanya untuk Editor -->
-                        @if(Auth::user()->isEditor())
+                        @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('isu.index') && request()->input('filter_status') == 'draft' ? 'active' : '' }}" href="{{ route('isu.index', ['filter_status' => 'draft']) }}">
                                 <span>Draft</span>
