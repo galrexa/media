@@ -120,13 +120,12 @@
     </style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-card">
-            <!-- Logo -->
-            <div class="text-center mb-4">
-                <img src="{{ asset('logo.png') }}" alt="Logo" class="logo mb-3">
-                <h4>Selamat Datang</h4>
-            </div>
+    <div class="login-card">
+        <!-- Header dengan logo -->
+        <div class="login-header">
+            <img src="{{ asset('logo.png') }}" alt="Media Monitoring" class="login-logo">
+            <h5>Selamat Datang</h5>
+        </div>
 
         <!-- Form login -->
         <div class="login-form">
