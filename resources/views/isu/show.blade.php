@@ -1,15 +1,5 @@
 <!-- resources/views/isu/show.blade.php -->
-@extends(
-    auth()->check() &&
-    (
-        auth()->user()->isAdmin() ||
-        auth()->user()->isEditor() ||
-        auth()->user()->isVerifikator1() ||
-        auth()->user()->isVerifikator2()
-    )
-    ? 'layouts.admin'
-    : 'layouts.app'
-)
+@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', $isu->judul)
 

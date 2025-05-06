@@ -5,11 +5,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 use App\Models\RefSkala;
 use App\Models\RefTone;
 use App\Models\Kategori;
-
 use App\Models\RefStatus;
 
 class Isu extends Model
@@ -126,28 +124,24 @@ class Isu extends Model
      */
     public function canBeEditedBy($role)
     {
-        // Admin dapat edit semua status
-        if ($role === 'admin') {
-            return true;
-        }
-
-        // Role editor hanya bisa edit jika isu miliknya dan status Draft atau Ditolak
+        // Role editor hanya bisa edit jika status Draft atau Ditolak
         if ($role === 'editor') {
-            return $this->created_by === Auth::id() && 
-                   in_array($this->status_id, [
-                       RefStatus::getDraftId(), 
-                       RefStatus::getDitolakId()
-                   ]);
+            return in_array($this->status_id, [RefStatus::DRAFT, RefStatus::DITOLAK]); // ID untuk Draft dan Ditolak
         }
 
         // Role verifikator1 hanya bisa edit jika status Verifikasi 1
         if ($role === 'verifikator1') {
-            return $this->status_id === RefStatus::getVerifikasi1Id();
+            return $this->status_id === RefStatus::VERIFIKASI_1; // ID untuk Verifikasi 1 = 2
         }
 
         // Role verifikator2 hanya bisa edit jika status Verifikasi 2
         if ($role === 'verifikator2') {
-            return $this->status_id === RefStatus::getVerifikasi2Id();
+            return $this->status_id === RefStatus::VERIFIKASI_2; // ID untuk Verifikasi 2 = 4 (PERBAIKAN!)
+        }
+
+        // Admin dapat edit semua status
+        if ($role === 'admin') {
+            return true;
         }
 
         return false;

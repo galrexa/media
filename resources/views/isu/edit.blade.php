@@ -46,12 +46,12 @@
         </div>
         <div class="card-body p-4">
             <!-- Tampilkan alert jika isu ditolak -->
-            <!-- @if($isu->status && $isu->status->nama == 'Ditolak' && $isu->alasan_penolakan)
+            @if($isu->status && $isu->status->nama == 'Ditolak' && $isu->alasan_penolakan)
             <div class="alert alert-danger mb-4">
                 <h5 class="alert-heading"><i class="fas fa-times-circle me-2"></i>Alasan Penolakan:</h5>
                 <p class="mb-0">{{ $isu->alasan_penolakan }}</p>
             </div>
-            @endif -->
+            @endif
             <form action="{{ route('isu.update', $isu) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
@@ -233,7 +233,7 @@
                                             <div class="input-group">
                                                 <input type="url" class="form-control referensi-url" name="referensi_url[]">
                                                 <button type="button" class="btn btn-outline-primary preview-btn">
-                                                    <i class="fa fa-eye"></i>
+                                                    <i class="fa fa-eye"></i> Preview
                                                 </button>
                                             </div>
                                             <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
@@ -334,7 +334,7 @@
         </div>
     </div>
 </div>
-
+    <!-- Perbaikan Modal Penolakan di resources/views/isu/edit.blade.php -->
     <div class="modal fade" id="tolakModal" tabindex="-1" aria-labelledby="tolakModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -470,10 +470,6 @@
             padding: 0.5rem 0;
             font-size: 0.8rem;
         }
-    }
-
-    .modal {
-    z-index: 2000 !important;
     }
 
 </style>
@@ -899,7 +895,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
 
     // Tambahkan event listener untuk tombol preview yang sudah ada
     const previewButtons = document.querySelectorAll('.preview-btn');
@@ -926,83 +921,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inisialisasi tombol hapus
     updateRemoveButtons();
-
-    // Tangani form submission untuk form edit
-    const editForm = document.querySelector('form[action*="update"]');
-    if (editForm) {
-        editForm.addEventListener('submit', function(e) {
-            // Ambil tombol yang diklik
-            const submitButton = e.submitter;
-            
-            // Cek apakah tombol sudah dalam status disabled
-            if (submitButton.disabled) {
-                e.preventDefault();
-                return false;
-            }
-
-            // Simpan teks asli tombol
-            const originalText = submitButton.innerHTML;
-            
-            // Update tombol menjadi disabled dan tampilkan loading
-            submitButton.disabled = true;
-            
-            // Tambahkan spinner loading berdasarkan jenis tombol dan role user
-            if (submitButton.name === 'action') {
-                switch (submitButton.value) {
-                    case 'simpan':
-                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...';
-                        break;
-                    case 'kirim':
-                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengirim ke Verifikator 1...';
-                        break;
-                    case 'teruskan':
-                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Meneruskan ke Verifikator 2...';
-                        break;
-                    case 'submit':
-                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mempublikasikan...';
-                        break;
-                    default:
-                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
-                }
-            }
-            
-            // Disable semua tombol submit lainnya
-            const allSubmitButtons = editForm.querySelectorAll('button[type="submit"]');
-            allSubmitButtons.forEach(button => {
-                if (button !== submitButton) {
-                    button.disabled = true;
-                }
-            });
-
-            // Jika ada error validasi, aktifkan kembali tombol
-            window.addEventListener('pageshow', function(event) {
-                allSubmitButtons.forEach(button => {
-                    button.disabled = false;
-                    button.innerHTML = originalText;
-                });
-            });
-        });
-    }
-
-    // Tangani form submission untuk form penolakan
-    const formPenolakan = document.getElementById('formPenolakan');
-    if (formPenolakan) {
-        formPenolakan.addEventListener('submit', function(e) {
-            const alasanPenolakan = document.getElementById('alasan_penolakan').value.trim();
-
-            if (alasanPenolakan.length < 10) {
-                e.preventDefault();
-                alert('Alasan penolakan minimal 10 karakter');
-                return false;
-            }
-
-            // Disable tombol submit untuk mencegah double submit
-            const btnSubmitPenolakan = document.getElementById('btnSubmitPenolakan');
-            btnSubmitPenolakan.disabled = true;
-            btnSubmitPenolakan.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
-        });
-    }
-
 });
 </script>
 @endsection

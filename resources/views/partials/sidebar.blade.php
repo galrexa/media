@@ -45,7 +45,7 @@
 
             <!-- Manajemen Isu -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('isu.index') ? 'active' : '' }}" href="{{ route('isu.index') }}">
+                <a class="nav-link {{ request()->routeIs('isu.*') ? 'active' : '' }}" href="#">
                     <i class="bi bi-file-text"></i>
                     <span>Manajemen Isu</span>
                     @if(isset($pendingIsuCount) && $pendingIsuCount > 0)
@@ -68,7 +68,7 @@
                     <ul class="nav flex-column sub-submenu">
 
                         <!-- Sub-sub menu Draft - Hanya untuk Editor -->
-                        @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
+                        @if(Auth::user()->isEditor())
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('isu.index') && request()->input('filter_status') == 'draft' ? 'active' : '' }}" href="{{ route('isu.index', ['filter_status' => 'draft']) }}">
                                 <span>Draft</span>
@@ -131,7 +131,7 @@
             <!-- Manajemen Dokumen -->
             @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('documents.index') ? 'active' : '' }}" href="{{ route('documents.index') }}">
+                <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="#">
                     <i class="bi bi-images"></i>
                     <span>Manajemen Dokumen</span>
                     @if(isset($pendingDocumentCount) && $pendingDocumentCount > 0)
@@ -157,7 +157,7 @@
 
             <!-- Trending -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('trending.selected') ? 'active' : '' }}" href="{{ route('trending.selected') }}">
+                <a class="nav-link {{ request()->routeIs('trending.*') ? 'active' : '' }}" href="#">
                     <i class="bi bi-graph-up"></i>
                     <span>Trending</span>
                     @if(isset($pendingTrendingCount) && $pendingTrendingCount > 0)
