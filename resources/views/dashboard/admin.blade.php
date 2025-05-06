@@ -124,3 +124,26 @@
     </div>
 </div>
 @endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Card animation
+        const cards = document.querySelectorAll('.stat-card, .action-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100 * index);
+        });
+
+        const actionButtons = document.querySelectorAll('.action-btn, .main-action-btn');
+        actionButtons.forEach(btn => {
+            btn.setAttribute('title', btn.textContent.trim());
+        });
+    });
+</script>
+@endsection

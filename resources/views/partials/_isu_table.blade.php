@@ -171,9 +171,6 @@
                             </td>
                             <td>
                             <div class="action-buttons">
-                                <a href="{{ route('isu.show', $isu) }}" class="btn-action btn-view" title="Lihat Detail" aria-label="Lihat detail isu">
-                                    <i class="fas fa-eye"></i>
-                                </a>
                                 @auth
                                     @if(auth()->user()->isAdmin() || $isu->canBeEditedBy(auth()->user()->getHighestRoleName()))
                                         <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
