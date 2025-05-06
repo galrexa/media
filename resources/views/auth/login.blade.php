@@ -20,7 +20,7 @@
             <!-- Logo -->
             <div class="text-center mb-4">
                 <img src="{{ asset('logo.png') }}" alt="Logo" class="logo mb-3">
-                <h4>Media Monitoring</h4>
+                <h4>Selamat Datang</h4>
             </div>
 
             <!-- Login Form -->

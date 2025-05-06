@@ -124,10 +124,6 @@
                 <div class="card-body">
                     <div class="isu-slider-container">
                         <div class="isu-slider">
-                            <!-- @php
-                                $nomorUrut = 1;
-                            @endphp -->
-                            <!-- Halaman pertama -->
                             <div class="isu-slide active">
                                 <div class="list-group list-group-flush">
                                     @forelse($isuStrategis->take(10) as $index => $isu)

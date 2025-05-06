@@ -246,6 +246,7 @@
         </ul>
     </div>
 </div>
+
 <!-- CSRF Token for JavaScript -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
