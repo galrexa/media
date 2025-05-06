@@ -1013,7 +1013,7 @@ class TrendingController extends Controller
     public function createManual()
     {
         $mediaSosials = MediaSosial::all();
-        return view('trending.create', compact('mediaSosials'));
+        return view('trending.manual-create', compact('mediaSosials'));
     }
 
     /**
