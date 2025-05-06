@@ -505,7 +505,7 @@ class TrendingController extends Controller
     public function create()
     {
         $mediaSosials = MediaSosial::all();
-        return view('trending.manual-create', compact('mediaSosials'));
+        return view('trending.create', compact('mediaSosials'));
     }
 
     public function store(Request $request)
