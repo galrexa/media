@@ -70,7 +70,7 @@
                                             <i class="fas fa-pencil me-1"></i>
                                         </a>
                                         <a href="{{ route('home', ['day' => $image->tanggal->diffInDays(now(), false)]) }}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-pencil me-1"></i>
+                                            <i class="fas fa-eye me-1"></i>
                                         </a>
                                     </td>
                                 </tr>

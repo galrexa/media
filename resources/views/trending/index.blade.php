@@ -137,9 +137,7 @@
                         <small class="text-muted">
                             <i class="bi bi-x me-1"></i> X Trends
                         </small>
-                        <!-- <small class="text-muted">
-                            Update terakhir: {{ $selectedXTrendings->count() > 0 ? $selectedXTrendings->sortByDesc('updated_at')->first()->updated_at->format('d/m/Y H:i') : 'Belum ada data' }}
-                        </small> -->
+
                     </div>
                 </div>
             </div>
@@ -149,7 +147,7 @@
 @endsection
 
 @section('styles')
-<!-- <link rel="stylesheet" href="{{ asset('css/layouts/app.css') }}">  -->
+<link rel="stylesheet" href="{{ asset('css/custom/app.css') }}"> 
 <style>
     .trend-rank {
         width: 36px;
