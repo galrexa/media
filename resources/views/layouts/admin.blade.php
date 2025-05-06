@@ -17,66 +17,89 @@
     <!-- Google Fonts - Inter & Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/layouts/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/custom/admin.css') }}">
     @yield('styles')
+    
+    <!-- Meta tag untuk memastikan rendering mobile yang baik -->
+    <meta name="HandheldFriendly" content="true">
+    <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
-    <!-- Navbar fixed di atas (Simpel Tanpa Search & Notification) -->
-<header class="top-navbar">
-    <div class="navbar-container px-3">
+    <!-- Navbar fixed di atas dengan dukungan mobile dan countdown timer -->
+    <header class="top-navbar">
+        <div class="navbar-container px-3">
+            <!-- Brand/logo dengan toggle sidebar -->
+            <div class="d-flex align-items-center w-100">
+                <!-- Mobile Menu Button - tampil hanya di mobile -->
+                <button class="mobile-toggle d-md-none" id="mobileSidebarToggle" aria-label="Toggle Mobile Sidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <!-- Desktop Menu Button - tampil hanya di desktop -->
+                <button class="toggle-sidebar d-none d-md-flex" id="toggleSidebar" aria-label="Toggle Desktop Sidebar">
+                    <i class="bi bi-list"></i>
+                </button>
+                
+                <span class="brand-text">Media Monitoring</span>
 
-        <!-- Brand/logo dengan toggle sidebar -->
-        <div class="d-flex align-items-center w-100">
-            <button class="toggle-sidebar d-none d-md-flex" id="toggleSidebar" aria-label="Toggle Sidebar">
-                <i class="bi bi-list"></i>
-            </button>
+                <!-- Countdown Timer ke jam 14.00 setiap hari -->
+                <div class="countdown-container ms-auto me-2" id="countdownContainer">
+                    <i class="bi bi-alarm-fill countdown-icon"></i>
+                    <div class="countdown-timer">
+                        <span id="countdownTimer">00:00:00</span>
+                    </div>
+                    <span class="countdown-overdue-label d-none" id="overdueLabel">Overtime</span>
+                </div>
 
-            <!-- Mobile Menu Button -->
-            <button class="mobile-toggle d-md-none me-2" id="mobileSidebarToggle" aria-label="Toggle Mobile Sidebar">
-                <i class="bi bi-list"></i>
-            </button>
-            <span class="brand-text">Media Monitoring</span>
-
-            <!-- User Profile Dropdown - diperbarui agar mirip dengan app.css -->
-            <div class="navbar-actions ms-auto">
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown user-dropdown">
-                        <a class="nav-link dropdown-toggle text-white user-dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-user-circle me-1"></i>{{ Auth::user()->name ?? 'Admin' }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                            <li><a href="{{ route('profile.index') }}" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
-                            <li><a href="{{ route('settings.index') }}" class="dropdown-item"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="fas fa-info-circle me-2"></i>Tentang</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form action="{{ route('logout') }}" method="POST">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
-                                    </button>
-                                </form>
-                            </li>
-                        </ul>
-                    </li>
-                </ul>
+                <!-- User Profile Dropdown - diperbarui agar responsif -->
+                <div class="navbar-actions">
+                    <ul class="navbar-nav">
+                        <li class="nav-item dropdown user-dropdown">
+                            <a class="nav-link dropdown-toggle text-white user-dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-1 d-none d-sm-inline-block"></i>
+                                <span class="d-none d-sm-inline-block">{{ Auth::user()->name ?? 'Admin' }}</span>
+                                <i class="fas fa-user-circle d-sm-none"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                                <li><a href="{{ route('profile.index') }}" class="dropdown-item"><i class="fas fa-user me-2"></i>Profil</a></li>
+                                @if (Auth::user()->isAdmin() || Auth::user()->isEditor())
+                                    <li><a href="{{ route('settings.index') }}" class="dropdown-item"><i class="fas fa-cog me-2"></i>Pengaturan</a></li>
+                                @endif
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form action="{{ route('logout') }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
             </div>
         </div>
-    </div>
-</header>
-    <!-- Sidebar dengan Glassmorphism Effect -->
+    </header>
+
+    <!-- Sidebar dengan dukungan mobile -->
     <nav id="sidebar" class="sidebar">
         <div class="sidebar-content">
-
+            <!-- Tambahkan header mobile dengan tombol tutup -->
+            <div class="sidebar-header d-flex d-md-none align-items-center justify-content-between">
+                <h5 class="m-0">Menu</h5>
+                <button class="btn-close sidebar-close" aria-label="Close"></button>
+            </div>
+            
             <div class="sidebar-menu">
                 @include('partials.sidebar')
             </div>
         </div>
     </nav>
 
-    <!-- Main Content dengan Modern UI -->
+    <!-- Main Content dengan dukungan mobile -->
     <main id="content" class="main-content">
-        <!-- Alerts dengan modern styling -->
+        <!-- Alerts dengan styling modern -->
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
@@ -90,171 +113,268 @@
             </div>
         @endif
 
-        <!-- Page Content dengan animasi transisi -->
+        <!-- Page Content dengan transisi -->
         <div class="page-content">
             @yield('content')
         </div>
     </main>
 
-    <!-- Mobile Toggle Button dengan efek floating -->
-    <button class="mobile-toggle" id="mobileToggle">
-        <i class="bi bi-list"></i>
-    </button>
-
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<!-- Script untuk admin.blade.php dengan notifikasi terintegrasi -->
-<script>
+    
+    <!-- Script untuk admin.blade.php dengan notifikasi dan dukungan mobile -->
+    <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const sidebar = document.getElementById('sidebar');
-        const content = document.getElementById('content');
-        const toggleSidebar = document.getElementById('toggleSidebar');
-        const mobileToggle = document.getElementById('mobileToggle');
-
-        // Desktop sidebar toggle dengan animasi
-        toggleSidebar?.addEventListener('click', () => {
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+    
+    // Tambahkan overlay untuk mobile
+    const createOverlay = () => {
+        const overlay = document.createElement('div');
+        overlay.classList.add('sidebar-overlay');
+        document.body.appendChild(overlay);
+        
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        });
+        
+        return overlay;
+    };
+    
+    const overlay = createOverlay();
+    
+    // Desktop sidebar toggle dengan fungsi expand
+    if (toggleSidebar) {
+        toggleSidebar.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             content.classList.toggle('expanded');
         });
-
-        // Mobile sidebar toggle dengan animasi
-        mobileToggle?.addEventListener('click', () => {
+    }
+    
+    // Mobile sidebar toggle
+    if (mobileSidebarToggle) {
+        mobileSidebarToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
             sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
         });
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
-                const isClickInsideSidebar = sidebar.contains(e.target);
-                const isClickOnToggle = mobileToggle.contains(e.target);
-
-                if (!isClickInsideSidebar && !isClickOnToggle && sidebar.classList.contains('show')) {
-                    sidebar.classList.remove('show');
-                }
-            }
+    }
+    
+    // Tambahkan event listener untuk tombol tutup di sidebar mobile
+    const sidebarClose = document.querySelector('.sidebar-close');
+    if (sidebarClose) {
+        sidebarClose.addEventListener('click', () => {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
         });
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                sidebar.classList.remove('show');
-            }
-        });
-
-        // Active menu highlighting dengan efek visual
-        const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('.nav-link');
-
-        navLinks.forEach(link => {
-            if (link.getAttribute('href') && link.getAttribute('href') !== '#') {
-                const href = link.getAttribute('href');
-                if (currentPath === href || currentPath.startsWith(href)) {
-                    link.classList.add('active');
-
-                    // If it's a submenu item, highlight the parent menu too
-                    if (link.closest('.submenu')) {
-                        const parentIndex = Array.from(link.closest('.submenu').parentElement.children)
-                            .indexOf(link.closest('.submenu')) - 1;
-                        const parentMenu = link.closest('.submenu').parentElement.children[parentIndex];
-                        if (parentMenu && parentMenu.querySelector('.nav-link')) {
-                            parentMenu.querySelector('.nav-link').classList.add('active');
-                        }
+    }
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        }
+    });
+    
+    // Tutup sidebar saat klik di luar
+    document.addEventListener('click', (e) => {
+        const isClickInsideSidebar = sidebar.contains(e.target);
+        const isClickOnToggle = mobileSidebarToggle && mobileSidebarToggle.contains(e.target);
+        
+        if (!isClickInsideSidebar && !isClickOnToggle && 
+            sidebar.classList.contains('show') && 
+            window.innerWidth <= 768) {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        }
+    });
+    
+    // Tutup sidebar saat tekan Escape
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && sidebar.classList.contains('show')) {
+            sidebar.classList.remove('show');
+            overlay.classList.remove('show');
+        }
+    });
+    
+    // Active menu highlighting
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link');
+    
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') && link.getAttribute('href') !== '#') {
+            const href = link.getAttribute('href');
+            if (currentPath === href || currentPath.startsWith(href)) {
+                link.classList.add('active');
+                
+                // Jika item submenu, highlight juga parent menu
+                if (link.closest('.submenu')) {
+                    const parentIndex = Array.from(link.closest('.submenu').parentElement.children)
+                        .indexOf(link.closest('.submenu')) - 1;
+                    const parentMenu = link.closest('.submenu').parentElement.children[parentIndex];
+                    if (parentMenu && parentMenu.querySelector('.nav-link')) {
+                        parentMenu.querySelector('.nav-link').classList.add('active');
                     }
                 }
             }
-        });
-
-        // Efek ripple pada button
-        const buttons = document.querySelectorAll('.btn');
-        buttons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                const x = e.clientX - e.target.offsetLeft;
-                const y = e.clientY - e.target.offsetTop;
-
-                const ripple = document.createElement('span');
-                ripple.style.left = `${x}px`;
-                ripple.style.top = `${y}px`;
-
-                this.appendChild(ripple);
-
-                setTimeout(() => {
-                    ripple.remove();
-                }, 600);
-            });
-        });
-
-        // ====== FITUR NOTIFIKASI ======
-
-            // Sembunyikan notifikasi badge saat dropdown dibuka
-            if (markAllAsRead) {
-                markAllAsRead.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    markAllNotificationsAsRead();
-                });
-            }
-        });
-
-        // Fungsi untuk menyembunyikan badge notifikasi
-        function hideNotificationBadge() {
-            const badge = document.getElementById('notification-badge');
-            if (badge) {
-                badge.style.display = 'none';
-
-                // Kirim AJAX request untuk menyimpan status di session
-                fetch('{{ route("reset.notification.badge") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify({ status: 'viewed' })
-                })
-                .then(response => response.json())
-                .then(data => console.log('Notification badge reset:', data))
-                .catch(error => console.error('Error resetting notification badge:', error));
-            }
         }
-
-        // Fungsi untuk menandai semua notifikasi sebagai terbaca
-        function markAllNotificationsAsRead() {
-            fetch('{{ route("markAllAsRead") }}', {
+    });
+    
+    // Efek ripple pada tombol
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const x = e.clientX - e.target.offsetLeft;
+            const y = e.clientY - e.target.offsetTop;
+            
+            const ripple = document.createElement('span');
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+    
+    // Bagian khusus untuk menangani rejected badge
+    function hideRejectedBadge() {
+        const badge = document.getElementById('rejected-badge');
+        if (badge) {
+            badge.style.display = 'none';
+            
+            // Kirim AJAX request untuk menyimpan status
+            fetch('{{ route("reset.rejected.badge") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
+                },
+                body: JSON.stringify({ status: 'viewed' })
             })
             .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Sembunyikan badge
-                    const badge = document.getElementById('notification-badge');
-                    if (badge) {
-                        badge.style.display = 'none';
-                    }
-
-                    // Hapus kelas 'unread' dari semua notifikasi
-                    const unreadItems = document.querySelectorAll('.notification-item.unread');
-                    unreadItems.forEach(item => {
-                        item.classList.remove('unread');
-                    });
-
-                    // Update badge di header notifikasi
-                    const headerBadge = document.querySelector('.notification-header .badge');
-                    if (headerBadge) {
-                        headerBadge.style.display = 'none';
-                    }
-
-                    // Sembunyikan tombol "Tandai Sudah Dibaca"
-                    const markAllReadBtn = document.getElementById('markAllAsRead');
-                    if (markAllReadBtn) {
-                        markAllReadBtn.style.display = 'none';
-                    }
-                }
-            })
-            .catch(error => console.error('Error marking notifications as read:', error));
+            .then(data => console.log('Badge reset success:', data))
+            .catch(error => console.error('Error resetting badge:', error));
         }
-</script>
+    }
+    
+    // Tambahkan event listener untuk tombol rejected
+    const rejectedMenuLink = document.getElementById('rejected-menu-link');
+    if (rejectedMenuLink) {
+        rejectedMenuLink.addEventListener('click', hideRejectedBadge);
+    }
+    
+    // Fungsi untuk countdown timer ke jam 14.00 setiap hari
+    function updateCountdown() {
+        // Ambil waktu saat ini
+        const now = new Date();
+        
+        // Tentukan target waktu jam 14:00 hari ini
+        const targetTime = new Date(now);
+        targetTime.setHours(14, 0, 0, 0);
+        
+        // Tentukan waktu reset - apa yang akan lebih awal:
+        // 1. 10 jam setelah jam 14:00
+        const resetTimePlus10 = new Date(targetTime);
+        resetTimePlus10.setHours(resetTimePlus10.getHours() + 10);
+        
+        // 2. Tengah malam
+        const midnightReset = new Date(now);
+        midnightReset.setDate(midnightReset.getDate() + 1);
+        midnightReset.setHours(0, 0, 0, 0);
+        
+        // Pilih yang lebih awal dari kedua opsi reset
+        const resetTime = resetTimePlus10 < midnightReset ? resetTimePlus10 : midnightReset;
+        
+        // Status dan mode timer
+        let isOverdue = false;
+        let isCountUp = false;
+        let timeDifference;
+        
+        // Logika untuk menentukan mode timer
+        if (now >= targetTime && now < resetTime) {
+            // Jika saat ini sudah lewat jam 14:00 tapi belum mencapai waktu reset
+            isOverdue = true;
+            isCountUp = true;
+            // Menghitung waktu yang telah berlalu sejak jam 14:00
+            timeDifference = now - targetTime;
+        } else if (now >= resetTime) {
+            // Jika sudah melewati waktu reset, set target ke jam 14:00 hari berikutnya
+            targetTime.setDate(targetTime.getDate() + 1);
+            timeDifference = targetTime - now;
+        } else {
+            // Mode normal countdown ke jam 14:00 hari ini
+            timeDifference = targetTime - now;
+        }
+        
+        // Konversi selisih waktu ke jam, menit, detik
+        const hours = Math.floor(timeDifference / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+        
+        // Format waktu dengan leading zeros
+        const formattedHours = hours.toString().padStart(2, '0');
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        const formattedSeconds = seconds.toString().padStart(2, '0');
+        
+        // Tambahkan tanda + jika menghitung naik
+        const timeDisplay = isCountUp ? 
+            `+${formattedHours}:${formattedMinutes}:${formattedSeconds}` : 
+            `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+        
+        // Tampilkan countdown/countup pada elemen HTML
+        document.getElementById('countdownTimer').textContent = timeDisplay;
+        
+        // Dapatkan container untuk styling
+        const countdownContainer = document.getElementById('countdownContainer');
+        const overdueLabel = document.getElementById('overdueLabel');
+        
+        // Reset semua kelas styling
+        countdownContainer.classList.remove(
+            'countdown-normal', 
+            'countdown-2hour', 
+            'countdown-1hour', 
+            'countdown-30min', 
+            'countdown-10min',
+            'countdown-overdue'
+        );
+        
+        // Atur styling berdasarkan status timer
+        if (isOverdue) {
+            countdownContainer.classList.add('countdown-overdue');
+            overdueLabel.classList.remove('d-none');
+            overdueLabel.textContent = "Overtime";
+        } else {
+            overdueLabel.classList.add('d-none');
+            
+            // Tambahkan class styling sesuai dengan waktu tersisa
+            if (timeDifference < 10 * 60 * 1000) { // Kurang dari 10 menit
+                countdownContainer.classList.add('countdown-10min');
+            } else if (timeDifference < 30 * 60 * 1000) { // Kurang dari 30 menit
+                countdownContainer.classList.add('countdown-30min');
+            } else if (timeDifference < 60 * 60 * 1000) { // Kurang dari 1 jam
+                countdownContainer.classList.add('countdown-1hour');
+            } else if (timeDifference < 2 * 60 * 60 * 1000) { // Kurang dari 2 jam
+                countdownContainer.classList.add('countdown-2hour');
+            } else {
+                countdownContainer.classList.add('countdown-normal');
+            }
+        }
+        
+        // Panggil fungsi ini lagi setelah 1 detik
+        setTimeout(updateCountdown, 1000);
+    }
+    
+    // Mulai countdown timer
+    updateCountdown();
+});
+    </script>
     @yield('scripts')
 </body>
 </html>

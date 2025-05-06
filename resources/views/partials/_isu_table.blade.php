@@ -8,15 +8,6 @@
                     <i class="fas fa-tasks me-1"></i> Aksi Massal
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                    <!-- Hapus: Admin dan Editor -->
-                    @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="delete-selected-{{ $tabId }}" data-action="delete">
-                                <i class="fas fa-trash me-2 text-danger"></i> Hapus
-                            </a>
-                        </li>
-                    @endif
-
                     <!-- Kirim: Admin, Editor ke Verifikator 1, Verifikator 1 ke Verifikator 2 -->
                     @if(Auth::user()->isAdmin())
                         <li>
@@ -61,13 +52,15 @@
                         </li>
                     @endif
 
-                    <!-- Export: Semua Role -->
-                    <!-- <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center" href="#" id="export-selected-{{ $tabId }}" data-action="export">
-                            <i class="fas fa-file-export me-2 text-secondary"></i> Export
-                        </a>
-                    </li> -->
+                    <!-- Hapus: Admin dan Editor -->
+                    @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="#" id="delete-selected-{{ $tabId }}" data-action="delete">
+                                <i class="fas fa-trash me-2 text-danger"></i> Hapus
+                            </a>
+                        </li>
+                    @endif
+
                 </ul>
             </div>
         </div>
@@ -130,7 +123,19 @@
                                     <input class="form-check-input isu-checkbox" type="checkbox" value="{{ $isu->id }}" data-tab="{{ $tabId }}" id="isu-{{ $isu->id }}-{{ $tabId }}">
                                 </div>
                             </td>
-                            <td class="fw-medium text-wrap">{{ $isu->judul }}</td>
+                            <td>
+                                <h6>
+                                    <a href="{{ route('isu.show', $isu) }}" class="recent-item-title text-decoration-none" title="Lihat detail isu" aria-label="Lihat detail isu {{ $isu->judul }}">{{ $isu->judul }}</a>
+                                </h6>
+                                @if(!auth()->user()->isEditor())
+                                <div class="recent-item-meta mt-1">
+                                    <span class="status-badge {{ $isu->isu_strategis ? 'bg-strategis' : 'bg-regional' }}">
+                                        <i class="{{ $isu->isu_strategis ? 'fas fa-star' : 'far fa-star' }} me-1"></i>
+                                        {{ $isu->isu_strategis ? 'Isu Strategis' : 'Isu Regional' }}
+                                    </span>
+                                </div>
+                                @endif
+                            </td>
                             <td>{{ \Carbon\Carbon::parse($isu->tanggal)->format('d/m/Y') }}</td>
                             <td>
                                 @if($isu->kategoris->isNotEmpty())
@@ -171,9 +176,9 @@
                             </td>
                             <td>
                             <div class="action-buttons">
-                                <a href="{{ route('isu.show', $isu) }}" class="btn-action btn-view" title="Lihat Detail" aria-label="Lihat detail isu">
+                                <!-- <a href="{{ route('isu.show', $isu) }}" class="btn-action btn-view" title="Lihat Detail" aria-label="Lihat detail isu">
                                     <i class="fas fa-eye"></i>
-                                </a>
+                                </a> -->
                                 @auth
                                     @if(auth()->user()->isAdmin() || $isu->canBeEditedBy(auth()->user()->getHighestRoleName()))
                                         <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
@@ -184,14 +189,6 @@
                                     <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat" aria-label="Lihat riwayat isu">
                                         <i class="fas fa-clock-rotate-left"></i>
                                     </a>
-
-                                    @if(auth()->user()->isAdmin() || (auth()->user()->isEditor() && in_array($isu->status_id, [1, 7]) && $isu->created_by == auth()->id()))
-                                        <a href="#" class="btn-action btn-delete" title="Hapus" aria-label="Hapus isu"
-                                        data-url="{{ route('isu.destroy', $isu) }}"
-                                        onclick="deleteIsu(event, this)">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    @endif
                                 @endauth
                             </div>
                             </td>
@@ -210,8 +207,7 @@
         <p>{{ $emptyMessage }}</p>
         @auth
             @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
-                <a href="{{ route('isu.create') }}" class="btn btn-outline-primary mt-3">
-                    <i class="fas fa-plus-circle me-2"></i> Tambah Isu Baru
+                <a href="{{ route('isu.create') }}" class="btn btn-outline-primary mt-3">Tambah Isu Baru
                 </a>
             @endif
         @endauth

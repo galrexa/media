@@ -68,7 +68,6 @@
                             <label for="isu_strategis" class="form-label fw-bold d-block">Isu Strategis</label>
                             <div class="form-check form-switch mt-2">
                                 <input type="checkbox" class="form-check-input" id="isu_strategis" name="isu_strategis" value="1" {{ old('isu_strategis') ? 'checked' : '' }}>
-                                <!-- <label class="form-check-label" for="isu_strategis">Isu Strategis</label> -->
                             </div>
                         </div>
                     </div>
@@ -169,7 +168,7 @@
                                             <div class="input-group">
                                                 <input type="url" class="form-control referensi-url" name="referensi_url[]">
                                                 <button type="button" class="btn btn-outline-primary preview-btn">
-                                                    <i class="fa fa-eye"></i> Preview
+                                                    <i class="fa fa-eye"></i>
                                                 </button>
                                             </div>
                                             <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
@@ -1025,6 +1024,56 @@ document.addEventListener('DOMContentLoaded', function() {
                     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
+        });
+    }
+
+        // Tambahkan handler untuk form submission
+        const isuForm = document.getElementById('isuForm');
+    if (isuForm) {
+        isuForm.addEventListener('submit', function(e) {
+            // Ambil tombol yang diklik
+            const submitButton = e.submitter;
+            
+            // Cek apakah tombol sudah dalam status disabled
+            if (submitButton.disabled) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Simpan teks asli tombol
+            const originalText = submitButton.innerHTML;
+            
+            // Update tombol menjadi disabled dan tampilkan loading
+            submitButton.disabled = true;
+            
+            // Tambahkan spinner loading berdasarkan jenis tombol
+            if (submitButton.name === 'action' && submitButton.value === 'simpan') {
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Menyimpan...';
+            } else if (submitButton.name === 'action' && submitButton.value === 'kirim') {
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Mengirim...';
+            }
+            
+            // Disable semua tombol submit lainnya
+            const allSubmitButtons = isuForm.querySelectorAll('button[type="submit"]');
+            allSubmitButtons.forEach(button => {
+                if (button !== submitButton) {
+                    button.disabled = true;
+                    button.style.opacity = '0.6';
+                    button.style.cursor = 'not-allowed';
+                }
+            });
+
+            // Jika ada error validasi atau user kembali ke halaman, aktifkan kembali tombol
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    allSubmitButtons.forEach(button => {
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                        button.style.cursor = 'pointer';
+                        button.innerHTML = originalText;
+                    });
+                }
+            });
         });
     }
 });
