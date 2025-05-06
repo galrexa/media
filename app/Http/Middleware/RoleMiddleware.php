@@ -10,6 +10,11 @@ class RoleMiddleware
 {
     /**
      * Handle an incoming request.
+     *
+     * @param Request $request
+     * @param Closure $next
+     * @param string ...$roles Roles yang diizinkan (editor, verifikator1, verifikator2, admin)
+     * @return Response
      */
     public function handle(Request $request, Closure $next, string ...$roles): Response
     {
@@ -18,15 +23,26 @@ class RoleMiddleware
             return redirect()->route('login');
         }
 
-        // Dapatkan role user saat ini
-        $userRole = $request->user()->role;
-        
-        // Cek apakah role user ada dalam daftar role yang diizinkan
-        if (in_array($userRole, $roles)) {
+        // Admin selalu mendapatkan akses ke semua halaman
+        if ($request->user()->isAdmin()) {
             return $next($request);
         }
-        
+
+        // Cek apakah user memiliki salah satu role yang diizinkan
+        $hasRole = false;
+        foreach ($roles as $role) {
+            // Gunakan method hasRole dari User model
+            if ($request->user()->hasRole($role)) {
+                $hasRole = true;
+                break;
+            }
+        }
+
+        if ($hasRole) {
+            return $next($request);
+        }
+
         // Jika tidak memiliki izin, redirect dengan error
-        return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk mengakses halaman ini.');
+        return redirect()->route('home')->with('error', 'Anda tidak memiliki izin untuk mengakses halaman ini.');
     }
 }

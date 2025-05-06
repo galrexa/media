@@ -6,13 +6,24 @@
 @section('content')
 <div class="container">
     <!-- Breadcrumb -->
-    <div class="row mb-3">
-        <div class="col-12">
+    <div class="breadcrumb-wrapper mb-3">
+        <div class="breadcrumb-container bg-white shadow-sm rounded p-2 d-inline-block">
             <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('home') }}">Beranda</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('isu.index') }}">Isu</a></li>
-                    <li class="breadcrumb-item active">Tambah Isu Baru</li>
+                <ol class="breadcrumb d-flex align-items-center m-0 flex-wrap">
+                    <li class="breadcrumb-item">
+                        <a href="{{ route('home') }}" class="text-decoration-none d-flex align-items-center">
+                            <i class="fas fa-home me-1"></i>
+                            <span>Beranda</span>
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="{{ route('isu.index') }}" class="text-decoration-none">
+                            <span>Isu</span>
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <span class="fw-medium">Tambah Isu Baru</span>
+                    </li>
                 </ol>
             </nav>
         </div>
@@ -57,7 +68,6 @@
                             <label for="isu_strategis" class="form-label fw-bold d-block">Isu Strategis</label>
                             <div class="form-check form-switch mt-2">
                                 <input type="checkbox" class="form-check-input" id="isu_strategis" name="isu_strategis" value="1" {{ old('isu_strategis') ? 'checked' : '' }}>
-                                <!-- <label class="form-check-label" for="isu_strategis">Isu Strategis</label> -->
                             </div>
                         </div>
                     </div>
@@ -91,14 +101,14 @@
                             @enderror
                         </div>
                     </div>
-                    
+
                     <!-- Tone -->
                     <div class="col-md-3">
                         <div class="mb-3">
                             <label for="tone" class="form-label fw-bold">Tone Isu</label>
                             <div class="tone-segment-rounded">
                                 @foreach($toneList as $tone)
-                                <input type="radio" class="tone-radio" id="tone_{{ $tone->id }}" name="tone" value="{{ $tone->id }}" 
+                                <input type="radio" class="tone-radio" id="tone_{{ $tone->id }}" name="tone" value="{{ $tone->id }}"
                                     {{ old('tone') == $tone->id ? 'checked' : '' }} data-color="{{ $tone->warna }}">
                                 <label for="tone_{{ $tone->id }}" {{ old('tone') == $tone->id ? 'style="background-color: '.$tone->warna.'; color: white;"' : '' }}>
                                     {{ $tone->nama }}
@@ -158,16 +168,16 @@
                                             <div class="input-group">
                                                 <input type="url" class="form-control referensi-url" name="referensi_url[]">
                                                 <button type="button" class="btn btn-outline-primary preview-btn">
-                                                    <i class="bi bi-eye"></i> Preview
+                                                    <i class="fa fa-eye"></i>
                                                 </button>
                                             </div>
                                             <small class="form-text text-muted">Thumbnail dan judul akan otomatis diambil dari URL</small>
-                                            <!-- Judul sebagai hidden input -->
+                                            
                                             <input type="hidden" class="referensi-judul" name="referensi_judul[]">
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="preview-container mt-2" style="display: none;">
                                     <div class="card border">
                                         <div class="card-body p-2">
@@ -183,10 +193,10 @@
                                     </div>
                                     <input type="hidden" name="referensi_thumbnail_url[]" class="thumbnail-url">
                                 </div>
-                                
+
                                 <div class="text-end mt-2">
                                     <button type="button" class="btn btn-sm btn-outline-danger remove-referensi">
-                                        <i class="bi bi-trash"></i> Hapus Referensi
+                                        <i class="fas fa-trash"></i> Hapus Referensi
                                     </button>
                                 </div>
                             </div>
@@ -205,8 +215,11 @@
                     <a href="{{ route('isu.index') }}" class="btn btn-light border">
                         <i class="bi bi-x-circle"></i> Batal
                     </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-floppy-disk"></i> Simpan
+                    <button type="submit" name="action" value="simpan" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> Simpan
+                    </button>
+                    <button type="submit" name="action" value="kirim" class="btn btn-success">
+                        <i class="fas fa-paper-plane me-1"></i> Kirim
                     </button>
                 </div>
             </form>
@@ -268,6 +281,9 @@
         border-radius: 5px;
         color: white;
     }
+    .badge a:hover {
+        text-decoration: underline !important;
+    }
 
     /* Tone Segment dengan Rounded Corners - Style 1 */
     .tone-segment-rounded {
@@ -323,12 +339,13 @@
         .tone-segment-rounded {
             max-width: 100%;
         }
-        
+
         .tone-segment-rounded label {
             padding: 0.5rem 0;
             font-size: 0.8rem;
         }
     }
+
 </style>
 @endsection
 
@@ -367,19 +384,19 @@
                 .create(element, {
                     licenseKey: 'GPL', // Ganti dengan license key Anda atau 'GPL'
                     plugins: [
-                        Essentials, 
-                        Paragraph, 
-                        Bold, 
-                        Italic, 
-                        Link, 
-                        Heading, 
-                        List, 
+                        Essentials,
+                        Paragraph,
+                        Bold,
+                        Italic,
+                        Link,
+                        Heading,
+                        List,
                         Alignment,
                         Underline
                     ],
                     toolbar: {
                         items: [
-                            'heading', '|', 
+                            'heading', '|',
                             'bold', 'italic', 'underline', '|',
                             'link', '|',
                             'alignment', '|',
@@ -402,7 +419,7 @@
                     editor.model.document.on('change:data', () => {
                         element.value = editor.getData();
                     });
-                    
+
                     // Simpan referensi editor jika diperlukan kemudian
                     window.editors = window.editors || {};
                     window.editors[element.id] = editor;
@@ -418,11 +435,11 @@ $(document).ready(function() {
     const input = document.querySelector('#kategori');
     const tagify = new Tagify(input, {
         whitelist: @json($kategoriList->pluck('nama')->toArray()),
-        dropdown: { 
-            enabled: 1, 
-            maxItems: 10, 
-            classname: 'tagify__dropdown', 
-            position: 'all' 
+        dropdown: {
+            enabled: 1,
+            maxItems: 10,
+            classname: 'tagify__dropdown',
+            position: 'all'
         },
         enforceWhitelist: false,
         delimiters: ',',
@@ -446,14 +463,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fungsi untuk mengatur warna segmen yang dipilih
     function updateSegmentColor() {
         const toneRadios = document.querySelectorAll('.tone-radio');
-        
+
         toneRadios.forEach(radio => {
             const label = radio.nextElementSibling;
             if (radio.checked) {
                 // Ambil warna dari atribut data-color
                 const color = radio.getAttribute('data-color');
                 console.log('Radio checked:', radio.id, 'Color:', color); // Debugging
-                
+
                 // Pastikan warna tersedia
                 if (color) {
                     label.style.backgroundColor = color;
@@ -465,10 +482,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Inisialisasi warna segmen saat halaman dimuat
     updateSegmentColor();
-    
+
     // Perbarui warna segmen saat pengguna memilih tone
     const toneRadios = document.querySelectorAll('.tone-radio');
     toneRadios.forEach(radio => {
@@ -477,12 +494,12 @@ document.addEventListener('DOMContentLoaded', function() {
             updateSegmentColor();
         });
     });
-    
+
     // Debugging: Tampilkan semua radio button dan status checked-nya
     console.log('All radio buttons:');
     toneRadios.forEach(radio => {
         console.log(radio.id, 'Checked:', radio.checked, 'Color:', radio.getAttribute('data-color'));
-    });    
+    });
 
     // Fungsi untuk mengatur tombol hapus
     function updateRemoveButtons() {
@@ -503,16 +520,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'https://' + url;
         }
-        
+
         try {
             // Membuat objek URL untuk mengekstrak hostname
             const urlObj = new URL(url);
             // Mengambil hostname (domain) dari URL
             let domain = urlObj.hostname;
-            
+
             // Menghapus 'www.' jika ada
             domain = domain.replace(/^www\./, '');
-            
+
             return domain;
         } catch (e) {
             // Jika URL tidak valid, kembalikan string kosong
@@ -525,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateJudulFromUrl(referensiItem) {
         const urlInput = referensiItem.querySelector('.referensi-url');
         const judulInput = referensiItem.querySelector('.referensi-judul');
-        
+
         if (urlInput && urlInput.value && judulInput) {
             const url = urlInput.value.trim();
             if (url) {
@@ -545,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 url = 'https://' + url;
             }
-            
+
             new URL(url);
             return true;
         } catch (e) {
@@ -561,10 +578,10 @@ document.addEventListener('DOMContentLoaded', function() {
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
-        
+
         // Cek apakah container notifikasi sudah ada
         let notificationContainer = document.getElementById('notification-container');
-        
+
         if (!notificationContainer) {
             // Buat container jika belum ada
             notificationContainer = document.createElement('div');
@@ -576,9 +593,9 @@ document.addEventListener('DOMContentLoaded', function() {
             notificationContainer.style.maxWidth = '350px';
             document.body.appendChild(notificationContainer);
         }
-        
+
         notificationContainer.appendChild(notification);
-        
+
         // Otomatis hilangkan notifikasi setelah 5 detik
         setTimeout(() => {
             notification.classList.remove('show');
@@ -597,14 +614,14 @@ document.addEventListener('DOMContentLoaded', function() {
             urlInput.addEventListener('input', function() {
                 updateJudulFromUrl(referensiItem);
             });
-            
+
             urlInput.addEventListener('change', function() {
                 const previewBtn = referensiItem.querySelector('.preview-btn');
                 if (previewBtn) {
                     previewBtn.click(); // Auto preview when URL is entered
                 }
             });
-            
+
             // Validasi URL ketika focus keluar
             urlInput.addEventListener('blur', function() {
                 const url = this.value.trim();
@@ -624,13 +641,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-        
+
         // Event listener untuk tombol preview
         const previewBtn = referensiItem.querySelector('.preview-btn');
         if (previewBtn) {
             previewBtn.addEventListener('click', handlePreview);
         }
-        
+
         // Event listener untuk tombol hapus
         const removeBtn = referensiItem.querySelector('.remove-referensi');
         if (removeBtn) {
@@ -642,7 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-        
+
         // Event listener untuk input judul
         const judulInput = referensiItem.querySelector('.referensi-judul');
         if (judulInput) {
@@ -650,7 +667,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update judul pada preview jika preview container sudah ditampilkan
                 const previewContainer = referensiItem.querySelector('.preview-container');
                 const previewTitle = previewContainer?.querySelector('.preview-title');
-                
+
                 if (previewContainer && previewContainer.style.display !== 'none' && previewTitle) {
                     previewTitle.textContent = this.value;
                 }
@@ -663,21 +680,21 @@ document.addEventListener('DOMContentLoaded', function() {
         // Cek apakah ada template referensi
         const referensiTemplate = document.querySelector('.referensi-item-template');
         let referensiItem;
-        
+
         if (referensiTemplate) {
             referensiItem = referensiTemplate.cloneNode(true);
             referensiItem.classList.remove('referensi-item-template');
             referensiItem.classList.add('referensi-item');
         } else {
             referensiItem = document.querySelector('.referensi-item').cloneNode(true);
-            
+
             // Clear input values
             const inputs = referensiItem.querySelectorAll('input');
             inputs.forEach(input => {
                 input.value = '';
                 input.classList.remove('is-invalid');
             });
-            
+
             // Reset preview container
             const previewContainer = referensiItem.querySelector('.preview-container');
             if (previewContainer) {
@@ -692,19 +709,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         }
-        
+
         // Tambahkan event listener
         addEventListenersToReferensiItem(referensiItem);
 
         referensiContainer.appendChild(referensiItem);
         updateRemoveButtons();
-        
+
         // Auto focus ke URL input
         const urlInput = referensiItem.querySelector('.referensi-url');
         if (urlInput) {
             urlInput.focus();
         }
-        
+
         // Animasi highlight
         referensiItem.style.transition = 'background-color 0.5s ease';
         referensiItem.style.backgroundColor = '#f0f8ff';
@@ -718,13 +735,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const referensiItem = event.target.closest('.referensi-item');
         const urlInput = referensiItem.querySelector('.referensi-url');
         const url = urlInput.value.trim();
-        
+
         const previewContainer = referensiItem.querySelector('.preview-container');
         const previewImg = previewContainer.querySelector('.preview-img');
         const previewTitle = previewContainer.querySelector('.preview-title');
         const thumbnailUrlInput = referensiItem.querySelector('.thumbnail-url');
         const judulInput = referensiItem.querySelector('.referensi-judul');
-        
+
         // Validasi URL
         if (!url) {
             event.target.textContent = 'Preview';
@@ -733,7 +750,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Masukkan URL terlebih dahulu.', 'warning');
             return;
         }
-        
+
         if (!isValidUrl(url)) {
             event.target.textContent = 'Preview';
             event.target.disabled = false;
@@ -741,9 +758,9 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('URL tidak valid.', 'warning');
             return;
         }
-        
+
         urlInput.classList.remove('is-invalid');
-        
+
         // Auto-fill judul dari domain jika masih kosong
         if (!judulInput.value && url) {
             judulInput.value = extractDomainForTitle(url);
@@ -753,7 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const originalBtnText = event.target.textContent;
         event.target.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
         event.target.disabled = true;
-        
+
         // Lakukan request ke endpoint preview
         fetch(`/preview?url=${encodeURIComponent(url)}`)
             .then(response => {
@@ -766,12 +783,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Reset tombol
                 event.target.textContent = originalBtnText;
                 event.target.disabled = false;
-                
+
                 if (data.success && data.image) {
                     // Set gambar preview
                     previewImg.src = data.image;
                     previewImg.style.display = 'block';
-                    
+
                     // Set judul jika ada
                     if (data.title) {
                         previewTitle.textContent = data.title;
@@ -785,10 +802,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         const domain = extractDomainForTitle(url);
                         previewTitle.textContent = domain;
                     }
-                    
+
                     // Simpan URL thumbnail
                     thumbnailUrlInput.value = data.image;
-                    
+
                     // Tampilkan container preview
                     previewContainer.style.display = 'block';
                     showNotification('Preview berhasil dimuat', 'success');
@@ -797,11 +814,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const domain = extractDomainForTitle(url);
                     previewTitle.textContent = domain;
                     judulInput.value = domain;
-                    
+
                     // Sembunyikan gambar karena tidak ada
                     previewImg.style.display = 'none';
                     thumbnailUrlInput.value = '';
-                    
+
                     // Tampilkan container preview
                     previewContainer.style.display = 'block';
                     showNotification('Preview berhasil dimuat tanpa gambar', 'info');
@@ -809,21 +826,21 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error fetching preview:', error);
-                
+
                 // Reset tombol
                 event.target.textContent = originalBtnText;
                 event.target.disabled = false;
-                
+
                 // Gunakan domain sebagai fallback
                 const domain = extractDomainForTitle(url);
                 previewTitle.textContent = domain;
                 judulInput.value = domain;
-                
+
                 // Tampilkan container preview tanpa gambar
                 previewContainer.style.display = 'block';
                 previewImg.style.display = 'none';
                 thumbnailUrlInput.value = '';
-                
+
                 showNotification('Gagal memuat preview: ' + error.message, 'danger');
             });
     }
@@ -836,7 +853,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const referensiItem = this.closest('.referensi-item');
             updateJudulFromUrl(referensiItem);
         });
-        
+
         // Event untuk auto-preview
         input.addEventListener('change', function() {
             const referensiItem = this.closest('.referensi-item');
@@ -845,7 +862,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 previewBtn.click();
             }
         });
-        
+
         // Validasi URL
         input.addEventListener('blur', function() {
             const url = this.value.trim();
@@ -893,7 +910,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const referensiItem = this.closest('.referensi-item');
             const previewContainer = referensiItem.querySelector('.preview-container');
             const previewTitle = previewContainer?.querySelector('.preview-title');
-            
+
             if (previewContainer && previewContainer.style.display !== 'none' && previewTitle) {
                 previewTitle.textContent = this.value;
             }
@@ -918,7 +935,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sortButton.className = 'btn btn-outline-secondary btn-sm ms-2';
         sortButton.innerHTML = '<i class="bi bi-sort-alpha-down"></i> Urutkan';
         sortButton.addEventListener('click', sortReferensiItems);
-        
+
         // Tambahkan setelah tombol "Tambah Referensi"
         addReferensiBtn.parentNode.insertBefore(sortButton, addReferensiBtn.nextSibling);
     }
@@ -930,7 +947,7 @@ document.addEventListener('DOMContentLoaded', function() {
         exportButton.className = 'btn btn-outline-primary btn-sm ms-2';
         exportButton.innerHTML = '<i class="bi bi-download"></i> Export';
         exportButton.addEventListener('click', exportReferensi);
-        
+
         // Tambahkan setelah tombol sort
         const sortButton = document.getElementById('sort-referensi');
         if (sortButton) {
@@ -943,12 +960,12 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!document.getElementById('import-referensi')) {
         const importContainer = document.createElement('div');
         importContainer.className = 'import-container d-inline-block ms-2';
-        
+
         const importLabel = document.createElement('label');
         importLabel.htmlFor = 'import-file';
         importLabel.className = 'btn btn-outline-secondary btn-sm';
         importLabel.innerHTML = '<i class="bi bi-upload"></i> Import';
-        
+
         const importInput = document.createElement('input');
         importInput.type = 'file';
         importInput.id = 'import-file';
@@ -966,10 +983,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 event.target.value = '';
             }
         });
-        
+
         importContainer.appendChild(importLabel);
         importContainer.appendChild(importInput);
-        
+
         // Tambahkan setelah tombol export
         const exportButton = document.getElementById('export-referensi');
         if (exportButton) {
@@ -981,13 +998,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Tambahkan utilitas drag and drop jika diperlukan
     // (Kode untuk drag and drop dapat ditambahkan di sini)
-    
+
     // Tambahkan fitur validasi form sebelum submit
     const form = referensiContainer.closest('form');
     if (form) {
         form.addEventListener('submit', function(event) {
             let hasError = false;
-            
+
             // Validasi semua URL
             const urlInputs = form.querySelectorAll('.referensi-url');
             urlInputs.forEach(input => {
@@ -997,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     hasError = true;
                 }
             });
-            
+
             if (hasError) {
                 event.preventDefault();
                 showNotification('Harap perbaiki kesalahan pada form sebelum melanjutkan.', 'danger');
@@ -1007,6 +1024,56 @@ document.addEventListener('DOMContentLoaded', function() {
                     firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
             }
+        });
+    }
+
+        // Tambahkan handler untuk form submission
+        const isuForm = document.getElementById('isuForm');
+    if (isuForm) {
+        isuForm.addEventListener('submit', function(e) {
+            // Ambil tombol yang diklik
+            const submitButton = e.submitter;
+            
+            // Cek apakah tombol sudah dalam status disabled
+            if (submitButton.disabled) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Simpan teks asli tombol
+            const originalText = submitButton.innerHTML;
+            
+            // Update tombol menjadi disabled dan tampilkan loading
+            submitButton.disabled = true;
+            
+            // Tambahkan spinner loading berdasarkan jenis tombol
+            if (submitButton.name === 'action' && submitButton.value === 'simpan') {
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Menyimpan...';
+            } else if (submitButton.name === 'action' && submitButton.value === 'kirim') {
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Mengirim...';
+            }
+            
+            // Disable semua tombol submit lainnya
+            const allSubmitButtons = isuForm.querySelectorAll('button[type="submit"]');
+            allSubmitButtons.forEach(button => {
+                if (button !== submitButton) {
+                    button.disabled = true;
+                    button.style.opacity = '0.6';
+                    button.style.cursor = 'not-allowed';
+                }
+            });
+
+            // Jika ada error validasi atau user kembali ke halaman, aktifkan kembali tombol
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    allSubmitButtons.forEach(button => {
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                        button.style.cursor = 'pointer';
+                        button.innerHTML = originalText;
+                    });
+                }
+            });
         });
     }
 });

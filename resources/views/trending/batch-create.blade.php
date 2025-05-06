@@ -74,7 +74,7 @@
                         </div>
                         <div class="col-md-1">
                             <button type="button" class="btn btn-danger remove-trending" disabled>
-                                <i class="bi bi-trash"></i>
+                                <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </div>
@@ -106,7 +106,7 @@
         const trendingContainer = document.getElementById('trending-container');
         const addTrendingBtn = document.getElementById('add-trending');
         let trendingCounter = 1;
-        
+
         // Add trending row
         addTrendingBtn.addEventListener('click', function() {
             const trendingItem = document.createElement('div');
@@ -124,13 +124,13 @@
                 </div>
                 <div class="col-md-1">
                     <button type="button" class="btn btn-danger remove-trending">
-                        <i class="bi bi-trash"></i>
+                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
             `;
-            
+
             trendingContainer.appendChild(trendingItem);
-            
+
             // Enable first row removal if there are multiple rows
             if (trendingContainer.querySelectorAll('.trending-item').length > 1) {
                 const firstRowBtn = trendingContainer.querySelector('.remove-trending[disabled]');
@@ -138,14 +138,14 @@
                     firstRowBtn.removeAttribute('disabled');
                 }
             }
-            
+
             trendingCounter++;
-            
+
             // Add event listener for new remove button
             const removeBtn = trendingItem.querySelector('.remove-trending');
             removeBtn.addEventListener('click', function() {
                 trendingItem.remove();
-                
+
                 // Disable first row removal if only one row remains
                 if (trendingContainer.querySelectorAll('.trending-item').length === 1) {
                     const firstRowBtn = trendingContainer.querySelector('.remove-trending');
@@ -155,12 +155,12 @@
                 }
             });
         });
-        
+
         // Setup event listeners for initial remove buttons
         document.querySelectorAll('.remove-trending').forEach(btn => {
             btn.addEventListener('click', function() {
                 this.closest('.trending-item').remove();
-                
+
                 // Disable first row removal if only one row remains
                 if (trendingContainer.querySelectorAll('.trending-item').length === 1) {
                     const firstRowBtn = trendingContainer.querySelector('.remove-trending');
