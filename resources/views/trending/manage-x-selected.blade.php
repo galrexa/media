@@ -55,9 +55,12 @@
                 <div class="card-header bg-light">
                     <h5 class="mb-0">Update Data</h5>
                 </div>
-                <div class="card-body d-flex align-items-center">
-                    <a href="{{ route('trending.refreshXTrends') }}" class="btn btn-dark w-100">
+                <div class="card-body d-flex flex-column gap-2">
+                    <a href="{{ route('trending.refreshXTrends') }}" class="btn btn-dark">
                         <i class="bi bi-arrow-clockwise me-2"></i> Refresh Trending X
+                    </a>
+                    <a href="{{ route('trending.manual.create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i> Tambah Trending Manual
                     </a>
                 </div>
             </div>
@@ -132,7 +135,7 @@
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle me-2"></i> Seret dan lepas untuk mengatur urutan tampilan.
                     </div>
-                    
+
                     <div id="selected-x-trendings" class="selected-list">
                         @if($selectedXTrendings->count() > 0)
                             @foreach($selectedXTrendings as $trending)
@@ -163,7 +166,7 @@
                             </div>
                         @endif
                     </div>
-                    
+
                     @if($selectedXTrendings->count() > 0)
                         <div class="d-grid mt-3">
                             <button id="save-x-order" class="btn btn-success">
@@ -175,7 +178,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="row">
         <div class="col-12 text-center">
             <a href="{{ route('trending.selected') }}" class="btn btn-secondary">
@@ -195,23 +198,23 @@
         padding: 10px;
         border-radius: 5px;
     }
-    
+
     .trending-item {
         cursor: grab;
     }
-    
+
     .trending-item:active {
         cursor: grabbing;
     }
-    
+
     .trending-item.dragging {
         opacity: 0.5;
     }
-    
+
     .card-header.bg-dark {
         background: linear-gradient(135deg, #333333, #212529) !important;
     }
-    
+
     .card-header.bg-success {
         background: linear-gradient(135deg, #198754, #28a745) !important;
     }
@@ -224,7 +227,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Inisialisasi Sortable untuk trending X
     const selectedXList = document.getElementById('selected-x-trendings');
-    
+
     if (selectedXList) {
         const xSortable = new Sortable(selectedXList, {
             animation: 150,
@@ -235,13 +238,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Update nomor urutan X setelah drag & drop
     function updateXOrderNumbers() {
         const items = document.querySelectorAll('#selected-x-trendings .trending-item');
         items.forEach((item, index) => {
             item.setAttribute('data-order', index);
-            
+
             // Update nomor urutan yang ditampilkan
             const badge = item.querySelector('.badge');
             if (badge) {
@@ -249,18 +252,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Simpan urutan X ke database
     const saveXOrderBtn = document.getElementById('save-x-order');
     if (saveXOrderBtn) {
         saveXOrderBtn.addEventListener('click', function() {
             const items = document.querySelectorAll('#selected-x-trendings .trending-item');
-            
+
             if (items.length === 0) {
                 alert('Tidak ada trending X yang dipilih!');
                 return;
             }
-            
+
             const orderedItems = [];
             items.forEach((item, index) => {
                 orderedItems.push({
@@ -268,11 +271,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     order: index
                 });
             });
-            
+
             // Ambil tanggal dari parameter URL
             const urlParams = new URLSearchParams(window.location.search);
             const date = urlParams.get('date') || '{{ date('Y-m-d') }}';
-            
+
             // Kirim data ke server
             fetch('{{ route("trending.updateXOrder") }}', {
                 method: 'POST',
@@ -280,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     items: orderedItems,
                     date: '{{ request('date', date('Y-m-d')) }}'
                 })

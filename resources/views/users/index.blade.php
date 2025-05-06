@@ -36,9 +36,9 @@
                     <thead>
                         <tr>
                             <th>Nama</th>
-                            <th>Username</th> <!-- Kolom username baru -->
+                            <th>Username</th>
                             <th>Email</th>
-                            <th>Role</th>
+                            <th>Peran</th>
                             <th>Terdaftar</th>
                             <th>Aksi</th>
                         </tr>
@@ -47,26 +47,32 @@
                         @forelse($users as $user)
                             <tr>
                                 <td>{{ $user->name }}</td>
-                                <td>{{ $user->username }}</td> <!-- Menampilkan data username -->
+                                <td>{{ $user->username }}</td>
                                 <td>{{ $user->email }}</td>
                                 <td>
-                                    <span class="badge bg-info">
-                                        {{ ucfirst($user->role) }}
-                                    </span>
+                                    @if($user->role)
+                                        <span class="badge bg-info me-1">
+                                            {{ ucfirst($user->role->name) }}
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary">
+                                            Tidak Ada Peran
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>{{ $user->created_at->format('d M Y') }}</td>
                                 <td>
                                     <div class="btn-group">
                                         <a href="{{ route('users.edit', $user->id) }}" class="btn btn-sm btn-warning">
-                                            <i class="bi bi-pencil me-1"></i> Edit
+                                            <i class="fas fa-pencil me-1"></i> Edit
                                         </a>
-                                        
+
                                         @if($user->id !== Auth::id())
                                             <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Yakin ingin menghapus pengguna ini?')">
-                                                    <i class="bi bi-trash me-1"></i> Hapus
+                                                    <i class="fas fa-trash me-1"></i> Hapus
                                                 </button>
                                             </form>
                                         @endif
@@ -82,7 +88,7 @@
                 </table>
             </div>
         </div>
-        
+
         <div class="card-footer">
             {{ $users->links() }}
         </div>

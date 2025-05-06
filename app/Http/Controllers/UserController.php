@@ -1,9 +1,9 @@
 <?php
 // app/Http/Controllers/UserController.php
-
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -27,7 +27,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::orderBy('name')->paginate(10);
+        $users = User::with('role')->orderBy('name')->paginate(10);
         return view('users.index', compact('users'));
     }
 
@@ -38,7 +38,8 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('users.create');
+        $roles = Role::all();
+        return view('users.create', compact('roles'));
     }
 
     /**
@@ -51,18 +52,18 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username', // Validasi untuk username
+            'username' => 'required|string|max:255|unique:users,username',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:admin,editor,viewer',
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         $user = User::create([
             'name' => $validated['name'],
-            'username' => $validated['username'], // Menyimpan username
+            'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
+            'role_id' => $validated['role_id'],
         ]);
 
         return redirect()->route('users.index')
@@ -77,7 +78,8 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
-        return view('users.edit', compact('user'));
+        $roles = Role::all();
+        return view('users.edit', compact('user', 'roles'));
     }
 
     /**
@@ -91,17 +93,17 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($user->id)], // Validasi untuk username
+            'username' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8|confirmed',
-            'role' => 'required|in:admin,editor,viewer',
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         $userData = [
             'name' => $validated['name'],
-            'username' => $validated['username'], // Memperbarui username
+            'username' => $validated['username'],
             'email' => $validated['email'],
-            'role' => $validated['role'],
+            'role_id' => $validated['role_id'],
         ];
 
         // Update password hanya jika diinput
