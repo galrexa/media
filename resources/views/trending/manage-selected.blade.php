@@ -50,7 +50,7 @@
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> Seret dan lepas untuk mengatur urutan tampilan.
                     </div>
-
+                    
                     <div id="selected-trendings" class="selected-list">
                         @if($selectedTrendings->count() > 0)
                             @foreach($selectedTrendings as $trending)
@@ -82,7 +82,7 @@
                             </div>
                         @endif
                     </div>
-
+                    
                     <div class="d-grid mt-3">
                         <button id="save-order" class="btn btn-success">
                             <i class="fas fa-floppy-disk"></i> Simpan Urutan
@@ -91,7 +91,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Tab untuk trending yang tersedia -->
         <div class="col-lg-6">
             <div class="card">
@@ -113,7 +113,7 @@
                             <button class="nav-link" id="x-db-tab" data-bs-toggle="tab" data-bs-target="#x-db" type="button" role="tab" aria-controls="x-db" aria-selected="false">X (DB)</button>
                         </li>
                     </ul>
-
+                    
                     <div class="tab-content mt-3" id="trendingSourceTabContent">
                         <!-- Tab Google Trends (Live) -->
                         <div class="tab-pane fade show active" id="google-live" role="tabpanel" aria-labelledby="google-live-tab">
@@ -148,7 +148,7 @@
                                 </div>
                             @endif
                         </div>
-
+                        
                         <!-- Tab X (Twitter) Trends (Live) -->
                         <div class="tab-pane fade" id="x-live" role="tabpanel" aria-labelledby="x-live-tab">
                             @if(!empty($trendingTrends24))
@@ -182,7 +182,7 @@
                                 </div>
                             @endif
                         </div>
-
+                        
                         <!-- Tab Google Trends (DB) -->
                         <div class="tab-pane fade" id="google-db" role="tabpanel" aria-labelledby="google-db-tab">
                             @if($googleTrendingsDB->count() > 0)
@@ -217,7 +217,7 @@
                                 </div>
                             @endif
                         </div>
-
+                        
                         <!-- Tab X (Twitter) Trends (DB) -->
                         <div class="tab-pane fade" id="x-db" role="tabpanel" aria-labelledby="x-db-tab">
                             @if($xTrendingsDB->count() > 0)
@@ -255,7 +255,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <div class="card mt-3">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">Perbarui Data Trending</h5>
@@ -289,15 +289,15 @@
         padding: 10px;
         border-radius: 5px;
     }
-
+    
     .trending-item {
         cursor: grab;
     }
-
+    
     .trending-item:active {
         cursor: grabbing;
     }
-
+    
     .trending-item.dragging {
         opacity: 0.5;
     }
@@ -310,7 +310,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Inisialisasi Sortable untuk drag & drop
     const selectedList = document.getElementById('selected-trendings');
-
+    
     if (selectedList) {
         const sortable = new Sortable(selectedList, {
             animation: 150,
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-
+    
     // Update nomor urutan setelah drag & drop
     function updateOrderNumbers() {
         const items = document.querySelectorAll('#selected-trendings .trending-item');
@@ -329,18 +329,18 @@ document.addEventListener('DOMContentLoaded', function() {
             item.setAttribute('data-order', index);
         });
     }
-
+    
     // Simpan urutan ke database
     const saveOrderBtn = document.getElementById('save-order');
     if (saveOrderBtn) {
         saveOrderBtn.addEventListener('click', function() {
             const items = document.querySelectorAll('#selected-trendings .trending-item');
-
+            
             if (items.length === 0) {
                 alert('Tidak ada trending yang dipilih!');
                 return;
             }
-
+            
             const orderedItems = [];
             items.forEach((item, index) => {
                 orderedItems.push({
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     order: index
                 });
             });
-
+            
             // Kirim data ke server
             fetch('{{ route("trending.updateOrder") }}', {
                 method: 'POST',
