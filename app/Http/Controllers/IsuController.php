@@ -735,11 +735,11 @@ class IsuController extends Controller
 
         $user = Auth::user();
 
-        if (!$user->isAdmin() && !$user->isVerifikator1() && !$user->isVerifikator2() &&
-            $isu->created_by != $user->id) {
-            return redirect()->route('isu.index')
-                ->with('error', 'Anda tidak memiliki hak akses untuk melihat isu ini.');
-        }
+        // if (!$user->isAdmin() && !$user->isVerifikator1() && !$user->isVerifikator2() &&
+        //     $isu->created_by != $user->id) {
+        //     return redirect()->route('isu.index')
+        //         ->with('error', 'Anda tidak memiliki hak akses untuk melihat isu ini.');
+        // }
 
         // Load relasi yang dibutuhkan termasuk status
         $isu->load([
