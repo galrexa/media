@@ -188,21 +188,10 @@
                     </button>
                 </div>
 
-                <!-- Link registrasi jika ada -->
-                @if (Route::has('register'))
-                    <div class="text-center">
-                        <span class="text-muted">Belum memiliki akun? </span>
-                        <a href="{{ route('register') }}" class="forgot-password fw-bold">
-                            Daftar disini
-                        </a>
-                    </div>
-                @endif
-            </form>
-        </div>
-
-        <!-- Footer sederhana -->
-        <div class="login-footer">
-            © 2025 Media Monitoring. All rights reserved.
+            <!-- Footer -->
+            <div class="text-center mt-4">
+                <small class="text-muted">Media Monitoring © Kantor Staf Presiden 2025</small>
+            </div>
         </div>
     </div>
 

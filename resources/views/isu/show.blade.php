@@ -7,7 +7,6 @@
 <div class="container">
     <div class="row mb-4 align-items-center">
     <div class="col-md-6">
-        <!-- <h2 class="page-title fw-bold mb-0">Daftar Isu</h2> -->
     </div>
         <div class="col-md-6 text-md-end">
             @auth
