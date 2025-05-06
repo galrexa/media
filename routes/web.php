@@ -10,8 +10,6 @@ use App\Http\Controllers\TrendingController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\BadgeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,24 +17,24 @@ use App\Http\Controllers\BadgeController;
 |--------------------------------------------------------------------------
 */
 
-// Home / Landing page
-Route::get('/', function () {
-    if (auth()->check()) {
+// Home / Landing page 
+Route::get('/', function () { 
+    if (auth()->check()) { 
         // Alih-alih mengarahkan ke dashboard, semua user diarahkan ke home
         $request = request();
         return app(HomeController::class)->index($request);
-    }
-    return redirect()->route('login');
+    } 
+    return redirect()->route('login'); 
 })->name('home');
 
 // Dashboard sebagai landing page untuk admin/editor
-Route::get('/dashboard-landing', function () {
-    $user = auth()->user();
-    if ($user->isAdmin() || $user->isEditor()) {
-        return redirect()->route('dashboard.admin');
-    } else {
+Route::get('/dashboard-landing', function () { 
+    $user = auth()->user(); 
+    if ($user->isAdmin() || $user->isEditor()) { 
+        return redirect()->route('dashboard.admin'); 
+    } else { 
         return redirect()->route('home');
-    }
+    } 
 })->middleware('auth')->name('dashboard.landing');
 
 // Route untuk halaman home
@@ -85,35 +83,19 @@ Route::middleware('auth')->group(function () {
 
     // Isu Management
     Route::prefix('isu')->name('isu.')->group(function () {
-
-        // Routes khusus Editor (membuat dan mengedit isu)
-        Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
+        Route::get('/', [IsuController::class, 'index'])->name('index');
+        
+        Route::middleware('role:admin,editor')->group(function () {
             Route::get('/create', [IsuController::class, 'create'])->name('create');
             Route::post('/', [IsuController::class, 'store'])->name('store');
-        });
-
-        Route::middleware('auth')->group(function () {
-            Route::get('/', [IsuController::class, 'index'])->name('index');
-            Route::get('/{isu}', [IsuController::class, 'show'])->name('show');
-            Route::post('/isu/mass-action', [IsuController::class, 'massAction'])->name('massAction');
-        });
-
-        // Route untuk history log isu - semua pengguna
-        Route::get('/{isu}/history', [IsuController::class, 'history'])->name('history');
-
-        // Routes yang dapat diakses oleh semua level (admin, editor, verifikator)
-        Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
             Route::get('/{isu}/edit', [IsuController::class, 'edit'])->name('edit');
             Route::put('/{isu}', [IsuController::class, 'update'])->name('update');
+            Route::delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
+            Route::get('/{isu}/history', [IsuController::class, 'history'])->name('history');
         });
-
-        // Routes khusus untuk verifikator (penolakan isu)
-        Route::middleware('role:admin,verifikator1,verifikator2')->group(function () {
-            Route::post('/{isu}/penolakan', [IsuController::class, 'processPenolakan'])->name('penolakan');
-        });
-
-        // Hapus isu hanya bisa dilakukan admin atau editor (dengan status Draft)
-        Route::middleware('role:admin,editor')->delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
+        
+        // Pindahkan rute dengan parameter ke bagian bawah
+        Route::get('/{isu}', [IsuController::class, 'show'])->name('show');
     });
 
     // Document Management
@@ -131,10 +113,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/selected', [TrendingController::class, 'selected'])->name('selected');
 
         Route::middleware('role:admin,editor')->group(function () {
-            // Routes untuk tambah manual trending
-            Route::get('/manual/create', [TrendingController::class, 'createManual'])->name('manual.create');
-            Route::post('/manual/store', [TrendingController::class, 'storeManual'])->name('manual.store');
-
             Route::get('/create', [TrendingController::class, 'create'])->name('create');
             Route::post('/', [TrendingController::class, 'store'])->name('store');
             Route::delete('/{trending}', [TrendingController::class, 'destroy'])->name('destroy');
@@ -169,31 +147,4 @@ Route::middleware('auth')->group(function () {
     // Public API-style endpoint (move to api.php if needed)
     Route::get('/api/trending/selected', [TrendingController::class, 'getSelectedTrendings'])
         ->name('api.trending.selected');
-
-        // Notification routes
-    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifikasi.index');
-    Route::get('/notifikasi/mark-as-read/{notifikasi}', [NotificationController::class, 'markAsRead'])->name('markAsRead');
-    Route::post('/notifikasi/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('markAllAsRead');
-    Route::get('/notifications/get', [NotificationController::class, 'getNotifications'])->name('get');
-    Route::delete('/notifikasi/{notifikasi}', [NotificationController::class, 'destroy'])->name('destroy');
-    Route::delete('/notifikasi/destroy-read', [NotificationController::class, 'destroyRead'])->name('destroyRead');
-    Route::delete('/notifikasi/destroy-all', [NotificationController::class, 'destroyAll'])->name('destroyAll');
-
-    Route::post('/reset-notification-badge', function () {
-        Session::put('notification_badge_hidden', true);
-        return response()->json(['success' => true]);
-    })->middleware('auth')->name('reset.notification.badge');
-
-
-    // Tambahkan route ini di routes/web.php
-    Route::post('/reset-rejected-badge', function () {
-        Session::put('rejected_badge_hidden', true);
-        return response()->json(['success' => true]);
-    })->middleware('auth')->name('reset.rejected.badge');
-
-    // Route untuk menampilkan badge kembali (untuk keperluan testing)
-    Route::get('/show-rejected-badge', function () {
-        Session::forget('rejected_badge_hidden');
-        return redirect()->back();
-    })->middleware('auth')->name('show.rejected.badge');
 });

@@ -1,19 +1,18 @@
 :root {
-    /* Modern Color Palette */
-    --primary-color: #4361ee;
-    --primary-light: #4cc9f0;
-    --primary-dark: #3a56d4;
-    --secondary-color: #3f37c9;
-    --accent-color: #4895ef;
-    --success-color: #0cce6b;
-    --danger-color: #e5383b;
-    --warning-color: #ff9e00;
-    --info-color: #4cc9f0;
-    --light-color: #f8f9fa;
-    --dark-color: #212529;
-    --text-color: #495057;
-    --text-light: #6c757d;
-    --bg-color: #f5f7fb;
+    /* Modern Color Palette - Glassmorphism & Neomorphism inspired */
+    --primary-color: #4361ee;            /* Warna utama, biru modern */
+    --primary-light: #4cc9f0;            /* Warna primer terang untuk gradasi */
+    --primary-dark: #3a56d4;             /* Warna primer gelap untuk gradasi */
+    --secondary-color: rgba(77, 77, 77, 0.15); /* Warna sekunder, dengan transparansi */
+    --accent-color: #4cc9f0;             /* Warna aksen, biru muda */
+    --accent-color-2: #f72585;           /* Aksen kedua, pink */
+    --success-color: #0cce6b;            /* Warna sukses/positif */
+    --danger-color: #e5383b;             /* Warna bahaya/error/negatif */
+    --warning-color: #ff9e00;            /* Warna peringatan */
+    --text-color: #2b2d42;               /* Warna teks utama */
+    --text-light: #6c757d;               /* Warna teks sekunder */
+    --light-bg: #f8f9fa;                 /* Background terang */
+    --bg-color: #f5f7fb;                 /* Background warna untuk body */
 
     /* Sidebar Dimensions */
     --sidebar-width: 260px;
@@ -25,15 +24,18 @@
     --border-radius-lg: 16px;
     --border-radius-xl: 24px;
 
-    /* Shadows */
+    /* Modern Shadow Styles */
+    --card-shadow: 0 10px 20px rgba(0,0,0,0.04), 0 6px 6px rgba(0,0,0,0.05);
+    --hover-shadow: 0 14px 28px rgba(0,0,0,0.08), 0 10px 10px rgba(0,0,0,0.05);
+    --neomorphic-shadow: 5px 5px 10px rgba(0,0,0,0.05), -5px -5px 10px rgba(255,255,255,0.8);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
     --shadow-md: 0 5px 15px rgba(0, 0, 0, 0.08);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
     --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-
-    /* Transitions */
+    
+    /* Modern Transitions */
     --transition-fast: all 0.2s ease;
-    --transition-normal: all 0.3s ease;
+    --transition-normal: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     --transition-slow: all 0.5s ease;
 }
 
@@ -46,17 +48,59 @@ body {
     line-height: 1.6;
 }
 
-/* Perbaikan Navbar - Simpel tanpa search & notification */
+/* Perbaikan Navbar - dengan glassmorphism effect */
 .top-navbar {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 64px;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    height: 65px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light)) !important;
     z-index: 1100;
     color: white;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.navbar-nav {
+    display: flex;
+    list-style: none;
+    margin-bottom: 0;
+    padding-left: 0;
+}
+
+.nav-item.dropdown.user-dropdown {
+    position: relative;
+}
+
+/* User dropdown styling */
+.nav-link.dropdown-toggle.text-white.user-dropdown-toggle {
+    color: white !important;
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    transition: var(--transition-normal);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.nav-link.dropdown-toggle.text-white.user-dropdown-toggle:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.nav-link.dropdown-toggle.text-white.user-dropdown-toggle i {
+    font-size: 1.2rem;
+    margin-right: 8px;
+    transition: var(--transition-normal);
+}
+
+.nav-link.dropdown-toggle.text-white.user-dropdown-toggle:hover i {
+    transform: scale(1.1);
 }
 
 .navbar-container {
@@ -75,31 +119,32 @@ body {
 }
 
 .toggle-sidebar {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     font-size: 1.25rem;
     color: white;
     cursor: pointer;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-right: 16px;
-    transition: var(--transition-fast);
+    transition: var(--transition-normal);
 }
 
 .toggle-sidebar:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     transform: scale(1.05);
 }
 
 .brand-text {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     font-weight: 700;
     color: white;
     letter-spacing: 0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .navbar-actions {
@@ -107,21 +152,22 @@ body {
     align-items: center;
 }
 
-/* User Dropdown Simpel */
+/* User Dropdown Styling */
 .user-dropdown .user-dropdown-toggle {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.15);
     border: none;
     border-radius: 8px;
     padding: 8px 16px;
     color: white;
     box-shadow: none;
-    transition: var(--transition-fast);
+    transition: var(--transition-normal);
     display: flex;
     align-items: center;
 }
 
 .user-dropdown .user-dropdown-toggle:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
 }
 
 .user-dropdown .user-info {
@@ -132,11 +178,12 @@ body {
     font-weight: 600;
     color: white;
     font-size: 0.9rem;
+    letter-spacing: 0.3px;
 }
 
 .user-dropdown .user-role {
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
 }
 
 .user-dropdown .user-avatar {
@@ -150,9 +197,100 @@ body {
     justify-content: center;
     font-weight: 600;
     border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: var(--transition-normal);
 }
 
-/* Sidebar Perbaikan */
+.user-dropdown:hover .user-avatar {
+    transform: scale(1.05);
+}
+
+/* Dropdown menu dengan animasi */
+.dropdown-menu {
+    position: absolute;
+    z-index: 1000;
+    display: none;
+    min-width: 10rem;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    font-size: 1rem;
+    text-align: left;
+    list-style: none;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: none;
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-md);
+    animation: dropdownFade 0.2s ease-out;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+@keyframes dropdownFade {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-menu .dropdown-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    clear: both;
+    font-weight: 500;
+    color: var(--text-color);
+    text-align: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    transition: var(--transition-normal);
+    font-size: 0.9rem;
+}
+
+.dropdown-menu .dropdown-item:hover, 
+.dropdown-menu .dropdown-item:focus {
+    color: var(--primary-color);
+    text-decoration: none;
+    background-color: rgba(67, 97, 238, 0.05);
+    transform: translateX(3px);
+}
+
+.dropdown-menu .dropdown-item i {
+    margin-right: 10px;
+    transition: var(--transition-normal);
+}
+
+.dropdown-menu .dropdown-item:hover i {
+    transform: scale(1.1);
+}
+
+.dropdown-divider {
+    height: 0;
+    margin: 0.5rem 0;
+    overflow: hidden;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Dropdown user details styling */
+.dropdown-user-details {
+    padding: 10px 20px;
+}
+
+.dropdown-user-name {
+    margin: 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.dropdown-user-email {
+    margin: 5px 0 0;
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+/* Sidebar Styling dengan glassmorphism effect */
 .sidebar {
     position: fixed;
     top: 64px;
@@ -166,6 +304,8 @@ body {
     transition: var(--transition-normal);
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
     border-right: 1px solid rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 .sidebar.collapsed {
@@ -302,6 +442,88 @@ body {
     text-align: center;
 }
 
+/* Styling untuk dropdown menu di sidebar */
+.dropdown-menu-item {
+    position: relative;
+}
+
+.nav-link.dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    transition: var(--transition-normal);
+}
+
+.sidebar-dropdown-icon {
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.menu-open .sidebar-dropdown-icon, 
+.dropdown-menu-item .collapse.show + .nav-link .sidebar-dropdown-icon,
+.dropdown-menu-item .dropdown-toggle[aria-expanded="true"] .sidebar-dropdown-icon {
+    transform: rotate(-180deg);
+}
+
+.submenu-list {
+    padding-left: 0;
+    list-style: none;
+    margin-bottom: 0;
+}
+
+.submenu-list .nav-item.submenu {
+    margin-bottom: 0;
+}
+
+.submenu-list .nav-link {
+    padding-left: 48px;
+    font-size: 0.85rem;
+    color: var(--text-light) !important;
+    transition: var(--transition-normal);
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.submenu-list .nav-link:hover {
+    color: var(--primary-color) !important;
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.submenu-list .nav-link.active {
+    color: var(--primary-color) !important;
+    background-color: rgba(67, 97, 238, 0.1);
+    border-left: 3px solid var(--primary-color);
+    font-weight: 600;
+}
+
+.collapse {
+    transition: height 0.3s ease;
+}
+
+.collapsing {
+    transition: height 0.3s ease;
+}
+
+.sidebar.collapsed .dropdown-menu-item .collapse,
+.sidebar.collapsed .dropdown-menu-item .collapsing {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-dropdown-icon {
+    display: none;
+}
+
+.dropdown-menu-item.menu-open > .nav-link,
+.dropdown-menu-item .nav-link.dropdown-toggle[aria-expanded="true"] {
+    color: var(--primary-color) !important;
+    background-color: rgba(67, 97, 238, 0.05);
+}
+
+.dropdown-menu-item .nav-link.dropdown-toggle:hover {
+    color: var(--primary-color) !important;
+}
+
 /* Main Content */
 .main-content {
     margin-left: var(--sidebar-width);
@@ -316,44 +538,44 @@ body {
     margin-left: var(--sidebar-collapsed-width);
 }
 
-    /* Style khusus untuk card header narasi */
-    .narasi-card .card-body {
-        padding: 1.5rem;
-    }
+/* Style khusus untuk card header narasi */
+.narasi-card .card-body {
+    padding: 1.5rem;
+}
 
-    .narasi-card .card-header {
-        display: flex;
-        align-items: center;
-        padding: 1rem 1.5rem;
-    }
+.narasi-card .card-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+}
 
-    .narasi-card .card-header.bg-success {
-        background: linear-gradient(135deg, #28a745, #20c997) !important;
-        border-bottom: none;
-    }
+.narasi-card .card-header.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+    border-bottom: none;
+}
 
-    .narasi-card .card-header.bg-danger {
-        background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
-        border-bottom: none;
-    }
+.narasi-card .card-header.bg-danger {
+    background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
+    border-bottom: none;
+}
 
-    .narasi-card .card-header i {
-        color: rgba(255, 255, 255, 0.9);
-        margin-right: 0.75rem;
-        font-size: 1.1rem;
-    }
+.narasi-card .card-header i {
+    color: rgba(255, 255, 255, 0.9);
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+}
 
-    .narasi-card .card-header h5 {
-        margin-bottom: 0;
-        font-weight: 600;
-        font-size: 1.8rem;
-        letter-spacing: 0.3px;
-    }
+.narasi-card .card-header h5 {
+    margin-bottom: 0;
+    font-weight: 600;
+    font-size: 1.8rem;
+    letter-spacing: 0.3px;
+}
 
-    .narasi-card .content-text {
-        font-size: 1.5rem; /* Memperbesar font narasi */
-        line-height: 1.5;
-    }
+.narasi-card .content-text {
+    font-size: 1.5rem; /* Memperbesar font narasi */
+    line-height: 1.5;
+}
 
 /* Alert Design */
 .alert {
@@ -486,48 +708,6 @@ body {
 
 .mobile-toggle:active {
     transform: scale(0.95);
-}
-
-/* Dropdown Menu */
-.dropdown-menu {
-    border: none;
-    box-shadow: var(--shadow-md);
-    border-radius: var(--border-radius-md);
-    background-color: #fff;
-    margin-top: 8px;
-    padding: 8px 0;
-    border: 1px solid rgba(0, 0, 0, 0.03);
-    animation: dropdownFade 0.2s ease-out;
-}
-
-@keyframes dropdownFade {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.dropdown-menu .dropdown-item {
-    color: var(--text-color);
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    transition: var(--transition-fast);
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-}
-
-.dropdown-menu .dropdown-item:hover {
-    color: var(--primary-color);
-    background-color: rgba(67, 97, 238, 0.05);
-    transform: translateX(3px);
-}
-
-.dropdown-menu .dropdown-item i {
-    margin-right: 10px;
-    transition: var(--transition-fast);
-}
-
-.dropdown-menu .dropdown-item:hover i {
-    transform: scale(1.1);
 }
 
 /* Page Heading */
@@ -787,57 +967,13 @@ body {
     .stat-card .stat-value {
         font-size: 1.5rem;
     }
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%);
-        width: var(--sidebar-width);
+    
+    .brand-text {
+        font-size: 1.2rem;
     }
-
-    .sidebar.show {
-        transform: translateX(0);
+    
+    .user-dropdown .user-avatar {
+        width: 36px;
+        height: 36px;
     }
-
-    .main-content {
-        margin-left: 0;
-        padding: 16px;
-    }
-
-    .mobile-toggle {
-        display: flex;
-    }
-
-    .main-content.expanded {
-        margin-left: 0;
-    }
-
-    .user-dropdown .user-info {
-        display: none;
-    }
-
-    .navbar-brand .brand-text {
-        font-size: 1.1rem;
-    }
-
-    .table-responsive {
-        max-width: 100%;
-        overflow-x: auto;
-    }
-
-    .card-header {
-        background: linear-gradient(135deg, var(--primary-color, #4361ee), var(--accent-color, #4cc9f0));
-        background-color: white;
-        border-bottom: 1px solid rgba(0,0,0,0.05);
-        font-weight: 600;
-        padding: 1.2rem 1.5rem;
-        display: flex;
-        align-items: center;
-    }
-
-    .card-header i {
-        margin-right: 0.5rem;
-        color: var(--primary-color);
-    }
-
 }
