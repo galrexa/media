@@ -5,6 +5,17 @@
 
 @section('content')
 <div class="container">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-6 text-md-end">
+            @auth
+                @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
+                    <a href="{{ route('isu.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i> Tambah Isu Baru
+                    </a>
+                @endif
+            @endauth
+        </div>
+    </div>
 
     <div class="card mb-4">
         <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
