@@ -785,11 +785,9 @@ class IsuController extends Controller
     {
 
         $user = Auth::user();
-
-        if (!$user->isAdmin() && !$user->isVerifikator1() && !$user->isVerifikator2() &&
-            $isu->created_by != $user->id) {
-            return redirect()->route('isu.index')
-                ->with('error', 'Anda tidak memiliki hak akses untuk melihat isu ini.');
+        if (!$user) {
+            return redirect()->route('login')
+                ->with('error', 'Anda harus login untuk melihat isu.');
         }
 
         // Load relasi yang dibutuhkan termasuk status
@@ -1618,6 +1616,11 @@ class IsuController extends Controller
                     request(),
                     RefStatus::getDipublikasiId()
                 );
+
+                // Kirim notifikasi publikasi jika service tersedia
+                // if (class_exists('App\\Services\\IsuNotificationService')) {
+                //     IsuNotificationService::notifyForPublication($isu, $user);
+                // }
 
                 $publishedCount++;
             }
