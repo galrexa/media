@@ -1219,47 +1219,50 @@ class IsuController extends Controller
         $validator = Validator::make($request->all(), [
             'action' => 'required|in:delete,send-to-verif1,send-to-verif2,reject,publish,export',
             'selected_ids' => 'required',
+            'rejection_reason' => 'required_if:action,reject',
         ]);
 
         if ($validator->fails()) {
-            return back()->with('error', 'Format request tidak valid.');
+            return back()->with('error', 'Format request tidak valid: ' . $validator->errors()->first());
         }
 
-        // Decode selected IDs
+        // Decode selected IDs - ini adalah perbaikan utama
         try {
-            $selectedIds = json_decode($request->selected_ids, true);
+            $selectedIds = json_decode($request->selected_ids);
+            
+            // Pastikan hasil decode adalah array
+            if (!is_array($selectedIds)) {
+                $selectedIds = [$selectedIds]; // Convert ke array jika bukan array
+            }
+            
+            // Check apakah array kosong
+            if (empty($selectedIds)) {
+                return back()->with('error', 'Tidak ada isu yang dipilih.');
+            }
         } catch (\Exception $e) {
-            return back()->with('error', 'Format ID tidak valid.');
-        }
-
-        // Check apakah array kosong
-        if (empty($selectedIds)) {
-            return back()->with('error', 'Tidak ada isu yang dipilih.');
+            return back()->with('error', 'Format ID tidak valid: ' . $e->getMessage());
         }
 
         // Mendapatkan pengguna dan role
         $user = Auth::user();
         $role = $user->getHighestRoleName();
 
-        // Mendapatkan isu yang dipilih
-        $isus = Isu::whereIn('id', $selectedIds);
-
         // Handle different actions
         switch ($request->action) {
             case 'delete':
-                return $this->handleDeleteAction($isus, $user, $selectedIds);
+                return $this->handleDeleteAction($selectedIds, $user);
 
             case 'send-to-verif1':
-                return $this->handleSendToVerif1Action($isus, $user, $selectedIds);
+                return $this->handleSendToVerif1Action($selectedIds, $user);
 
             case 'send-to-verif2':
-                return $this->handleSendToVerif2Action($isus, $user, $selectedIds);
+                return $this->handleSendToVerif2Action($selectedIds, $user);
 
             case 'reject':
-                return $this->handleRejectAction($isus, $user, $selectedIds, $request->rejection_reason);
+                return $this->handleRejectAction($selectedIds, $user, $request->rejection_reason);
 
             case 'publish':
-                return $this->handlePublishAction($isus, $user, $selectedIds);
+                return $this->handlePublishAction($selectedIds, $user);
 
             case 'export':
                 return $this->handleExportAction($selectedIds, $user);
@@ -1269,6 +1272,7 @@ class IsuController extends Controller
         }
     }
 
+
     /**
      * Handle delete action.
      *
@@ -1277,29 +1281,56 @@ class IsuController extends Controller
      * @param array $selectedIds
      * @return \Illuminate\Http\Response
      */
-    private function handleDeleteAction($isus, $user, $selectedIds)
+    private function handleDeleteAction($selectedIds, $user)
     {
         // Hanya admin dan editor yang bisa menghapus
         if (!$user->isAdmin() && !$user->isEditor()) {
             return back()->with('error', 'Anda tidak memiliki izin untuk menghapus isu.');
         }
 
-        $query = clone $isus;
+        DB::beginTransaction();
+        try {
+            // Query untuk menyeleksi isu yang akan dihapus
+            $query = Isu::whereIn('id', $selectedIds);
 
-        // Untuk editor, hanya bisa menghapus isu yang mereka buat dan masih draft
-        if ($user->isEditor()) {
-            $query->where('created_by', $user->id)
-                ->where('status_id', RefStatus::getDraftId());
-        }
+            // Untuk editor, hanya bisa menghapus isu yang mereka buat dan masih draft
+            if ($user->isEditor()) {
+                $query->where('created_by', $user->id)
+                    ->where('status_id', RefStatus::getDraftId());
+            }
 
-        $deletedCount = $query->delete();
+            $isusToDelete = $query->get();
+            $deletedCount = 0;
 
-        if ($deletedCount > 0) {
-            return back()->with('success', $deletedCount . ' isu berhasil dihapus.');
-        } else {
-            return back()->with('error', 'Tidak ada isu yang dihapus. Mungkin Anda tidak memiliki izin untuk menghapus isu yang dipilih.');
+            foreach ($isusToDelete as $isu) {
+                // Log penghapusan sebelum menghapus data
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'DELETE',
+                    null,
+                    json_encode($isu->toArray()),
+                    null,
+                    request(),
+                    $isu->status_id
+                );
+
+                $isu->delete();
+                $deletedCount++;
+            }
+
+            DB::commit();
+
+            if ($deletedCount > 0) {
+                return back()->with('success', $deletedCount . ' isu berhasil dihapus.');
+            } else {
+                return back()->with('error', 'Tidak ada isu yang dihapus. Mungkin Anda tidak memiliki izin untuk menghapus isu yang dipilih.');
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat menghapus isu: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Handle send to Verifikator 1 action.
@@ -1309,45 +1340,67 @@ class IsuController extends Controller
      * @param array $selectedIds
      * @return \Illuminate\Http\Response
      */
-    private function handleSendToVerif1Action($isus, $user, $selectedIds)
+    private function handleSendToVerif1Action($selectedIds, $user)
     {
         // Hanya admin dan editor yang bisa mengirim ke Verifikator 1
         if (!$user->isAdmin() && !$user->isEditor()) {
             return back()->with('error', 'Anda tidak memiliki izin untuk mengirim isu ke Verifikator 1.');
         }
 
-        $query = clone $isus;
+        DB::beginTransaction();
+        try {
+            // Query untuk menyeleksi isu yang akan dikirim ke verifikator 1
+            $query = Isu::whereIn('id', $selectedIds);
 
-        // Untuk editor, hanya bisa mengirim isu yang mereka buat dan masih draft
-        if ($user->isEditor()) {
-            $query->where('created_by', $user->id)
-                ->where('status_id', RefStatus::getDraftId());
-        }
+            // Untuk editor, hanya bisa mengirim isu yang mereka buat dan masih draft
+            if ($user->isEditor()) {
+                $query->where('created_by', $user->id)
+                    ->where('status_id', RefStatus::getDraftId());
+            }
 
-        // Update status ke Verifikasi 1
-        $updatedCount = $query->update([
-            'status_id' => RefStatus::getVerifikasi1Id(),
-            'updated_by' => $user->id,
-            'updated_at' => now()
-        ]);
+            $isusToUpdate = $query->get();
+            $updatedCount = 0;
 
-        // Log perubahan dan kirim notifikasi
-        foreach ($query->get() as $isu) {
-            LogIsu::create([
-                'isu_id' => $isu->id,
-                'user_id' => $user->id,
-                'keterangan' => 'Isu dikirim ke Verifikator 1',
-                'status_id' => RefStatus::getVerifikasi1Id()
-            ]);
+            foreach ($isusToUpdate as $isu) {
+                // Simpan status lama untuk log
+                $oldStatusId = $isu->status_id;
+                
+                // Update status ke Verifikasi 1
+                $isu->update([
+                    'status_id' => RefStatus::getVerifikasi1Id(),
+                    'updated_by' => $user->id,
+                    'updated_at' => now()
+                ]);
 
-            // Kirim notifikasi ke verifikator 1
-            IsuNotificationService::notifyForVerification($isu, RefStatus::getVerifikasi1Id(), $user);
-        }
+                // Log perubahan status
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'UPDATE',
+                    'status',
+                    RefStatus::getNamaById($oldStatusId),
+                    RefStatus::getNamaById(RefStatus::getVerifikasi1Id()),
+                    request(),
+                    RefStatus::getVerifikasi1Id()
+                );
 
-        if ($updatedCount > 0) {
-            return back()->with('success', $updatedCount . ' isu berhasil dikirim ke Verifikator 1.');
-        } else {
-            return back()->with('error', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
+                // Kirim notifikasi ke verifikator 1 jika service tersedia
+                if (class_exists('App\\Services\\IsuNotificationService')) {
+                    IsuNotificationService::notifyForVerification($isu, RefStatus::getVerifikasi1Id(), $user);
+                }
+
+                $updatedCount++;
+            }
+
+            DB::commit();
+
+            if ($updatedCount > 0) {
+                return back()->with('success', $updatedCount . ' isu berhasil dikirim ke Verifikator 1.');
+            } else {
+                return back()->with('error', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat mengirim isu ke Verifikator 1: ' . $e->getMessage());
         }
     }
 
@@ -1359,44 +1412,66 @@ class IsuController extends Controller
      * @param array $selectedIds
      * @return \Illuminate\Http\Response
      */
-    private function handleSendToVerif2Action($isus, $user, $selectedIds)
+    private function handleSendToVerif2Action($selectedIds, $user)
     {
         // Hanya admin dan verifikator 1 yang bisa mengirim ke Verifikator 2
         if (!$user->isAdmin() && !$user->hasRole('verifikator1')) {
             return back()->with('error', 'Anda tidak memiliki izin untuk mengirim isu ke Verifikator 2.');
         }
 
-        $query = clone $isus;
+        DB::beginTransaction();
+        try {
+            // Query untuk menyeleksi isu yang akan dikirim ke verifikator 2
+            $query = Isu::whereIn('id', $selectedIds);
 
-        // Verifikator 1 hanya bisa mengirim isu yang sudah dalam status Verifikasi 1
-        if ($user->hasRole('verifikator1')) {
-            $query->where('status_id', RefStatus::getVerifikasi1Id());
-        }
+            // Verifikator 1 hanya bisa mengirim isu yang sudah dalam status Verifikasi 1
+            if ($user->hasRole('verifikator1')) {
+                $query->where('status_id', RefStatus::getVerifikasi1Id());
+            }
 
-        // Update status ke Verifikasi 2
-        $updatedCount = $query->update([
-            'status_id' => RefStatus::getVerifikasi2Id(),
-            'updated_by' => $user->id,
-            'updated_at' => now()
-        ]);
+            $isusToUpdate = $query->get();
+            $updatedCount = 0;
 
-        // Log perubahan dan kirim notifikasi
-        foreach ($query->get() as $isu) {
-            LogIsu::create([
-                'isu_id' => $isu->id,
-                'user_id' => $user->id,
-                'keterangan' => 'Isu dikirim ke Verifikator 2',
-                'status_id' => RefStatus::getVerifikasi2Id()
-            ]);
+            foreach ($isusToUpdate as $isu) {
+                // Simpan status lama untuk log
+                $oldStatusId = $isu->status_id;
+                
+                // Update status ke Verifikasi 2
+                $isu->update([
+                    'status_id' => RefStatus::getVerifikasi2Id(),
+                    'updated_by' => $user->id,
+                    'updated_at' => now()
+                ]);
 
-            // Kirim notifikasi ke verifikator 2
-            IsuNotificationService::notifyForVerification($isu, RefStatus::getVerifikasi2Id(), $user);
-        }
+                // Log perubahan status
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'UPDATE',
+                    'status',
+                    RefStatus::getNamaById($oldStatusId),
+                    RefStatus::getNamaById(RefStatus::getVerifikasi2Id()),
+                    request(),
+                    RefStatus::getVerifikasi2Id()
+                );
 
-        if ($updatedCount > 0) {
-            return back()->with('success', $updatedCount . ' isu berhasil dikirim ke Verifikator 2.');
-        } else {
-            return back()->with('error', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
+                // Kirim notifikasi ke verifikator 2 jika service tersedia
+                if (class_exists('App\\Services\\IsuNotificationService')) {
+                    IsuNotificationService::notifyForVerification($isu, RefStatus::getVerifikasi2Id(), $user);
+                }
+
+                $updatedCount++;
+            }
+
+            DB::commit();
+
+            if ($updatedCount > 0) {
+                return back()->with('success', $updatedCount . ' isu berhasil dikirim ke Verifikator 2.');
+            } else {
+                return back()->with('error', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat mengirim isu ke Verifikator 2: ' . $e->getMessage());
         }
     }
 
@@ -1409,7 +1484,7 @@ class IsuController extends Controller
      * @param string $rejectionReason
      * @return \Illuminate\Http\Response
      */
-    private function handleRejectAction($isus, $user, $selectedIds, $rejectionReason)
+    private function handleRejectAction($selectedIds, $user, $rejectionReason)
     {
         // Validasi alasan penolakan
         if (empty($rejectionReason)) {
@@ -1421,43 +1496,76 @@ class IsuController extends Controller
             return back()->with('error', 'Anda tidak memiliki izin untuk menolak isu.');
         }
 
-        $query = clone $isus;
+        DB::beginTransaction();
+        try {
+            // Query untuk menyeleksi isu yang akan ditolak
+            $query = Isu::whereIn('id', $selectedIds);
 
-        // Verifikator 1 hanya bisa menolak isu yang status Verifikasi 1
-        if ($user->hasRole('verifikator1')) {
-            $query->where('status_id', RefStatus::getVerifikasi1Id());
-        }
+            // Verifikator 1 hanya bisa menolak isu yang status Verifikasi 1
+            if ($user->hasRole('verifikator1')) {
+                $query->where('status_id', RefStatus::getVerifikasi1Id());
+            }
 
-        // Verifikator 2 hanya bisa menolak isu yang status Verifikasi 2
-        if ($user->hasRole('verifikator2')) {
-            $query->where('status_id', RefStatus::getVerifikasi2Id());
-        }
+            // Verifikator 2 hanya bisa menolak isu yang status Verifikasi 2
+            if ($user->hasRole('verifikator2')) {
+                $query->where('status_id', RefStatus::getVerifikasi2Id());
+            }
 
-        // Update status ke Ditolak
-        $updatedCount = $query->update([
-            'status_id' => RefStatus::getDitolakId(),
-            'alasan_penolakan' => $rejectionReason,
-            'updated_by' => $user->id,
-            'updated_at' => now()
-        ]);
+            $isusToReject = $query->get();
+            $rejectedCount = 0;
 
-        // Log perubahan dan kirim notifikasi
-        foreach ($query->get() as $isu) {
-            LogIsu::create([
-                'isu_id' => $isu->id,
-                'user_id' => $user->id,
-                'keterangan' => 'Isu ditolak: ' . $rejectionReason,
-                'status_id' => RefStatus::getDitolakId()
-            ]);
+            foreach ($isusToReject as $isu) {
+                // Simpan status lama untuk log
+                $oldStatusId = $isu->status_id;
+                
+                // Update status ke Ditolak
+                $isu->update([
+                    'status_id' => RefStatus::getDitolakId(),
+                    'alasan_penolakan' => $rejectionReason,
+                    'updated_by' => $user->id,
+                    'updated_at' => now()
+                ]);
 
-            // Kirim notifikasi penolakan
-            IsuNotificationService::notifyForRejection($isu, $rejectionReason, $user);
-        }
+                // Log perubahan status
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'UPDATE',
+                    'status',
+                    RefStatus::getNamaById($oldStatusId),
+                    'Ditolak',
+                    request(),
+                    RefStatus::getDitolakId()
+                );
 
-        if ($updatedCount > 0) {
-            return back()->with('success', $updatedCount . ' isu berhasil ditolak.');
-        } else {
-            return back()->with('error', 'Tidak ada isu yang ditolak. Mungkin Anda tidak memiliki izin untuk menolak isu yang dipilih.');
+                // Log alasan penolakan
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'UPDATE',
+                    'alasan_penolakan',
+                    null,
+                    $rejectionReason,
+                    request(),
+                    RefStatus::getDitolakId()
+                );
+
+                // Kirim notifikasi penolakan jika service tersedia
+                // if (class_exists('App\\Services\\IsuNotificationService')) {
+                //     IsuNotificationService::notifyForRejection($isu, $rejectionReason, $user);
+                // }
+
+                $rejectedCount++;
+            }
+
+            DB::commit();
+
+            if ($rejectedCount > 0) {
+                return back()->with('success', $rejectedCount . ' isu berhasil ditolak.');
+            } else {
+                return back()->with('error', 'Tidak ada isu yang ditolak. Mungkin Anda tidak memiliki izin untuk menolak isu yang dipilih.');
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat menolak isu: ' . $e->getMessage());
         }
     }
 
@@ -1469,46 +1577,66 @@ class IsuController extends Controller
      * @param array $selectedIds
      * @return \Illuminate\Http\Response
      */
-    private function handlePublishAction($isus, $user, $selectedIds)
+    private function handlePublishAction($selectedIds, $user)
     {
         // Hanya admin dan verifikator 2 yang bisa publikasi
         if (!$user->isAdmin() && !$user->hasRole('verifikator2')) {
             return back()->with('error', 'Anda tidak memiliki izin untuk mempublikasikan isu.');
         }
 
-        $query = clone $isus;
+        DB::beginTransaction();
+        try {
+            // Query untuk menyeleksi isu yang akan dipublikasikan
+            $query = Isu::whereIn('id', $selectedIds);
 
-        // Verifikator 2 hanya bisa publikasi isu yang status Verifikasi 2
-        if ($user->hasRole('verifikator2')) {
-            $query->where('status_id', RefStatus::getVerifikasi2Id());
-        }
+            // Verifikator 2 hanya bisa publikasi isu yang status Verifikasi 2
+            if ($user->hasRole('verifikator2')) {
+                $query->where('status_id', RefStatus::getVerifikasi2Id());
+            }
 
-        // Update status ke Dipublikasi
-        $updatedCount = $query->update([
-            'status_id' => RefStatus::getDipublikasiId(),
-            'updated_by' => $user->id,
-            'updated_at' => now()
-        ]);
+            $isusToPublish = $query->get();
+            $publishedCount = 0;
 
-        // Log perubahan dan kirim notifikasi
-        foreach ($query->get() as $isu) {
-            LogIsu::create([
-                'isu_id' => $isu->id,
-                'user_id' => $user->id,
-                'keterangan' => 'Isu dipublikasikan',
-                'status_id' => RefStatus::getDipublikasiId()
-            ]);
+            foreach ($isusToPublish as $isu) {
+                // Simpan status lama untuk log
+                $oldStatusId = $isu->status_id;
+                
+                // Update status ke Dipublikasi
+                $isu->update([
+                    'status_id' => RefStatus::getDipublikasiId(),
+                    'updated_by' => $user->id,
+                    'updated_at' => now()
+                ]);
 
-            // Kirim notifikasi publikasi
-            IsuNotificationService::notifyForPublication($isu, $user);
-        }
+                // Log perubahan status
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'UPDATE',
+                    'status',
+                    RefStatus::getNamaById($oldStatusId),
+                    RefStatus::getNamaById(RefStatus::getDipublikasiId()),
+                    request(),
+                    RefStatus::getDipublikasiId()
+                );
 
-        if ($updatedCount > 0) {
-            return back()->with('success', $updatedCount . ' isu berhasil dipublikasikan.');
-        } else {
-            return back()->with('error', 'Tidak ada isu yang dipublikasikan. Mungkin Anda tidak memiliki izin untuk mempublikasikan isu yang dipilih.');
+                // Kirim notifikasi publikasi jika service tersedia
+                if (class_exists('App\\Services\\IsuNotificationService')) {
+                    IsuNotificationService::notifyForPublication($isu, $user);
+                }
+
+                $publishedCount++;
+            }
+
+            DB::commit();
+
+            if ($publishedCount > 0) {
+                return back()->with('success', $publishedCount . ' isu berhasil dipublikasikan.');
+            } else {
+                return back()->with('error', 'Tidak ada isu yang dipublikasikan. Mungkin Anda tidak memiliki izin untuk mempublikasikan isu yang dipilih.');
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Terjadi kesalahan saat mempublikasikan isu: ' . $e->getMessage());
         }
     }
-
-
 }
