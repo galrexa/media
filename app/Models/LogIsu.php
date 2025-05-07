@@ -135,17 +135,26 @@ class LogIsu extends Model
                 // Parse JSON jika nilai adalah JSON
                 if ($this->isJson($value)) {
                     $categories = json_decode($value, true);
-                    return is_array($categories) ? implode(', ', $categories) : $value;
+                    // Pastikan $categories adalah array
+                    if (is_array($categories)) {
+                        return implode(', ', $categories);
+                    }
+                    // Jika bukan array, kembalikan sebagai string
+                    return (string) $value;
                 }
-                return $value;
+                // Jika nilai sudah berbentuk array (mungkin sudah di-decode)
+                if (is_array($value)) {
+                    return implode(', ', $value);
+                }
+                return (string) $value;
                 
             case 'status':
                 // Cek apakah nilai adalah ID status
                 if (is_numeric($value)) {
                     $status = RefStatus::find($value);
-                    return $status ? $status->nama : $value;
+                    return $status ? $status->nama : (string) $value;
                 }
-                return $value;
+                return (string) $value;
 
             // Format untuk tanggal
             case 'tanggal':
@@ -154,16 +163,25 @@ class LogIsu extends Model
                 if (strtotime($value)) {
                     return date('d/m/Y', strtotime($value));
                 }
-                return $value;
+                return (string) $value;
 
             // Format untuk kolom WYSIWYG atau text panjang
             case 'deskripsi':
             case 'konten':
             case 'keterangan':
-                return strlen($value) > 100 ? substr(strip_tags($value), 0, 100) . '...' : strip_tags($value);
+                $strValue = (string) $value;
+                return strlen($strValue) > 100 ? substr(strip_tags($strValue), 0, 100) . '...' : strip_tags($strValue);
                 
             default:
-                return $value;
+                // Pastikan nilai selalu dikembalikan sebagai string
+                if (is_array($value) || is_object($value)) {
+                    try {
+                        return json_encode($value, JSON_UNESCAPED_UNICODE);
+                    } catch (\Exception $e) {
+                        return '(data kompleks)';
+                    }
+                }
+                return (string) $value;
         }
     }
 
@@ -179,7 +197,16 @@ class LogIsu extends Model
             return false;
         }
         
-        json_decode($string);
-        return json_last_error() === JSON_ERROR_NONE;
+        // String kosong bukanlah JSON valid
+        if (empty($string)) {
+            return false;
+        }
+        
+        try {
+            $result = json_decode($string);
+            return (json_last_error() === JSON_ERROR_NONE);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }
