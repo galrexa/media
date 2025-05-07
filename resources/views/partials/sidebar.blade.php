@@ -48,9 +48,6 @@
                 <a class="nav-link {{ request()->routeIs('isu.index') ? 'active' : '' }}" href="{{ route('isu.index') }}">
                     <i class="bi bi-file-text"></i>
                     <span>Manajemen Isu</span>
-                    @if(isset($pendingIsuCount) && $pendingIsuCount > 0)
-                        <span class="badge bg-danger rounded-pill ms-auto">{{ $pendingIsuCount }}</span>
-                    @endif
                 </a>
             </li>
 
@@ -103,19 +100,28 @@
                         </li>
                         @endif
 
-                        <!-- Sub-sub menu Ditolak - Untuk Editor, Verifikator 1, dan Verifikator 2 -->
+                        <!-- Sub-sub menu Ditolak - Untuk Editor dan Admin -->
                         @if(Auth::user()->isEditor() || Auth::user()->isAdmin())
                         <li class="nav-item">
                             <a id="rejected-menu-link" class="nav-link {{ request()->routeIs('isu.index') && request()->input('filter_status') == 'rejected' ? 'active' : '' }}"
                             href="{{ route('isu.index', ['filter_status' => 'rejected']) }}"
                             onclick="hideRejectedBadge()">
                                 <span>Ditolak</span>
-                                @if(isset($rejectedIsuCount) && $rejectedIsuCount > 0)
-                                    <span id="rejected-badge" class="badge bg-danger rounded-pill ms-auto">{{ $rejectedIsuCount }}</span>
+                                @if(Auth::user()->isAdmin())
+                                    {{-- Admin sees all rejected issues --}}
+                                    @if(isset($rejectedIsuCount) && $rejectedIsuCount > 0)
+                                        <span id="rejected-badge" class="badge bg-danger rounded-pill ms-auto">{{ $rejectedIsuCount }}</span>
+                                    @endif
+                                @elseif(Auth::user()->isEditor())
+                                    {{-- Editor only sees their own rejected issues --}}
+                                    @if(isset($rejectedIsuCount) && $rejectedIsuCount > 0)
+                                        <span id="rejected-badge" class="badge bg-danger rounded-pill ms-auto">{{ $rejectedIsuCount }}</span>
+                                    @endif
                                 @endif
                             </a>
                         </li>
                         @endif
+
                     </ul>
                 </div>
             </li>
