@@ -345,7 +345,6 @@ class IsuController extends Controller
                 'isRejectedPage' => ($filterStatus === 'rejected')
             ]);
         } else {
-            // Kode untuk non-verifikator (admin, editor, dll)
             
             // Base queries dengan eager loading
             $isusStrategisQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator'])
@@ -377,8 +376,16 @@ class IsuController extends Controller
             } else {
                 // Filter berdasarkan role jika tidak ada filter sidebar
                 if ($user->isEditor()) {
-                    $isusStrategisQuery->where('created_by', $user->id);
-                    $isusLainnyaQuery->where('created_by', $user->id);
+                    // Modifikasi untuk menampilkan isu milik editor dan yang sudah dipublikasi
+                    $isusStrategisQuery->where(function($query) use ($user) {
+                        $query->where('created_by', $user->id)
+                              ->orWhere('status_id', RefStatus::getDipublikasiId());
+                    });
+                    
+                    $isusLainnyaQuery->where(function($query) use ($user) {
+                        $query->where('created_by', $user->id)
+                              ->orWhere('status_id', RefStatus::getDipublikasiId());
+                    });
                 }
                 // Admin melihat semua isu (tidak ada filter tambahan)
             }
