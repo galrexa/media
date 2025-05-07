@@ -244,15 +244,15 @@ class IsuController extends Controller
      * @return \Illuminate\View\View
      */
 
-     public function index(Request $request)
-     {
+    public function index(Request $request)
+    {
         $user = Auth::user();
         $role = $user->getHighestRoleName();
         $userId = $user->id;
-     
+    
         // Ambil filter status dari request
         $filterStatus = $request->input('filter_status');
-     
+    
         // Reset badge untuk filter rejected
         if ($filterStatus === 'rejected') {
             Session::put('rejected_badge_hidden', true);
@@ -260,17 +260,17 @@ class IsuController extends Controller
             Cache::put($cacheKey, true, now()->addDays(7));
             Log::info("Badge ditolak direset oleh User ID: {$userId} ({$user->name}) melalui akses halaman");
         }
-     
+    
         // Sorting
         $sortField = $request->get('sort', 'tanggal');
         $sortDirection = in_array(strtolower($request->get('direction', 'desc')), ['asc', 'desc'])
             ? strtolower($request->get('direction', 'desc'))
             : 'desc';
-     
+    
         // Whitelist kolom yang diizinkan untuk sorting
         $allowedSortFields = ['tanggal', 'skala', 'tone', 'status_id'];
         $sortField = in_array($sortField, $allowedSortFields) ? $sortField : 'tanggal';
-         
+        
         // Cek apakah user adalah verifikator
         $isVerifikator = $user->hasRole('verifikator1') || $user->hasRole('verifikator2');
         
@@ -303,7 +303,7 @@ class IsuController extends Controller
                         break;
                 }
             }
-             
+            
             // Filter berdasarkan status dari form
             if ($request->filled('status')) {
                 $statusId = (int) $request->input('status');
@@ -359,6 +359,12 @@ class IsuController extends Controller
                     case 'draft':
                         $isusStrategisQuery->where('status_id', RefStatus::getDraftId());
                         $isusLainnyaQuery->where('status_id', RefStatus::getDraftId());
+                        
+                        // Untuk editor, hanya tampilkan draft miliknya
+                        if ($user->isEditor()) {
+                            $isusStrategisQuery->where('created_by', $userId);
+                            $isusLainnyaQuery->where('created_by', $userId);
+                        }
                         break;
                     case 'verifikasi1':
                         $isusStrategisQuery->where('status_id', RefStatus::getVerifikasi1Id());
@@ -371,20 +377,29 @@ class IsuController extends Controller
                     case 'rejected':
                         $isusStrategisQuery->where('status_id', RefStatus::getDitolakId());
                         $isusLainnyaQuery->where('status_id', RefStatus::getDitolakId());
+                        
+                        // Untuk editor, hanya tampilkan isu yang ditolak miliknya
+                        if ($user->isEditor()) {
+                            $isusStrategisQuery->where('created_by', $userId);
+                            $isusLainnyaQuery->where('created_by', $userId);
+                        }
                         break;
                 }
-            } else {
+            }
+            else {
                 // Filter berdasarkan role jika tidak ada filter sidebar
                 if ($user->isEditor()) {
-                    // Modifikasi untuk menampilkan isu milik editor dan yang sudah dipublikasi
+                    // Modifikasi untuk menampilkan:
+                    // 1. Semua isu yang dibuat editor sendiri (terlepas status)
+                    // 2. Semua isu yang sudah dipublikasi (dibuat siapapun)
                     $isusStrategisQuery->where(function($query) use ($user) {
                         $query->where('created_by', $user->id)
-                              ->orWhere('status_id', RefStatus::getDipublikasiId());
+                            ->orWhere('status_id', RefStatus::getDipublikasiId());
                     });
                     
                     $isusLainnyaQuery->where(function($query) use ($user) {
                         $query->where('created_by', $user->id)
-                              ->orWhere('status_id', RefStatus::getDipublikasiId());
+                            ->orWhere('status_id', RefStatus::getDipublikasiId());
                     });
                 }
                 // Admin melihat semua isu (tidak ada filter tambahan)
@@ -395,9 +410,15 @@ class IsuController extends Controller
                 $statusId = (int) $request->input('status');
                 $isusStrategisQuery->where('status_id', $statusId);
                 $isusLainnyaQuery->where('status_id', $statusId);
+                
+                // Jika status ditolak dan user adalah editor, tampilkan hanya miliknya
+                if ($statusId == RefStatus::getDitolakId() && $user->isEditor()) {
+                    $isusStrategisQuery->where('created_by', $userId);
+                    $isusLainnyaQuery->where('created_by', $userId);
+                }
             }
             
-             // Filter tanggal
+            // Filter tanggal
             if ($request->filled('date_from') && $request->filled('date_to')) {
                 $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
                 $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
@@ -405,7 +426,7 @@ class IsuController extends Controller
                 $isusLainnyaQuery->whereBetween('tanggal', [$dateFrom, $dateTo]);
             }
             
-             // Pencarian global
+            // Pencarian global
             if ($request->filled('search')) {
                 $searchTerm = '%' . $request->search . '%';
                 $isusStrategisQuery->where(function($query) use ($searchTerm) {
@@ -437,15 +458,69 @@ class IsuController extends Controller
             // Dapatkan daftar status untuk dropdown filter
             $statusList = RefStatus::getActive();
             
+            // Siapkan data sidebar
+            $sidebarData = $this->prepareSidebarData();
+            
             // Return view untuk non-verifikator
-            return view('isu.index', [
+            return view('isu.index', array_merge([
                 'isusStrategis' => $isusStrategis,
                 'isusLainnya' => $isusLainnya,
                 'statusList' => $statusList,
                 'isRejectedPage' => ($filterStatus === 'rejected')
-            ]);
+            ], $sidebarData));
         }
     }
+
+    /**
+     * Mengambil dan menyiapkan data untuk sidebar
+     * 
+     * @return array
+     */
+    private function prepareSidebarData()
+    {
+        $user = Auth::user();
+        $userId = $user->id;
+        $data = [];
+        
+        // Hitung jumlah isu berdasarkan status
+        if ($user->isAdmin()) {
+            // Admin bisa melihat semua isu
+            $data['draftIsuCount'] = Isu::where('status_id', RefStatus::getDraftId())->count();
+            $data['verifikasi1IsuCount'] = Isu::where('status_id', RefStatus::getVerifikasi1Id())->count();
+            $data['verifikasi2IsuCount'] = Isu::where('status_id', RefStatus::getVerifikasi2Id())->count();
+            $data['rejectedIsuCount'] = Isu::where('status_id', RefStatus::getDitolakId())->count();
+            $data['pendingIsuCount'] = $data['verifikasi1IsuCount'] + $data['verifikasi2IsuCount'];
+        } 
+        elseif ($user->isEditor()) {
+            // Editor hanya bisa melihat draft isu yang dia buat
+            $data['draftIsuCount'] = Isu::where('status_id', RefStatus::getDraftId())
+                                ->where('created_by', $userId)
+                                ->count();
+                                
+            // Untuk rejected, hanya tampilkan jumlah isu yang dibuat oleh editor tersebut
+            $data['rejectedIsuCount'] = Isu::where('status_id', RefStatus::getDitolakId())
+                                    ->where('created_by', $userId)
+                                    ->count();
+            
+            // Cek apakah badge ditolak perlu disembunyikan berdasarkan cache
+            $cacheKey = 'rejected_badge_hidden_' . $userId;
+            if (Cache::has($cacheKey) && Cache::get($cacheKey) === true) {
+                $data['rejectedIsuCount'] = 0; // Set ke 0 untuk menyembunyikan badge
+            }
+        }
+        elseif ($user->hasRole('verifikator1')) {
+            // Verifikator 1 hanya perlu melihat isu yang perlu diverifikasi level 1
+            $data['verifikasi1IsuCount'] = Isu::where('status_id', RefStatus::getVerifikasi1Id())->count();
+            $data['pendingIsuCount'] = $data['verifikasi1IsuCount'];
+        }
+        elseif ($user->hasRole('verifikator2')) {
+            // Verifikator 2 hanya perlu melihat isu yang perlu diverifikasi level 2
+            $data['verifikasi2IsuCount'] = Isu::where('status_id', RefStatus::getVerifikasi2Id())->count();
+            $data['pendingIsuCount'] = $data['verifikasi2IsuCount'];
+        }
+        
+        return $data;
+    }    
 
     /**
      * Menampilkan form untuk membuat isu baru.
@@ -1301,7 +1376,7 @@ class IsuController extends Controller
             // Untuk editor, hanya bisa menghapus isu yang mereka buat dan masih draft
             if ($user->isEditor()) {
                 $query->where('created_by', $user->id)
-                    ->where('status_id', RefStatus::getDraftId());
+                      ->whereIn('status_id', [RefStatus::getDraftId(), RefStatus::getDitolakId()]);
             }
 
             $isusToDelete = $query->get();
@@ -1336,13 +1411,11 @@ class IsuController extends Controller
         }
     }
 
-
     /**
      * Handle send to Verifikator 1 action.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $isus
-     * @param \App\Models\User $user
      * @param array $selectedIds
+     * @param \App\Models\User $user
      * @return \Illuminate\Http\Response
      */
     private function handleSendToVerif1Action($selectedIds, $user)
@@ -1352,7 +1425,28 @@ class IsuController extends Controller
             return back()->with('error', 'Anda tidak memiliki izin untuk mengirim isu ke Verifikator 1.');
         }
 
+        // Pastikan $selectedIds adalah array
+        if (!is_array($selectedIds)) {
+            $selectedIds = json_decode($selectedIds);
+            if (!is_array($selectedIds)) {
+                return back()->with('error', 'Format data tidak valid.');
+            }
+        }
+
+        // Periksa jika array kosong
+        if (empty($selectedIds)) {
+            return back()->with('error', 'Tidak ada isu yang dipilih.');
+        }
+
+        // Log untuk debugging
+        Log::info('Sending to Verifikator 1', ['selected_ids' => $selectedIds, 'user_id' => $user->id]);
+
+        $updatedCount = 0;
+        $errors = [];
+
+        // Mulai transaksi
         DB::beginTransaction();
+        
         try {
             // Query untuk menyeleksi isu yang akan dikirim ke verifikator 1
             $query = Isu::whereIn('id', $selectedIds);
@@ -1364,47 +1458,59 @@ class IsuController extends Controller
             }
 
             $isusToUpdate = $query->get();
-            $updatedCount = 0;
-
+            
             foreach ($isusToUpdate as $isu) {
-                // Simpan status lama untuk log
-                $oldStatusId = $isu->status_id;
-                
-                // Update status ke Verifikasi 1
-                $isu->update([
-                    'status_id' => RefStatus::getVerifikasi1Id(),
-                    'updated_by' => $user->id,
-                    'updated_at' => now()
-                ]);
+                try {
+                    // Simpan status lama untuk log
+                    $oldStatusId = $isu->status_id;
+                    
+                    // Update status ke Verifikasi 1
+                    $isu->update([
+                        'status_id' => RefStatus::getVerifikasi1Id(),
+                        'updated_by' => $user->id,
+                        'updated_at' => now()
+                    ]);
 
-                // Log perubahan status
-                LogHelper::logIsuActivity(
-                    $isu->id,
-                    'UPDATE',
-                    'status',
-                    RefStatus::getNamaById($oldStatusId),
-                    RefStatus::getNamaById(RefStatus::getVerifikasi1Id()),
-                    request(),
-                    RefStatus::getVerifikasi1Id()
-                );
+                    // Log perubahan status
+                    LogHelper::logIsuActivity(
+                        $isu->id,
+                        'UPDATE',
+                        'status',
+                        RefStatus::getNamaById($oldStatusId),
+                        RefStatus::getNamaById(RefStatus::getVerifikasi1Id()),
+                        request(),
+                        RefStatus::getVerifikasi1Id()
+                    );
 
-                // Kirim notifikasi ke verifikator 1 jika service tersedia
-                if (class_exists('App\\Services\\IsuNotificationService')) {
-                    IsuNotificationService::notifyForVerification($isu, RefStatus::getVerifikasi1Id(), $user);
+                    $updatedCount++;
+                } catch (\Exception $e) {
+                    // Catat error untuk isu tertentu tapi terus lanjutkan dengan isu lainnya
+                    $errors[] = "Isu #{$isu->id}: " . $e->getMessage();
+                    Log::error("Error updating isu #{$isu->id}", ['error' => $e->getMessage()]);
                 }
-
-                $updatedCount++;
             }
 
-            DB::commit();
-
+            // Jika ada yang berhasil, commit transaksi
             if ($updatedCount > 0) {
-                return back()->with('success', $updatedCount . ' isu berhasil dikirim ke Verifikator 1.');
+                DB::commit();
+
+                $message = $updatedCount . ' isu berhasil dikirim ke Verifikator 1.';
+                
+                // Jika ada error, tambahkan ke pesan
+                if (!empty($errors)) {
+                    Log::warning('Some issues encountered errors', ['errors' => $errors]);
+                    // Tidak perlu menampilkan pesan error karena aksi utama berhasil
+                }
+                
+                return back()->with('success', $message);
             } else {
+                // Tidak ada yang berhasil, rollback
+                DB::rollBack();
                 return back()->with('error', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
             }
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Mass action error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return back()->with('error', 'Terjadi kesalahan saat mengirim isu ke Verifikator 1: ' . $e->getMessage());
         }
     }
@@ -1412,9 +1518,8 @@ class IsuController extends Controller
     /**
      * Handle send to Verifikator 2 action.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $isus
-     * @param \App\Models\User $user
      * @param array $selectedIds
+     * @param \App\Models\User $user
      * @return \Illuminate\Http\Response
      */
     private function handleSendToVerif2Action($selectedIds, $user)
@@ -1424,7 +1529,28 @@ class IsuController extends Controller
             return back()->with('error', 'Anda tidak memiliki izin untuk mengirim isu ke Verifikator 2.');
         }
 
+        // Pastikan $selectedIds adalah array
+        if (!is_array($selectedIds)) {
+            $selectedIds = json_decode($selectedIds);
+            if (!is_array($selectedIds)) {
+                return back()->with('error', 'Format data tidak valid.');
+            }
+        }
+
+        // Periksa jika array kosong
+        if (empty($selectedIds)) {
+            return back()->with('error', 'Tidak ada isu yang dipilih.');
+        }
+
+        // Log untuk debugging
+        Log::info('Sending to Verifikator 2', ['selected_ids' => $selectedIds, 'user_id' => $user->id]);
+
+        $updatedCount = 0;
+        $errors = [];
+
+        // Mulai transaksi
         DB::beginTransaction();
+        
         try {
             // Query untuk menyeleksi isu yang akan dikirim ke verifikator 2
             $query = Isu::whereIn('id', $selectedIds);
@@ -1435,47 +1561,72 @@ class IsuController extends Controller
             }
 
             $isusToUpdate = $query->get();
-            $updatedCount = 0;
-
+            
             foreach ($isusToUpdate as $isu) {
-                // Simpan status lama untuk log
-                $oldStatusId = $isu->status_id;
-                
-                // Update status ke Verifikasi 2
-                $isu->update([
-                    'status_id' => RefStatus::getVerifikasi2Id(),
-                    'updated_by' => $user->id,
-                    'updated_at' => now()
-                ]);
+                try {
+                    // Simpan status lama untuk log
+                    $oldStatusId = $isu->status_id;
+                    
+                    // Update status ke Verifikasi 2
+                    $isu->update([
+                        'status_id' => RefStatus::getVerifikasi2Id(),
+                        'updated_by' => $user->id,
+                        'updated_at' => now()
+                    ]);
 
-                // Log perubahan status
-                LogHelper::logIsuActivity(
-                    $isu->id,
-                    'UPDATE',
-                    'status',
-                    RefStatus::getNamaById($oldStatusId),
-                    RefStatus::getNamaById(RefStatus::getVerifikasi2Id()),
-                    request(),
-                    RefStatus::getVerifikasi2Id()
-                );
+                    // Log perubahan status
+                    LogHelper::logIsuActivity(
+                        $isu->id,
+                        'UPDATE',
+                        'status',
+                        RefStatus::getNamaById($oldStatusId),
+                        RefStatus::getNamaById(RefStatus::getVerifikasi2Id()),
+                        request(),
+                        RefStatus::getVerifikasi2Id()
+                    );
 
-                // Kirim notifikasi ke verifikator 2 jika service tersedia
-                if (class_exists('App\\Services\\IsuNotificationService')) {
-                    IsuNotificationService::notifyForVerification($isu, RefStatus::getVerifikasi2Id(), $user);
+                    $updatedCount++;
+                } catch (\Exception $e) {
+                    // Catat error untuk isu tertentu tapi terus lanjutkan dengan isu lainnya
+                    $errors[] = "Isu #{$isu->id}: " . $e->getMessage();
+                    Log::error("Error updating isu #{$isu->id}", ['error' => $e->getMessage()]);
                 }
-
-                $updatedCount++;
             }
 
-            DB::commit();
-
+            // Jika ada yang berhasil, commit transaksi
             if ($updatedCount > 0) {
-                return back()->with('success', $updatedCount . ' isu berhasil dikirim ke Verifikator 2.');
+                DB::commit();
+                
+                // Kirim notifikasi setelah transaksi DB berhasil (pisahkan dari transaksi utama)
+                foreach ($isusToUpdate as $isu) {
+                    try {
+                        // Kirim notifikasi ke verifikator 2 jika service tersedia
+                        if (class_exists('App\\Services\\IsuNotificationService')) {
+                            IsuNotificationService::notifyForVerification($isu, RefStatus::getVerifikasi2Id(), $user);
+                        }
+                    } catch (\Exception $e) {
+                        // Logging notifikasi error tapi jangan menggagalkan seluruh operasi
+                        Log::warning("Notification error for isu #{$isu->id}", ['error' => $e->getMessage()]);
+                    }
+                }
+
+                $message = $updatedCount . ' isu berhasil dikirim ke Verifikator 2.';
+                
+                // Jika ada error, tambahkan ke pesan
+                if (!empty($errors)) {
+                    Log::warning('Some issues encountered errors', ['errors' => $errors]);
+                    // Tidak perlu menampilkan pesan error karena aksi utama berhasil
+                }
+                
+                return back()->with('success', $message);
             } else {
+                // Tidak ada yang berhasil, rollback
+                DB::rollBack();
                 return back()->with('error', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
             }
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Mass action error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return back()->with('error', 'Terjadi kesalahan saat mengirim isu ke Verifikator 2: ' . $e->getMessage());
         }
     }
