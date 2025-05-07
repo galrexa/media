@@ -115,23 +115,23 @@
                         <div class="mb-3">
                             <label for="dokumen_url" class="form-label">URL Dokumen PDF (Laporan Harian)</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-file-earmark-pdf"></i></span>
-                                <input type="url" class="form-control @error('dokumen_url') is-invalid @enderror" id="dokumen_url" name="dokumen_url" 
-                                    value="{{ old('dokumen_url', $image->dokumen_url) }}" 
+                                <span class="input-group-text"><i class="fa fa-file"></i></span>
+                                <input type="url" class="form-control @error('dokumen_url') is-invalid @enderror" id="dokumen_url" name="dokumen_url"
+                                    value="{{ old('dokumen_url', $image->dokumen_url) }}"
                                     placeholder="https://example.com/laporan-harian.pdf">
                             </div>
                             <small class="form-text text-muted">Masukkan URL dokumen PDF laporan harian (opsional)</small>
                             @error('dokumen_url')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                            
+
                             @if($image->dokumen_url)
                                 <div class="mt-2">
                                     <div class="card">
                                         <div class="card-body p-2">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <div>
-                                                    <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
+                                                    <i class="fas fa-file text-danger fs-4"></i>
                                                     <a href="{{ $image->dokumen_url }}" target="_blank" class="ms-2">Lihat Dokumen PDF</a>
                                                 </div>
                                                 <div class="form-check">
@@ -174,14 +174,14 @@
         // Handle dropdown date selection
         const dateSelector = document.getElementById('date-selector');
         const goToDateBtn = document.getElementById('go-to-date');
-        
+
         goToDateBtn.addEventListener('click', function() {
             const selectedDate = dateSelector.value;
             if (selectedDate) {
                 window.location.href = "{{ route('documents.edit') }}/" + selectedDate;
             }
         });
-        
+
         // File input preview
         const fileInputs = document.querySelectorAll('input[type="file"]');
         fileInputs.forEach(input => {
@@ -193,7 +193,7 @@
                         if (existingPreview) {
                             existingPreview.remove();
                         }
-                        
+
                         const reader = new FileReader();
                         reader.onload = function(e) {
                             const imgPreview = document.createElement('div');
@@ -209,7 +209,7 @@
                 }
             });
         });
-        
+
         // Toggle delete checkbox and file input
         const deleteCheckboxes = document.querySelectorAll('input[type="checkbox"][name^="delete_image"]');
         deleteCheckboxes.forEach(checkbox => {
@@ -224,7 +224,7 @@
                 }
             });
         });
-        
+
         // Tangani checkbox hapus dokumen
         const deleteDocumentCheckbox = document.getElementById('delete_dokumen');
         if (deleteDocumentCheckbox) {
