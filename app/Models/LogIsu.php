@@ -20,7 +20,7 @@ class LogIsu extends Model
         'new_value',
         'ip_address',
         'user_agent',
-        'status_id'  // Tambahkan kolom status_id
+        'status_id'
     ];
 
     // Tidak perlu updated_at karena log hanya dibuat sekali
@@ -93,5 +93,93 @@ class LogIsu extends Model
             default:
                 return 'fas fa-info-circle';
         }
+    }
+
+    /**
+     * Memformat nilai lama untuk ditampilkan di history
+     * 
+     * @return string
+     */
+    public function getFormattedOldValue()
+    {
+        return $this->formatValue($this->old_value, $this->field_changed);
+    }
+
+    /**
+     * Memformat nilai baru untuk ditampilkan di history
+     * 
+     * @return string
+     */
+    public function getFormattedNewValue()
+    {
+        return $this->formatValue($this->new_value, $this->field_changed);
+    }
+
+    /**
+     * Memformat nilai sesuai tipe field
+     * 
+     * @param string $value
+     * @param string $field
+     * @return string
+     */
+    protected function formatValue($value, $field)
+    {
+        // Jika nilai kosong atau null
+        if ($value === null || $value === '') {
+            return '(kosong)';
+        }
+
+        // Format berdasarkan jenis field
+        switch ($field) {
+            case 'kategori':
+                // Parse JSON jika nilai adalah JSON
+                if ($this->isJson($value)) {
+                    $categories = json_decode($value, true);
+                    return is_array($categories) ? implode(', ', $categories) : $value;
+                }
+                return $value;
+                
+            case 'status':
+                // Cek apakah nilai adalah ID status
+                if (is_numeric($value)) {
+                    $status = RefStatus::find($value);
+                    return $status ? $status->nama : $value;
+                }
+                return $value;
+
+            // Format untuk tanggal
+            case 'tanggal':
+            case 'tanggal_mulai':
+            case 'tanggal_selesai':
+                if (strtotime($value)) {
+                    return date('d/m/Y', strtotime($value));
+                }
+                return $value;
+
+            // Format untuk kolom WYSIWYG atau text panjang
+            case 'deskripsi':
+            case 'konten':
+            case 'keterangan':
+                return strlen($value) > 100 ? substr(strip_tags($value), 0, 100) . '...' : strip_tags($value);
+                
+            default:
+                return $value;
+        }
+    }
+
+    /**
+     * Mengecek apakah string adalah JSON valid
+     * 
+     * @param string $string
+     * @return bool
+     */
+    protected function isJson($string) 
+    {
+        if (!is_string($string)) {
+            return false;
+        }
+        
+        json_decode($string);
+        return json_last_error() === JSON_ERROR_NONE;
     }
 }
