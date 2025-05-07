@@ -15,7 +15,7 @@
 
 @section('content')
 <div class="container">
-    <!-- Breadcrumb dengan ARIA -->
+    
     <nav aria-label="Navigasi breadcrumb">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('home') }}" aria-label="Kembali ke Beranda">Beranda</a></li>
