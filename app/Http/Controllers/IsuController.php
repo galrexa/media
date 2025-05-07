@@ -1619,11 +1619,6 @@ class IsuController extends Controller
                     RefStatus::getDipublikasiId()
                 );
 
-                // Kirim notifikasi publikasi jika service tersedia
-                if (class_exists('App\\Services\\IsuNotificationService')) {
-                    IsuNotificationService::notifyForPublication($isu, $user);
-                }
-
                 $publishedCount++;
             }
 
