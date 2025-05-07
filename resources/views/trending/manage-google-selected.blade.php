@@ -55,9 +55,12 @@
                 <div class="card-header bg-light">
                     <h5 class="mb-0">Update Data</h5>
                 </div>
-                <div class="card-body d-flex align-items-center">
-                    <a href="{{ route('trending.refreshGoogleTrends') }}" class="btn btn-info w-100">
+                <div class="card-body d-flex flex-column gap-2">
+                    <a href="{{ route('trending.refreshGoogleTrends') }}" class="btn btn-info">
                         <i class="bi bi-arrow-clockwise me-2"></i> Refresh Trending Google
+                    </a>
+                    <a href="{{ route('trending.manual.create') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i> Tambah Trending Manual
                     </a>
                 </div>
             </div>
@@ -132,7 +135,7 @@
                     <div class="alert alert-info mb-3">
                         <i class="bi bi-info-circle me-2"></i> Seret dan lepas untuk mengatur urutan tampilan.
                     </div>
-                    
+
                     <div id="selected-google-trendings" class="selected-list">
                         @if($selectedGoogleTrendings->count() > 0)
                             @foreach($selectedGoogleTrendings as $trending)
@@ -163,7 +166,7 @@
                             </div>
                         @endif
                     </div>
-                    
+
                     @if($selectedGoogleTrendings->count() > 0)
                         <div class="d-grid mt-3">
                             <button id="save-google-order" class="btn btn-success">
@@ -175,7 +178,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="row">
         <div class="col-12 text-center">
             <a href="{{ route('trending.selected') }}" class="btn btn-secondary">
@@ -195,23 +198,23 @@
         padding: 10px;
         border-radius: 5px;
     }
-    
+
     .trending-item {
         cursor: grab;
     }
-    
+
     .trending-item:active {
         cursor: grabbing;
     }
-    
+
     .trending-item.dragging {
         opacity: 0.5;
     }
-    
+
     .card-header.bg-info {
         background: linear-gradient(135deg, #4285f4, #0d6efd) !important;
     }
-    
+
     .card-header.bg-success {
         background: linear-gradient(135deg, #198754, #28a745) !important;
     }
@@ -224,7 +227,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Inisialisasi Sortable untuk trending Google
     const selectedGoogleList = document.getElementById('selected-google-trendings');
-    
+
     if (selectedGoogleList) {
         const googleSortable = new Sortable(selectedGoogleList, {
             animation: 150,
@@ -235,13 +238,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Update nomor urutan Google setelah drag & drop
     function updateGoogleOrderNumbers() {
         const items = document.querySelectorAll('#selected-google-trendings .trending-item');
         items.forEach((item, index) => {
             item.setAttribute('data-order', index);
-            
+
             // Update nomor urutan yang ditampilkan
             const badge = item.querySelector('.badge');
             if (badge) {
@@ -249,18 +252,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Simpan urutan Google ke database
     const saveGoogleOrderBtn = document.getElementById('save-google-order');
     if (saveGoogleOrderBtn) {
         saveGoogleOrderBtn.addEventListener('click', function() {
             const items = document.querySelectorAll('#selected-google-trendings .trending-item');
-            
+
             if (items.length === 0) {
                 alert('Tidak ada trending Google yang dipilih!');
                 return;
             }
-            
+
             const orderedItems = [];
             items.forEach((item, index) => {
                 orderedItems.push({
@@ -268,11 +271,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     order: index
                 });
             });
-            
+
             // Ambil tanggal dari parameter URL
             const urlParams = new URLSearchParams(window.location.search);
             const date = urlParams.get('date') || '{{ date('Y-m-d') }}';
-            
+
             // Kirim data ke server
             fetch('{{ route("trending.updateGoogleOrder") }}', {
                 method: 'POST',
@@ -280,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     items: orderedItems,
                     date: date
                 })
@@ -289,14 +292,14 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 // Buat elemen notifikasi
                 const alertDiv = document.createElement('div');
-                
+
                 // Atur kelas dan pesan berdasarkan status respons
                 alertDiv.className = data.success ? 'alert alert-success' : 'alert alert-danger';
                 alertDiv.textContent = data.success ? 'Urutan trending Google berhasil disimpan!' : 'Terjadi kesalahan saat menyimpan urutan trending Google.';
-                
+
                 // Tambahkan notifikasi ke halaman
                 document.querySelector('.container').prepend(alertDiv); // Sesuaikan selector container
-                
+
                 // Otomatis hilangkan notifikasi setelah 3 detik
                 setTimeout(() => alertDiv.remove(), 3000);
             })

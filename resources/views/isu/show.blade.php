@@ -1,10 +1,34 @@
 <!-- resources/views/isu/show.blade.php -->
-@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
+@extends(
+    auth()->check() &&
+    (
+        auth()->user()->isAdmin() ||
+        auth()->user()->isEditor() ||
+        auth()->user()->isVerifikator1() ||
+        auth()->user()->isVerifikator2()
+    )
+    ? 'layouts.admin'
+    : 'layouts.app'
+)
 
 @section('title', $isu->judul)
 
 @section('content')
 <div class="container">
+    <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+        <h2 class="page-title fw-bold mb-0">Daftar Isu</h2>
+    </div>
+        <div class="col-md-6 text-md-end">
+            @auth
+                @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
+                    <a href="{{ route('isu.create') }}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i> Tambah Isu Baru
+                    </a>
+                @endif
+            @endauth
+        </div>
+    </div>
 
     <div class="card mb-4">
         <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
@@ -129,7 +153,15 @@
                         </form>
                     </div>
                 @endif
+
+
             </div>
+            @if($isu->status && $isu->status->nama == 'Ditolak' && $isu->alasan_penolakan)
+                <div class="alert alert-danger mt-3">
+                    <h5 class="alert-heading"><i class="fas fa-times-circle me-2"></i>Alasan Penolakan: </h5>
+                    <p class="mb-0">{{ $isu->alasan_penolakan }}</p>
+                </div>
+            @endif
         </div>
     </div>
 </div>

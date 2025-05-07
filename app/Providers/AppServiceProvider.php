@@ -6,6 +6,12 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use App\Http\Middleware\RoleMiddleware;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Log;
+use App\Http\ViewComposers\SidebarComposer;
+use App\Http\ViewComposers\NotificationComposer;
+use Illuminate\Support\Facades\View;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Pagination\Paginator;
@@ -25,7 +31,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        
+
         Schema::defaultStringLength(191);
         // Register role middleware
         Route::aliasMiddleware('role', RoleMiddleware::class);
@@ -37,5 +43,8 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrap();
 
         Carbon::setLocale('id');
+        View::composer('partials.sidebar', SidebarComposer::class);
+        View::composer('layouts.admin', NotificationComposer::class);
+        Log::info('AppServiceProvider: ViewComposers registered');
     }
 }
