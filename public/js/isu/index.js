@@ -21,7 +21,50 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Inisialisasi rejection modal
     initRejectModal();
+
+    initAllStatus();
 });
+
+function initAllStatus() {
+    // Get active tab from hidden input
+    const activeTabInput = document.getElementById("active_tab_input");
+
+    // Setup tabs based on user role
+    const isVerificator =
+        document.body.classList.contains("role-verifikator1") ||
+        document.body.classList.contains("role-verifikator2");
+
+    if (isVerificator) {
+        // For verificator, we only have one tab (semua)
+        const tab = document.getElementById("semua-tab");
+        if (tab) {
+            // Tab is already active by default
+            const tabPane = document.getElementById("semua");
+            if (tabPane) tabPane.classList.add("show", "active");
+        }
+    } else {
+        // For other users, handle tab switching between strategis and lainnya
+        const activeTab = activeTabInput.value || "strategis";
+        const tab = document.getElementById(`${activeTab}-tab`);
+
+        if (tab) {
+            tab.classList.add("active");
+            const tabPane = document.getElementById(activeTab);
+            if (tabPane) tabPane.classList.add("show", "active");
+        }
+
+        // Add event listeners to tabs
+        document
+            .querySelectorAll(".custom-tab-link")
+            .forEach(function (tabLink) {
+                tabLink.addEventListener("click", function (e) {
+                    const tabId = this.id.replace("-tab", "");
+                    document.getElementById("search_active_tab").value = tabId;
+                    activeTabInput.value = tabId;
+                });
+            });
+    }
+}
 
 /**
  * Inisialisasi tooltip Bootstrap
@@ -263,98 +306,4 @@ function initMassActionButtons() {
                 document.getElementById("mass-action-form").submit();
             });
         });
-
-    // Handler khusus untuk tombol reject
-    document
-        .querySelectorAll('[id^="reject-selected-"]')
-        .forEach(function (button) {
-            button.addEventListener("click", function (e) {
-                e.preventDefault();
-
-                const tabId = this.id.split("-").pop();
-                const selectedIds = Array.from(
-                    document.querySelectorAll(
-                        `.isu-checkbox[data-tab="${tabId}"]:checked`
-                    )
-                ).map((el) => el.value);
-
-                if (selectedIds.length === 0) {
-                    alert("Silakan pilih setidaknya satu isu.");
-                    return;
-                }
-
-                // Simpan data yang diperlukan untuk digunakan saat konfirmasi
-                const rejectModal = new bootstrap.Modal(
-                    document.getElementById("rejectModal")
-                );
-
-                // Simpan ID isu yang dipilih untuk digunakan nanti
-                document
-                    .getElementById("rejectModal")
-                    .setAttribute("data-tab", tabId);
-                document
-                    .getElementById("rejectModal")
-                    .setAttribute(
-                        "data-selected-ids",
-                        JSON.stringify(selectedIds)
-                    );
-
-                // Tampilkan modal
-                rejectModal.show();
-            });
-        });
-}
-
-/**
- * Inisialisasi modal penolakan isu
- */
-function initRejectModal() {
-    // Handler untuk tombol konfirmasi penolakan
-    const confirmButton = document.getElementById("confirm-reject");
-    if (confirmButton) {
-        confirmButton.addEventListener("click", function () {
-            const rejectionReason = document
-                .getElementById("rejection-reason-input")
-                .value.trim();
-            const rejectionInput = document.getElementById(
-                "rejection-reason-input"
-            );
-
-            if (!rejectionReason) {
-                // Tampilkan pesan error
-                rejectionInput.classList.add("is-invalid");
-                return;
-            }
-
-            rejectionInput.classList.remove("is-invalid");
-            const modal = document.getElementById("rejectModal");
-            const tabId = modal.getAttribute("data-tab");
-            const selectedIds = JSON.parse(
-                modal.getAttribute("data-selected-ids")
-            );
-
-            // Set form values
-            document.getElementById("mass-action").value = "reject";
-            document.getElementById("selected-ids").value =
-                JSON.stringify(selectedIds);
-            document.getElementById("rejection-reason").value = rejectionReason;
-
-            // Submit form
-            document.getElementById("mass-action-form").submit();
-        });
-    }
-
-    // Reset rejection reason when modal is closed
-    const rejectModal = document.getElementById("rejectModal");
-    if (rejectModal) {
-        rejectModal.addEventListener("hidden.bs.modal", function () {
-            const rejectionInput = document.getElementById(
-                "rejection-reason-input"
-            );
-            if (rejectionInput) {
-                rejectionInput.value = "";
-                rejectionInput.classList.remove("is-invalid");
-            }
-        });
-    }
 }
