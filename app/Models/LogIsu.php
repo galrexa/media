@@ -122,6 +122,7 @@ class LogIsu extends Model
      * @param string $field
      * @return string
      */
+    // Perbaikan pada fungsi formatValue() di model LogIsu
     protected function formatValue($value, $field)
     {
         // Jika nilai kosong atau null
@@ -132,20 +133,19 @@ class LogIsu extends Model
         // Format berdasarkan jenis field
         switch ($field) {
             case 'kategori':
-                // Parse JSON jika nilai adalah JSON
-                if ($this->isJson($value)) {
+                // Jika nilai adalah string tapi mungkin berbentuk JSON
+                if (is_string($value) && $this->isJson($value)) {
                     $categories = json_decode($value, true);
                     // Pastikan $categories adalah array
                     if (is_array($categories)) {
                         return implode(', ', $categories);
                     }
-                    // Jika bukan array, kembalikan sebagai string
-                    return (string) $value;
                 }
-                // Jika nilai sudah berbentuk array (mungkin sudah di-decode)
-                if (is_array($value)) {
+                // Jika nilai sudah berbentuk array
+                elseif (is_array($value)) {
                     return implode(', ', $value);
                 }
+                // Jika bukan array atau JSON, kembalikan sebagai string
                 return (string) $value;
                 
             case 'status':
@@ -174,7 +174,13 @@ class LogIsu extends Model
                 
             default:
                 // Pastikan nilai selalu dikembalikan sebagai string
-                if (is_array($value) || is_object($value)) {
+                if (is_array($value)) {
+                    try {
+                        return implode(', ', $value);
+                    } catch (\Exception $e) {
+                        return '(data kompleks)';
+                    }
+                } elseif (is_object($value)) {
                     try {
                         return json_encode($value, JSON_UNESCAPED_UNICODE);
                     } catch (\Exception $e) {
@@ -202,11 +208,7 @@ class LogIsu extends Model
             return false;
         }
         
-        try {
-            $result = json_decode($string);
-            return (json_last_error() === JSON_ERROR_NONE);
-        } catch (\Exception $e) {
-            return false;
-        }
+        json_decode($string);
+        return (json_last_error() === JSON_ERROR_NONE);
     }
 }
