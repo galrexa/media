@@ -1,5 +1,15 @@
 <!-- resources/views/isu/show.blade.php -->
-@extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
+@extends(
+    auth()->check() &&
+    (
+        auth()->user()->isAdmin() ||
+        auth()->user()->isEditor() ||
+        auth()->user()->isVerifikator1() ||
+        auth()->user()->isVerifikator2()
+    )
+    ? 'layouts.admin'
+    : 'layouts.app'
+)
 
 @section('title', $isu->judul)
 
@@ -7,6 +17,7 @@
 <div class="container">
     <div class="row mb-4 align-items-center">
     <div class="col-md-6">
+        <h2 class="page-title fw-bold mb-0">Daftar Isu</h2>
     </div>
         <div class="col-md-6 text-md-end">
             @auth
