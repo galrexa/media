@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta property="og:title" content="Media Monitoring - Login">
-    <meta property="og:description" content="Media Monitoring - Kantor Staf Presiden">
+    <meta property="og:title" content="Media Monitoring KSP">
+    <meta property="og:description" content="Platform Pemantauan Media milik Kantor Staf Presiden. Solusi komprehensif untuk melacak, menganalisis, dan mengelola liputan media dan isu terkini guna mendukung pengambilan keputusan yang tepat.">
     <meta property="og:image" content="{{ asset('og-image.png') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
