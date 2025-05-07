@@ -45,7 +45,7 @@
 
             <!-- Manajemen Isu -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('isu.*') ? 'active' : '' }}" href="#">
+                <a class="nav-link {{ request()->routeIs('isu.index') ? 'active' : '' }}" href="{{ route('isu.index') }}">
                     <i class="bi bi-file-text"></i>
                     <span>Manajemen Isu</span>
                     @if(isset($pendingIsuCount) && $pendingIsuCount > 0)
@@ -68,7 +68,7 @@
                     <ul class="nav flex-column sub-submenu">
 
                         <!-- Sub-sub menu Draft - Hanya untuk Editor -->
-                        @if(Auth::user()->isEditor())
+                        @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('isu.index') && request()->input('filter_status') == 'draft' ? 'active' : '' }}" href="{{ route('isu.index', ['filter_status' => 'draft']) }}">
                                 <span>Draft</span>
@@ -131,7 +131,7 @@
             <!-- Manajemen Dokumen -->
             @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="#">
+                <a class="nav-link {{ request()->routeIs('documents.index') ? 'active' : '' }}" href="{{ route('documents.index') }}">
                     <i class="bi bi-images"></i>
                     <span>Manajemen Dokumen</span>
                     @if(isset($pendingDocumentCount) && $pendingDocumentCount > 0)
@@ -157,7 +157,7 @@
 
             <!-- Trending -->
             <li class="nav-item">
-                <a class="nav-link {{ request()->routeIs('trending.*') ? 'active' : '' }}" href="#">
+                <a class="nav-link {{ request()->routeIs('trending.selected') ? 'active' : '' }}" href="{{ route('trending.selected') }}">
                     <i class="bi bi-graph-up"></i>
                     <span>Trending</span>
                     @if(isset($pendingTrendingCount) && $pendingTrendingCount > 0)
@@ -246,64 +246,6 @@
         </ul>
     </div>
 </div>
-@if(Auth::user()->isAdmin())
-<!-- Debug section, hanya terlihat oleh Admin -->
-<div class="debug-sidebar mt-5 p-3 bg-light border">
-    <h6>Debug Badge Information</h6>
-    <table class="table table-sm">
-        <tr>
-            <th>Variable</th>
-            <th>Value</th>
-        </tr>
-        <tr>
-            <td>draftIsuCount</td>
-            <td>{{ isset($draftIsuCount) ? $draftIsuCount : 'Not set' }}</td>
-        </tr>
-        <tr>
-            <td>verifikasi1IsuCount</td>
-            <td>{{ isset($verifikasi1IsuCount) ? $verifikasi1IsuCount : 'Not set' }}</td>
-        </tr>
-        <tr>
-            <td>verifikasi2IsuCount</td>
-            <td>{{ isset($verifikasi2IsuCount) ? $verifikasi2IsuCount : 'Not set' }}</td>
-        </tr>
-        <tr>
-            <td>rejectedIsuCount</td>
-            <td>{{ isset($rejectedIsuCount) ? $rejectedIsuCount : 'Not set' }}</td>
-        </tr>
-        <tr>
-            <td>pendingIsuCount</td>
-            <td>{{ isset($pendingIsuCount) ? $pendingIsuCount : 'Not set' }}</td>
-        </tr>
-        <tr>
-            <td>rejectedBadgeHidden</td>
-            <td>{{ isset($rejectedBadgeHidden) ? ($rejectedBadgeHidden ? 'true' : 'false') : 'Not set' }}</td>
-        </tr>
-        <tr>
-            <td>isRejectedPage</td>
-            <td>{{ isset($isRejectedPage) ? ($isRejectedPage ? 'true' : 'false') : 'Not set' }}</td>
-        </tr>
-        <tr>
-            <td>Current filter_status</td>
-            <td>{{ request()->input('filter_status') }}</td>
-        </tr>
-    </table>
-    <div class="mt-2">
-        <a href="{{ route('show.rejected.badge') }}" class="btn btn-sm btn-outline-secondary">Reset Badge Status</a>
-    </div>
-</div>
-@endif
-
-<style>
-    .debug-sidebar {
-        font-size: 0.8rem;
-    }
-    .debug-sidebar table {
-        font-size: 0.8rem;
-    }
-</style>
-
-
 <!-- CSRF Token for JavaScript -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
