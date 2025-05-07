@@ -215,13 +215,12 @@
                     <a href="{{ route('isu.index') }}" class="btn btn-light border">
                         <i class="bi bi-x-circle"></i> Batal
                     </a>
-                    <button type="submit" name="action" value="kirim" class="btn btn-success">
-                        <i class="fas fa-paper-plane me-1"></i> Kirim
-                    </button>
                     <button type="submit" name="action" value="simpan" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i> Simpan
                     </button>
-
+                    <button type="submit" name="action" value="kirim" class="btn btn-success">
+                        <i class="fas fa-paper-plane me-1"></i> Kirim
+                    </button>
                 </div>
             </form>
         </div>
