@@ -110,26 +110,26 @@
                                                     <strong>{{ $log->field_changed }}</strong>
                                                     
                                                     @php
-                                                        // Pengecekan khusus untuk kolom kategori
-                                                        $oldFormatted = $log->getFormattedOldValue();
-                                                        $newFormatted = $log->getFormattedNewValue();
-                                                        $showDiff = true;
+                                                    // Pengecekan khusus untuk kolom kategori
+                                                    $oldFormatted = $log->getFormattedOldValue();
+                                                    $newFormatted = $log->getFormattedNewValue();
+                                                    $showDiff = true;
+                                                    
+                                                    // Jika field adalah kategori, pastikan nilai ditampilkan dengan benar
+                                                    if ($log->field_changed === 'kategori') {
+                                                        // Pastikan nilai ditampilkan dalam urutan yang benar
+                                                        $tempOld = $oldFormatted;
+                                                        $tempNew = $newFormatted;
                                                         
-                                                        // Jika field adalah kategori, pastikan nilai ditampilkan dengan benar
-                                                        if ($log->field_changed === 'kategori') {
-                                                            // Pastikan nilai ditampilkan dalam urutan yang benar
-                                                            $tempOld = $oldFormatted;
-                                                            $tempNew = $newFormatted;
-                                                            
-                                                            // Periksa apakah nilai baru lebih panjang dari nilai lama
-                                                            // Yang mengindikasikan penambahan kategori bukan pengurangan
-                                                            if (strlen($tempNew) > strlen($tempOld)) {
-                                                                // Tukar nilai untuk menampilkan dalam urutan yang benar
-                                                                $oldFormatted = $tempNew;
-                                                                $newFormatted = $tempOld;
-                                                            }
+                                                        // Periksa apakah nilai baru lebih panjang dari nilai lama
+                                                        // Yang mengindikasikan penambahan kategori bukan pengurangan
+                                                        if (strlen($tempNew) > strlen($tempOld)) {
+                                                            // Tukar nilai untuk menampilkan dalam urutan yang benar
+                                                            $oldFormatted = $tempNew;
+                                                            $newFormatted = $tempOld;
                                                         }
-                                                    @endphp
+                                                    }
+                                                @endphp
                                                     
                                                     @if($showDiff && !str_contains($log->field_changed, 'tanggal'))
                                                         <div class="small">
