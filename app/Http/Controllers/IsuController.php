@@ -46,9 +46,9 @@ class IsuController extends Controller
             'kategori' => 'nullable|string',
             'skala' => 'nullable|string',
             'tone' => 'nullable|string',
-            'rangkuman' => 'nullable|string',
-            'narasi_positif' => 'nullable|string|max:1000',
-            'narasi_negatif' => 'nullable|string|max:1000',
+            'rangkuman' => 'nullable|string|max:10000',
+            'narasi_positif' => 'nullable|string|max:10000',
+            'narasi_negatif' => 'nullable|string|max:10000',
             'referensi_judul.*' => 'nullable|string|max:255',
             'referensi_url.*' => [
                 'nullable',
@@ -56,7 +56,7 @@ class IsuController extends Controller
                 'max:1000',
                 // Validasi URL untuk mencegah injeksi
                 function ($attribute, $value, $fail) {
-                    $blockedDomains = ['evil.com', 'malicious.org']; // Contoh domain yang diblokir
+                    $blockedDomains = ['evil.com', 'malicious.org'];
                     $parsed = parse_url($value);
                     if (isset($parsed['host']) && in_array($parsed['host'], $blockedDomains)) {
                         $fail('URL ini tidak diperbolehkan.');
@@ -244,164 +244,200 @@ class IsuController extends Controller
      * @return \Illuminate\View\View
      */
 
-    public function index(Request $request)
-    {
+     public function index(Request $request)
+     {
         $user = Auth::user();
         $role = $user->getHighestRoleName();
         $userId = $user->id;
-
+     
         // Ambil filter status dari request
         $filterStatus = $request->input('filter_status');
-
-        // Jika mengakses halaman dengan filter "rejected", reset badge dengan lebih menyeluruh
+     
+        // Reset badge untuk filter rejected
         if ($filterStatus === 'rejected') {
-            // Simpan ke session
             Session::put('rejected_badge_hidden', true);
-
-            // Simpan ke cache untuk persistensi lebih lama
             $cacheKey = 'rejected_badge_hidden_' . $userId;
-            Cache::put($cacheKey, true, now()->addDays(7)); // Simpan selama 7 hari
-
-            // Log aksi untuk audit
+            Cache::put($cacheKey, true, now()->addDays(7));
             Log::info("Badge ditolak direset oleh User ID: {$userId} ({$user->name}) melalui akses halaman");
         }
-
-        // Base queries dengan eager loading termasuk status
-        $isusStrategisQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator'])
-                                ->where('isu_strategis', true);
-
-        $isusLainnyaQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator'])
-                                ->where('isu_strategis', false);
-
-        // Filter dari sidebar (filter_status)
-        if ($request->has('filter_status')) {
-            $filterStatus = $request->input('filter_status');
-
-            switch($filterStatus) {
-                case 'draft':
-                    // Status Draft
-                    $isusStrategisQuery->where('status_id', RefStatus::getDraftId());
-                    $isusLainnyaQuery->where('status_id', RefStatus::getDraftId());
-                    break;
-                case 'verifikasi1':
-                    // Status Verifikasi 1
-                    $isusStrategisQuery->where('status_id', RefStatus::getVerifikasi1Id());
-                    $isusLainnyaQuery->where('status_id', RefStatus::getVerifikasi1Id());
-                    break;
-                case 'verifikasi2':
-                    // Status Verifikasi 2
-                    $isusStrategisQuery->where('status_id', RefStatus::getVerifikasi2Id());
-                    $isusLainnyaQuery->where('status_id', RefStatus::getVerifikasi2Id());
-                    break;
-                case 'rejected':
-                    // Status Ditolak
-                    $isusStrategisQuery->where('status_id', RefStatus::getDitolakId());
-                    $isusLainnyaQuery->where('status_id', RefStatus::getDitolakId());
-                    break;
-            }
-        } else {
-            // Filter berdasarkan role jika tidak ada filter sidebar
-            if ($user->isEditor()) {
-                // Editor hanya melihat isu yang dibuat olehnya
-                $isusStrategisQuery->where('created_by', $user->id);
-                $isusLainnyaQuery->where('created_by', $user->id);
-            } elseif ($user->hasRole('verifikator1')) {
-                // Verifikator 1 melihat isu yang perlu diperiksa dan yang telah disetujui
-                $isusStrategisQuery->whereIn('status_id', [
-                    RefStatus::getVerifikasi1Id(),
-                    RefStatus::getVerifikasi2Id(),
-                    RefStatus::getDipublikasiId(),
-                    RefStatus::getDitolakId()
-                ]);
-                $isusLainnyaQuery->whereIn('status_id', [
-                    RefStatus::getVerifikasi1Id(),
-                    RefStatus::getVerifikasi2Id(),
-                    RefStatus::getDipublikasiId(),
-                    RefStatus::getDitolakId()
-                ]);
-            } elseif ($user->hasRole('verifikator2')) {
-                // Verifikator 2 melihat isu yang perlu diperiksa dan yang telah dipublikasikan
-                $isusStrategisQuery->whereIn('status_id', [
-                    RefStatus::getVerifikasi1Id(),
-                    RefStatus::getVerifikasi2Id(),
-                    RefStatus::getDipublikasiId(),
-                    RefStatus::getDitolakId()
-                ]);
-                $isusLainnyaQuery->whereIn('status_id', [
-                    RefStatus::getVerifikasi1Id(),
-                    RefStatus::getVerifikasi2Id(),
-                    RefStatus::getDipublikasiId(),
-                    RefStatus::getDitolakId()
-                ]);
-            }
-            // Admin melihat semua isu (tidak ada filter tambahan)
-        }
-
-        // Filter berdasarkan status dari form jika dipilih
-        if ($request->filled('status')) {
-            $statusId = (int) $request->input('status');
-            $isusStrategisQuery->where('status_id', $statusId);
-            $isusLainnyaQuery->where('status_id', $statusId);
-        }
-
-        if ($request->filled('date_from') && $request->filled('date_to')) {
-            $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
-            $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
-
-            $isusStrategisQuery->whereBetween('tanggal', [$dateFrom, $dateTo]);
-            $isusLainnyaQuery->whereBetween('tanggal', [$dateFrom, $dateTo]);
-        }
-
-        // Pencarian global
-        if ($request->filled('search')) {
-            $searchTerm = '%' . $request->search . '%';
-
-            // Menggunakan parameter binding untuk mencegah SQL injection
-            $isusStrategisQuery->where(function($query) use ($searchTerm) {
-                $query->where('judul', 'like', $searchTerm)
-                    ->orWhereHas('kategoris', function($q) use ($searchTerm) {
-                        $q->where('nama', 'like', $searchTerm);
-                    });
-            });
-
-            $isusLainnyaQuery->where(function($query) use ($searchTerm) {
-                $query->where('judul', 'like', $searchTerm)
-                    ->orWhereHas('kategoris', function($q) use ($searchTerm) {
-                        $q->where('nama', 'like', $searchTerm);
-                    });
-            });
-        }
-
+     
         // Sorting
         $sortField = $request->get('sort', 'tanggal');
         $sortDirection = in_array(strtolower($request->get('direction', 'desc')), ['asc', 'desc'])
             ? strtolower($request->get('direction', 'desc'))
             : 'desc';
-
-
-        // Whitelist kolom yang diizinkan untuk sorting, tambahkan status_id
+     
+        // Whitelist kolom yang diizinkan untuk sorting
         $allowedSortFields = ['tanggal', 'skala', 'tone', 'status_id'];
-
         $sortField = in_array($sortField, $allowedSortFields) ? $sortField : 'tanggal';
-
-        // Sorting normal
-        $isusStrategisQuery->orderBy($sortField, $sortDirection);
-        $isusLainnyaQuery->orderBy($sortField, $sortDirection);
-
-        $isusStrategis = $isusStrategisQuery->paginate(10, ['*'], 'strategis');
-        $isusLainnya = $isusLainnyaQuery->paginate(10, ['*'], 'lainnya');
-
-        // Pastikan semua parameter disertakan di URL pagination
-        $isusStrategis->appends($request->except('strategis'));
-        $isusLainnya->appends($request->except('lainnya'));
-
-        // Dapatkan daftar status untuk dropdown filter
-        $statusList = RefStatus::getActive();
-
-        // Kirim informasi tambahan ke view bahwa ini adalah halaman dengan filter rejected
-        $isRejectedPage = ($filterStatus === 'rejected');
-
-        return view('isu.index', compact('isusStrategis', 'isusLainnya', 'statusList', 'isRejectedPage'));
+         
+        // Cek apakah user adalah verifikator
+        $isVerifikator = $user->hasRole('verifikator1') || $user->hasRole('verifikator2');
+        
+        if ($isVerifikator) {
+            // Query gabungan untuk verifikator
+            $isusGabunganQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator']);
+            
+            // Filter berdasarkan status yang relevan untuk verifikator
+            $isusGabunganQuery->whereIn('status_id', [
+                RefStatus::getVerifikasi1Id(),
+                RefStatus::getVerifikasi2Id(),
+                RefStatus::getDipublikasiId(),
+                RefStatus::getDitolakId()
+            ]);
+            
+            // Filter dari sidebar (filter_status)
+            if ($request->has('filter_status')) {
+                switch($filterStatus) {
+                    case 'draft':
+                        $isusGabunganQuery->where('status_id', RefStatus::getDraftId());
+                        break;
+                    case 'verifikasi1':
+                        $isusGabunganQuery->where('status_id', RefStatus::getVerifikasi1Id());
+                        break;
+                    case 'verifikasi2':
+                        $isusGabunganQuery->where('status_id', RefStatus::getVerifikasi2Id());
+                        break;
+                    case 'rejected':
+                        $isusGabunganQuery->where('status_id', RefStatus::getDitolakId());
+                        break;
+                }
+            }
+             
+            // Filter berdasarkan status dari form
+            if ($request->filled('status')) {
+                $statusId = (int) $request->input('status');
+                $isusGabunganQuery->where('status_id', $statusId);
+            }
+            
+            // Filter tanggal
+            if ($request->filled('date_from') && $request->filled('date_to')) {
+                $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
+                $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
+                $isusGabunganQuery->whereBetween('tanggal', [$dateFrom, $dateTo]);
+            }
+            
+            // Pencarian global
+            if ($request->filled('search')) {
+                $searchTerm = '%' . $request->search . '%';
+                $isusGabunganQuery->where(function($query) use ($searchTerm) {
+                    $query->where('judul', 'like', $searchTerm)
+                        ->orWhereHas('kategoris', function($q) use ($searchTerm) {
+                            $q->where('nama', 'like', $searchTerm);
+                        });
+                });
+            }
+            
+            // Sorting
+            $isusGabunganQuery->orderBy($sortField, $sortDirection);
+            
+            // Pagination
+            $isusGabungan = $isusGabunganQuery->paginate(10, ['*'], 'semua');
+            $isusGabungan->appends($request->except('semua'));
+            
+            // Dapatkan daftar status untuk dropdown filter
+            $statusList = RefStatus::getActive();
+            
+            // Return view untuk verifikator
+            return view('isu.index', [
+                'isusGabungan' => $isusGabungan,
+                'statusList' => $statusList,
+                'isRejectedPage' => ($filterStatus === 'rejected')
+            ]);
+        } else {
+            // Kode untuk non-verifikator (admin, editor, dll)
+            
+            // Base queries dengan eager loading
+            $isusStrategisQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator'])
+                                    ->where('isu_strategis', true);
+            
+            $isusLainnyaQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator'])
+                                    ->where('isu_strategis', false);
+            
+            // Filter dari sidebar (filter_status)
+            if ($request->has('filter_status')) {
+                switch($filterStatus) {
+                    case 'draft':
+                        $isusStrategisQuery->where('status_id', RefStatus::getDraftId());
+                        $isusLainnyaQuery->where('status_id', RefStatus::getDraftId());
+                        break;
+                    case 'verifikasi1':
+                        $isusStrategisQuery->where('status_id', RefStatus::getVerifikasi1Id());
+                        $isusLainnyaQuery->where('status_id', RefStatus::getVerifikasi1Id());
+                        break;
+                    case 'verifikasi2':
+                        $isusStrategisQuery->where('status_id', RefStatus::getVerifikasi2Id());
+                        $isusLainnyaQuery->where('status_id', RefStatus::getVerifikasi2Id());
+                        break;
+                    case 'rejected':
+                        $isusStrategisQuery->where('status_id', RefStatus::getDitolakId());
+                        $isusLainnyaQuery->where('status_id', RefStatus::getDitolakId());
+                        break;
+                }
+            } else {
+                // Filter berdasarkan role jika tidak ada filter sidebar
+                if ($user->isEditor()) {
+                    $isusStrategisQuery->where('created_by', $user->id);
+                    $isusLainnyaQuery->where('created_by', $user->id);
+                }
+                // Admin melihat semua isu (tidak ada filter tambahan)
+            }
+            
+            // Filter berdasarkan status dari form
+            if ($request->filled('status')) {
+                $statusId = (int) $request->input('status');
+                $isusStrategisQuery->where('status_id', $statusId);
+                $isusLainnyaQuery->where('status_id', $statusId);
+            }
+            
+             // Filter tanggal
+            if ($request->filled('date_from') && $request->filled('date_to')) {
+                $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
+                $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
+                $isusStrategisQuery->whereBetween('tanggal', [$dateFrom, $dateTo]);
+                $isusLainnyaQuery->whereBetween('tanggal', [$dateFrom, $dateTo]);
+            }
+            
+             // Pencarian global
+            if ($request->filled('search')) {
+                $searchTerm = '%' . $request->search . '%';
+                $isusStrategisQuery->where(function($query) use ($searchTerm) {
+                    $query->where('judul', 'like', $searchTerm)
+                        ->orWhereHas('kategoris', function($q) use ($searchTerm) {
+                            $q->where('nama', 'like', $searchTerm);
+                        });
+                });
+                $isusLainnyaQuery->where(function($query) use ($searchTerm) {
+                    $query->where('judul', 'like', $searchTerm)
+                        ->orWhereHas('kategoris', function($q) use ($searchTerm) {
+                            $q->where('nama', 'like', $searchTerm);
+                        });
+                });
+            }
+            
+            // Sorting
+            $isusStrategisQuery->orderBy($sortField, $sortDirection);
+            $isusLainnyaQuery->orderBy($sortField, $sortDirection);
+            
+            // Pagination
+            $isusStrategis = $isusStrategisQuery->paginate(10, ['*'], 'strategis');
+            $isusLainnya = $isusLainnyaQuery->paginate(10, ['*'], 'lainnya');
+            
+            // Pastikan semua parameter disertakan di URL pagination
+            $isusStrategis->appends($request->except('strategis'));
+            $isusLainnya->appends($request->except('lainnya'));
+            
+            // Dapatkan daftar status untuk dropdown filter
+            $statusList = RefStatus::getActive();
+            
+            // Return view untuk non-verifikator
+            return view('isu.index', [
+                'isusStrategis' => $isusStrategis,
+                'isusLainnya' => $isusLainnya,
+                'statusList' => $statusList,
+                'isRejectedPage' => ($filterStatus === 'rejected')
+            ]);
+        }
     }
 
     /**
@@ -439,9 +475,31 @@ class IsuController extends Controller
         // Cek hak akses berdasarkan role dan status isu
         $user = Auth::user();
         $role = $user->getHighestRoleName();
+        $action = $request->input('action', 'simpan');
 
-        // Validasi hak akses
-        if (!$user->isAdmin() && !$isu->canBeEditedBy($role)) {
+        // Simpan data asli untuk log perubahan
+        $originalData = $isu->toArray();
+        $oldStatusId = $isu->status_id;
+
+        // Pengecekan hak akses spesifik untuk kasus khusus
+        $allowAccess = false;
+        
+        // Admin selalu memiliki akses
+        if ($user->isAdmin()) {
+            $allowAccess = true;
+        }
+        // Editor hanya bisa mengirim isu draft yang dia buat 
+        else if ($user->isEditor() && $action === 'kirim' && 
+                $isu->status_id === RefStatus::getDraftId() && 
+                $isu->created_by === $user->id) {
+            $allowAccess = true;
+        }
+        // Untuk kasus lain, gunakan pengecekan standar
+        else if ($isu->canBeEditedBy($role)) {
+            $allowAccess = true;
+        }
+
+        if (!$allowAccess) {
             return redirect()->back()->with('error', 'Anda tidak memiliki hak untuk mengedit isu ini.');
         }
 
@@ -453,9 +511,9 @@ class IsuController extends Controller
             'kategori' => 'nullable|string',
             'skala' => 'nullable|string',
             'tone' => 'nullable|string',
-            'rangkuman' => 'nullable|string|max:1000',
-            'narasi_positif' => 'nullable|string|max:1000',
-            'narasi_negatif' => 'nullable|string|max:1000',
+            'rangkuman' => 'nullable|string|max:10000',
+            'narasi_positif' => 'nullable|string|max:10000',
+            'narasi_negatif' => 'nullable|string|max:10000',
             'referensi_judul.*' => 'nullable|string|max:255',
             'referensi_url.*' => 'nullable|url|max:255',
             'referensi_id.*' => 'nullable|exists:referensi_isus,id',
@@ -648,18 +706,11 @@ class IsuController extends Controller
 
             // Gunakan pesan sukses berdasarkan aksi yang dilakukan
             $successMessage = $statusAction ? "Isu berhasil {$statusAction}!" : "Isu berhasil diperbarui!";
-            return redirect()->route('isu.show', $isu)
+            return redirect()->route('isu.edit', $isu)
                             ->with('success', $successMessage);
 
         } catch (\Exception $e) {
             DB::rollBack();
-
-            // Log error untuk analisis
-            /* \Log::error('Error saat memperbarui isu: ' . $e->getMessage(), [
-                'user_id' => Auth::id(),
-                'isu_id' => $isu->id,
-                'trace' => $e->getTraceAsString()
-            ]); */
 
             return redirect()->back()
                         ->withInput()
@@ -735,11 +786,11 @@ class IsuController extends Controller
 
         $user = Auth::user();
 
-        // if (!$user->isAdmin() && !$user->isVerifikator1() && !$user->isVerifikator2() &&
-        //     $isu->created_by != $user->id) {
-        //     return redirect()->route('isu.index')
-        //         ->with('error', 'Anda tidak memiliki hak akses untuk melihat isu ini.');
-        // }
+        if (!$user->isAdmin() && !$user->isVerifikator1() && !$user->isVerifikator2() &&
+            $isu->created_by != $user->id) {
+            return redirect()->route('isu.index')
+                ->with('error', 'Anda tidak memiliki hak akses untuk melihat isu ini.');
+        }
 
         // Load relasi yang dibutuhkan termasuk status
         $isu->load([
@@ -784,15 +835,22 @@ class IsuController extends Controller
      */
     public function edit(Isu $isu)
     {
-        // Mengubah cek akses untuk mengizinkan verifikator1 dan verifikator2
-        $user = Auth::user();
-        $role = $user->getHighestRoleName();
-
-        // Cek apakah user berhak mengedit isu ini berdasarkan role dan status
-        if (!$isu->canBeEditedBy($role)) {
-            return redirect()->route('isu.index')
-                ->with('error', 'Anda tidak memiliki hak untuk mengedit isu ini.');
-        }
+        // $user = Auth::user();
+        
+        // // Admin selalu memiliki akses
+        // if ($user->isAdmin()) {
+        //     // Lanjut ke proses edit
+        // }
+        // // Cek peran lain
+        // else {
+        //     $role = $user->getHighestRoleName();
+            
+        //     // Cek apakah user berhak mengedit isu ini berdasarkan role dan status
+        //     if (!$isu->canBeEditedBy($role)) {
+        //         return redirect()->route('isu.index')
+        //             ->with('error', 'Anda tidak memiliki hak untuk mengedit isu ini.');
+        //     }
+        // }
 
         // Ambil data isu beserta referensinya
         $isu->load('referensi');
@@ -825,7 +883,7 @@ class IsuController extends Controller
 
         $user = Auth::user();
         // Cek izin akses
-        if (!auth()->user()->isAdmin() && !auth()->user()->isEditor() && $isu->created_by != auth()->id()) {
+        if (!$user->isAdmin() && !$user->isEditor() && !$user->isVerifikator1() && !$user->isVerifikator2()) {
             abort(403, 'Unauthorized');
         }
 
@@ -912,14 +970,158 @@ class IsuController extends Controller
     // Method untuk pencatatan log
     private function logActivity(Isu $isu, $keterangan)
     {
-        LogIsu::create([
-            'isu_id' => $isu->id,
-            'user_id' => Auth::id(),
-            'keterangan' => $keterangan,
-            'status_id' => $isu->status_id,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent()
-        ]);
+        if ($oldValue !== $newValue && LogIsu::isSignificantChange($field, $oldValue, $newValue)) {
+            // Hanya catat jika perubahan signifikan
+            LogIsu::create([
+                'isu_id' => $isu->id,
+                'user_id' => auth()->id(),
+                'action' => 'UPDATE',
+                'field_changed' => $field,
+                'old_value' => $oldValue,
+                'new_value' => $newValue,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+                'status_id' => $isu->status_id ?? null,
+            ]);
+        }
+        
+    }
+
+    /**
+     * Memeriksa apakah perubahan cukup signifikan untuk dicatat
+     * Static method untuk digunakan di controller
+     */
+    public static function isSignificantChange($field, $oldValue, $newValue)
+    {
+        // Skip jika keduanya null atau empty string
+        if (($oldValue === null || $oldValue === '') && 
+            ($newValue === null || $newValue === '')) {
+            return false;
+        }
+        
+        // Jika field adalah kategori, lakukan pengecekan khusus
+        if ($field === 'kategori') {
+            // Pastikan nilai old_value dan new_value dalam urutan yang benar
+            // Jika ini adalah penambahan kategori (nilai baru lebih banyak)
+            if (is_string($oldValue) && is_string($newValue) && 
+                count(explode(',', $newValue)) > count(explode(',', $oldValue))) {
+                // Tukar nilai untuk mencatat dengan benar
+                $tempOldValue = $oldValue;
+                $oldValue = $newValue;
+                $newValue = $tempOldValue;
+            }
+            
+            // Atau jika nilai lama adalah string dan nilai baru adalah JSON
+            $newValueJson = json_decode($newValue, true);
+            if (is_string($oldValue) && $newValueJson !== null && isset($newValueJson[0]['value'])) {
+                // Bandingkan panjang untuk menentukan mana yang lebih detail
+                if (strlen($newValueJson[0]['value']) > strlen($oldValue)) {
+                    // Tukar nilai jika nilai JSON memiliki lebih banyak informasi
+                    $tempOldValue = $oldValue;
+                    $oldValue = $newValue;
+                    $newValue = $tempOldValue;
+                }
+            }
+        }
+        
+        // Jika field tanggal, normalisasi dulu
+        if (strpos($field, 'tanggal') !== false) {
+            try {
+                if (!empty($oldValue)) {
+                    $oldValue = Carbon::parse($oldValue)->format('Y-m-d');
+                }
+                if (!empty($newValue)) {
+                    $newValue = Carbon::parse($newValue)->format('Y-m-d');
+                }
+            } catch (\Exception $e) {
+                // Jika gagal parse sebagai tanggal, gunakan nilai asli
+            }
+        }
+        
+        // Untuk field HTML, normalisasi whitespace
+        if (strpos($oldValue, '<') !== false || strpos($newValue, '<') !== false) {
+            $oldNormalized = preg_replace('/\s+|&nbsp;/', ' ', strip_tags($oldValue));
+            $newNormalized = preg_replace('/\s+|&nbsp;/', ' ', strip_tags($newValue));
+            
+            return trim($oldNormalized) !== trim($newNormalized);
+        }
+        
+        // Untuk nilai JSON
+        $oldJson = json_decode($oldValue, true);
+        $newJson = json_decode($newValue, true);
+        
+        if ($oldJson !== null && $newJson !== null) {
+            // Untuk format [{"value":"x"}]
+            if (is_array($oldJson) && isset($oldJson[0]['value']) && 
+                is_array($newJson) && isset($newJson[0]['value'])) {
+                return $oldJson[0]['value'] !== $newJson[0]['value'];
+            }
+            
+            // Fungsi untuk ekstrak nilai dari struktur JSON yang mungkin berbeda
+            $extractValue = function($json) {
+                if (is_array($json)) {
+                    // Cek format [{"value":"x"}]
+                    if (isset($json[0]['value'])) {
+                        return $json[0]['value'];
+                    }
+                    // Cek format {"value":"x"}
+                    if (isset($json['value'])) {
+                        return $json['value'];
+                    }
+                    // Cek format ["x"]
+                    if (isset($json[0]) && is_string($json[0])) {
+                        return $json[0];
+                    }
+                }
+                return $json;
+            };
+            
+            $oldExtracted = $extractValue($oldJson);
+            $newExtracted = $extractValue($newJson);
+            
+            // Bandingkan nilai yang sudah diekstrak
+            if (is_scalar($oldExtracted) && is_scalar($newExtracted)) {
+                return (string)$oldExtracted !== (string)$newExtracted;
+            }
+            
+            // Untuk format JSON lainnya, bandingkan sebagai string yang dinormalisasi
+            return json_encode($oldJson, \JSON_UNESCAPED_UNICODE) !== json_encode($newJson, \JSON_UNESCAPED_UNICODE);
+        }
+        
+        // Pengecekan tambahan untuk perubahan format string ke JSON
+        if (is_string($oldValue) && $newJson !== null) {
+            // Ekstrak nilai dari JSON dan bandingkan dengan string
+            if (isset($newJson[0]['value']) && $oldValue === $newJson[0]['value']) {
+                return false;
+            }
+            
+            // Coba format lain jika ada
+            if (isset($newJson['value']) && $oldValue === $newJson['value']) {
+                return false;
+            }
+            
+            if (isset($newJson[0]) && is_string($newJson[0]) && $oldValue === $newJson[0]) {
+                return false;
+            }
+        }
+        
+        // Pengecekan sebaliknya: dari JSON ke string
+        if ($oldJson !== null && is_string($newValue)) {
+            if (isset($oldJson[0]['value']) && $oldJson[0]['value'] === $newValue) {
+                return false;
+            }
+            
+            if (isset($oldJson['value']) && $oldJson['value'] === $newValue) {
+                return false;
+            }
+            
+            if (isset($oldJson[0]) && is_string($oldJson[0]) && $oldJson[0] === $newValue) {
+                return false;
+            }
+        }
+        
+        // Default: perubahan signifikan jika nilai berbeda
+        return $oldValue !== $newValue;
     }
 
     // Method untuk menampilkan form alasan penolakan
@@ -998,12 +1200,6 @@ class IsuController extends Controller
                 ->with('success', 'Isu berhasil ditolak dengan alasan yang diberikan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            // Log error untuk debugging
-            // \Log::error('Error saat menolak isu: ' . $e->getMessage(), [
-            //     'user_id' => Auth::id(),
-            //     'isu_id' => $isu->id,
-            //     'trace' => $e->getTraceAsString()
-            // ]);
 
             return redirect()->back()
                 ->withInput()
