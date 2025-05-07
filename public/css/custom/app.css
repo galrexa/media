@@ -31,7 +31,7 @@
 body {
     font-family: 'Inter', 'Poppins', sans-serif; /* Kombinasi font modern */
     color: var(--text-color);
-    background-color: #ffffff;
+    background-color: #f5f7fa; /* Background warna lebih soft */
     min-height: 100vh;
     display: flex;
     flex-direction: column;

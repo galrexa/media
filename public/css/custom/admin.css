@@ -939,7 +939,6 @@ body {
     font-weight: 600;
     font-size: 0.75rem;
     border-radius: 50px;
-    text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
@@ -1205,5 +1204,366 @@ body {
     }
     100% {
         box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+    }
+}
+
+/* Tambahkan ini di bagian bawah file admin.css */
+
+/* Mobile Sidebar Enhancement */
+@media (max-width: 768px) {
+    /* Ubah posisi sidebar saat mobile */
+    .sidebar {
+        left: -100%;
+        width: 85%;
+        z-index: 1100;
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.15);
+        transition: left 0.3s ease;
+    }
+
+    /* Class untuk menampilkan sidebar */
+    .sidebar.show {
+        left: 0;
+    }
+
+    /* Atur content agar mengisi seluruh layar */
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding: 16px;
+    }
+
+    /* Styling untuk tombol mobile toggle */
+    .mobile-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+
+    /* Tambahkan overlay saat sidebar terbuka */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1050;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .sidebar-overlay.show {
+        display: block;
+    }
+
+    /* Header untuk mobile */
+    .navbar-container {
+        padding: 0 16px;
+    }
+
+    .brand-text {
+        font-size: 1.1rem;
+    }
+
+    /* Tambahkan margin untuk tombol hamburger */
+    .mobile-toggle {
+        margin-right: 10px;
+    }
+
+    /* Animasi untuk sidebar */
+    @keyframes slideInRight {
+        from {
+            transform: translateX(-100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+
+    /* Perbaikan tampilan tabel pada mobile */
+    .table-container {
+        border-radius: 8px;
+    }
+
+    .table thead th {
+        padding: 12px 8px;
+        font-size: 0.8rem;
+    }
+
+    .table tbody td {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+    }
+
+    /* Perbaikan tampilan tombol pada mobile */
+    .btn {
+        padding: 0.5rem 1rem;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    /* Perbaikan tampilan cards pada mobile */
+    .stat-card {
+        padding: 14px;
+        margin-bottom: 16px;
+    }
+
+    .stat-card .stat-icon {
+        width: 45px;
+        height: 45px;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.4rem;
+    }
+
+    /* User dropdown pada mobile */
+    .user-dropdown-toggle {
+        padding: 6px 12px !important;
+        font-size: 0.9rem;
+    }
+}
+
+/* Tablet Adjustments */
+@media (min-width: 769px) and (max-width: 991px) {
+    .sidebar {
+        width: 220px;
+    }
+
+    .main-content {
+        margin-left: 220px;
+        padding: 20px;
+    }
+
+    .sidebar.collapsed {
+        width: 60px;
+    }
+
+    .main-content.expanded {
+        margin-left: 60px;
+    }
+}
+
+/* Perbaikan khusus untuk iPhone SE dan perangkat sangat kecil */
+@media (max-width: 375px) {
+    .page-title {
+        font-size: 1.3rem;
+    }
+
+    .nav-link {
+        padding: 10px 20px;
+    }
+
+    .btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .brand-text {
+        font-size: 1rem;
+    }
+}
+
+/* Perbaikan untuk orientasi landscape pada mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .sidebar {
+        top: 50px;
+        height: calc(100vh - 50px);
+    }
+
+    .top-navbar {
+        height: 50px;
+    }
+
+    .main-content {
+        margin-top: 50px;
+        min-height: calc(100vh - 50px);
+    }
+
+    .sidebar-menu {
+        padding: 10px 0;
+    }
+
+    .nav-link {
+        padding: 8px 20px;
+    }
+}
+
+/* Animasi fade untuk overlay */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Base styling untuk countdown container */
+.countdown-container {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: white;
+    font-weight: 500;
+    margin-right: 15px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.countdown-container:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.countdown-icon {
+    margin-right: 8px;
+    font-size: 1rem;
+}
+
+.countdown-timer {
+    font-family: "Inter", sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+/* Responsivitas untuk mobile */
+@media (max-width: 576px) {
+    .countdown-container {
+        padding: 4px 8px;
+        margin-right: 8px;
+    }
+
+    .countdown-timer {
+        font-size: 0.8rem;
+    }
+
+    .countdown-label {
+        display: none;
+    }
+}
+
+/* Variasi style untuk berbagai waktu tersisa */
+.countdown-normal {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Kurang dari 2 jam */
+.countdown-2hour {
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid rgba(255, 193, 7, 0.4);
+    animation: pulse-warning 2.5s infinite;
+}
+
+/* Kurang dari 1 jam */
+.countdown-1hour {
+    background: rgba(255, 152, 0, 0.25);
+    border: 1px solid rgba(255, 152, 0, 0.5);
+    animation: pulse-warning 2s infinite;
+}
+
+/* Kurang dari 30 menit */
+.countdown-30min {
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.4);
+    animation: pulse-urgent 1.5s infinite;
+}
+
+/* Kurang dari 10 menit */
+.countdown-10min {
+    background: rgba(244, 67, 54, 0.3);
+    border: 1px solid rgba(244, 67, 54, 0.6);
+    color: #fff;
+    font-weight: 700;
+    animation: pulse-critical 1s infinite;
+}
+
+/* Melewati batas waktu */
+.countdown-overdue {
+    background: linear-gradient(
+        135deg,
+        rgba(183, 58, 58, 0.5),
+        rgba(176, 39, 39, 0.3)
+    );
+    /* border: 1px solid rgba(183, 58, 58, 0.5); */
+    box-shadow: 0 0 10px rgba(183, 58, 58, 0.5);
+    color: #fff;
+}
+
+.countdown-overdue .countdown-icon {
+    color: #ffffff;
+}
+
+.countdown-overdue-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: rgba(183, 58, 58, 0.9);
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 5px;
+    animation: blink 1s infinite;
+}
+
+/* Animasi */
+@keyframes pulse-warning {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(255, 193, 7, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+    }
+}
+
+@keyframes pulse-urgent {
+    0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.6);
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(244, 67, 54, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+    }
+}
+
+@keyframes pulse-critical {
+    0% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.8);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 8px rgba(244, 67, 54, 0);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+        transform: scale(1);
+    }
+}
+
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
     }
 }
