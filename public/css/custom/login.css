@@ -1,91 +1,240 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Media Monitoring</title>
+/* Reset & Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+body {
+    background: linear-gradient(135deg, #60a5fa, #ffffff);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+    min-height: 100vh;
+}
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ asset('css/custom/login.css') }}">
-</head>
-<body>
-    <div class="login-container">
-        <div class="login-card">
-            <!-- Logo -->
-            <div class="text-center mb-4">
-                <img src="{{ asset('logo.png') }}" alt="Logo" class="logo mb-3">
-                <h4>Media Monitoring</h4>
-            </div>
+/* Login Container */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
 
-            <!-- Login Form -->
-            <form method="POST" action="{{ route('login') }}">
-                @csrf
+/* Login Card */
+.login-card {
+    background: linear-gradient(145deg, #ffffff, #f8f9fa);
+    padding: 40px 30px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    width: 100%;
+    max-width: 420px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
 
-                <!-- Username -->
-                <div class="form-group mb-3">
-                    <div class="input-with-icon @error('username') has-error @enderror">
-                        <i class="fas fa-user"></i>
-                        <input id="username" type="text"
-                               class="form-control @error('username') is-invalid @enderror"
-                               name="username"
-                               value="{{ old('username') }}"
-                               placeholder="Username"
-                               required
-                               autofocus>
-                        @error('username')
-                            <i class="fas fa-exclamation-circle error-icon"></i>
-                        @enderror
-                    </div>
-                    @error('username')
-                        <div class="error-message">
-                            {{ $message }}
-                        </div>
-                    @enderror
-                </div>
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
 
-                <!-- Password -->
-                <div class="form-group mb-3">
-                    <div class="input-with-icon @error('password') has-error @enderror">
-                        <i class="fas fa-lock"></i>
-                        <input id="password" type="password"
-                               class="form-control @error('password') is-invalid @enderror"
-                               name="password"
-                               placeholder="Password"
-                               required>
-                        <i id="togglePassword" class="fas fa-eye toggle-password"></i>
-                        @error('password')
-                            <i class="fas fa-exclamation-circle error-icon"></i>
-                        @enderror
-                    </div>
-                    @error('password')
-                        <div class="error-message">
-                            {{ $message }}
-                        </div>
-                    @enderror
-                </div>
+/* Logo */
+.logo {
+    height: 90px;
+    width: auto;
+    margin-bottom: 10px;
+}
 
-                <!-- Submit Button -->
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary btn-login">
-                        Login
-                    </button>
-                </div>
-            </form>
+/* Form Group */
+.form-group {
+    position: relative;
+    margin-bottom: 20px;
+}
 
-            <!-- Footer -->
-            <div class="text-center mt-4">
-                <small class="text-muted">© 2025 Kantor Staf Presiden</small>
-            </div>
-        </div>
-    </div>
+/* Input with Icon */
+.input-with-icon {
+    position: relative;
+}
 
-    <!-- Scripts -->
-    <script src="{{ asset('js/login.js') }}"></script>
-</body>
-</html>
+.input-with-icon i:first-child {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+    pointer-events: none;
+    z-index: 1;
+    font-size: 18px;
+}
+
+.input-with-icon input {
+    padding-left: 45px;
+    padding-right: 45px;
+    height: 52px;
+    font-size: 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    width: 100%;
+    background: #fff;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.input-with-icon input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    outline: none;
+}
+
+/* Error state */
+.input-with-icon.has-error input {
+    border-color: #ef4444;
+    padding-right: 70px;
+}
+
+.input-with-icon.has-error input:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+/* Error icon */
+.error-icon {
+    position: absolute;
+    right: 45px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #ef4444;
+    pointer-events: none;
+    z-index: 2;
+    font-size: 16px;
+}
+
+/* Toggle password icon */
+.toggle-password {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #6c757d;
+    z-index: 2;
+    font-size: 18px;
+}
+
+.toggle-password:hover {
+    color: #1f2937;
+}
+
+/* Error message */
+.error-message {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 6px;
+    padding-left: 15px;
+}
+
+/* Button */
+.btn-login {
+    height: 52px;
+    font-weight: 600;
+    font-size: 15px;
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    transition: transform 0.2s ease, background 0.3s ease;
+}
+
+.btn-login:hover {
+    background: linear-gradient(90deg, #2563eb, #1d4ed8);
+    transform: scale(1.02);
+}
+
+.btn-login:active {
+    transform: scale(0.98);
+}
+
+/* Remove default Bootstrap invalid feedback styling */
+.form-control.is-invalid {
+    background-image: none;
+}
+
+.invalid-feedback {
+    display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .login-card {
+        max-width: 360px;
+        padding: 30px 25px;
+    }
+
+    .logo {
+        height: 80px;
+    }
+
+    .input-with-icon input {
+        height: 48px;
+        font-size: 14px;
+    }
+
+    .btn-login {
+        height: 48px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 576px) {
+    .login-card {
+        max-width: 90%;
+        padding: 25px 20px;
+    }
+
+    .logo {
+        height: 70px;
+    }
+
+    .input-with-icon input {
+        height: 46px;
+        font-size: 13px;
+        padding-left: 40px;
+    }
+
+    .input-with-icon i:first-child {
+        left: 12px;
+        font-size: 16px;
+    }
+
+    .toggle-password {
+        right: 12px;
+        font-size: 16px;
+    }
+
+    .btn-login {
+        height: 46px;
+        font-size: 13px;
+    }
+
+    .error-message {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 400px) {
+    .login-card {
+        padding: 20px 15px;
+    }
+
+    .logo {
+        height: 60px;
+    }
+
+    .input-with-icon input {
+        height: 44px;
+        font-size: 12px;
+    }
+
+    .btn-login {
+        height: 44px;
+        font-size: 12px;
+    }
+}

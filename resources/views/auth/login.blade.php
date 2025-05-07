@@ -80,7 +80,7 @@
 
             <!-- Footer -->
             <div class="text-center mt-4">
-                <small class="text-muted">© 2025 Media Monitoring</small>
+                <small class="text-muted">© 2025 Kantor Staf Presiden</small>
             </div>
         </div>
     </div>
