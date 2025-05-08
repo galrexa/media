@@ -186,9 +186,9 @@
                                         </a>
                                     @endif
 
-                                    <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat" aria-label="Lihat riwayat isu">
+                                    <!-- <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat" aria-label="Lihat riwayat isu">
                                         <i class="fas fa-clock-rotate-left"></i>
-                                    </a>
+                                    </a> -->
                                 @endauth
                             </div>
                             </td>
