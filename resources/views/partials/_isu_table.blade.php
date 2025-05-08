@@ -180,12 +180,13 @@
                                     <i class="fas fa-eye"></i>
                                 </a> -->
                                 @auth
-                                    @if(auth()->user()->isAdmin() || $isu->canBeEditedBy(auth()->user()->getHighestRoleName()))
-                                        <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                    @endif
-
+                                @if((auth()->user()->isEditor() && $isu->created_by == auth()->user()->id && $isu->canBeEditedBy('editor')) ||
+                                    (auth()->user()->hasRole('verifikator1') && $isu->canBeEditedBy('verifikator1')) ||
+                                    (auth()->user()->hasRole('verifikator2') && $isu->canBeEditedBy('verifikator2')))
+                                    <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                @endif
                                     <!-- <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat" aria-label="Lihat riwayat isu">
                                         <i class="fas fa-clock-rotate-left"></i>
                                     </a> -->
@@ -215,35 +216,65 @@
 @endif
 <!-- Di bagian bawah file Blade -->
 <script>
+    // Ganti fungsi deleteIsu di _isu_table.blade.php dengan kode ini
     function deleteIsu(event, element) {
         event.preventDefault(); // Mencegah aksi default link
 
-        // Tampilkan konfirmasi (opsional: gunakan SweetAlert untuk UX lebih baik)
-        if (!confirm('Apakah Anda yakin ingin menghapus isu ini?')) {
-            return;
-        }
-
-        // Kirim permintaan DELETE menggunakan Fetch API
-        fetch(element.getAttribute('data-url'), {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Hapus elemen dari DOM atau redirect
-                element.closest('.action-buttons').parentElement.remove();
-                alert(data.message || 'Isu berhasil dihapus!');
-            } else {
-                alert(data.message || 'Gagal menghapus isu.');
+        // Gunakan SweetAlert untuk konfirmasi
+        Swal.fire({
+            title: 'Hapus Isu',
+            text: 'Apakah Anda yakin ingin menghapus isu ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Kirim permintaan DELETE menggunakan Fetch API
+                fetch(element.getAttribute('data-url'), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Hapus elemen dari DOM
+                        element.closest('tr').remove();
+                        
+                        // Tampilkan notifikasi sukses dengan SweetAlert
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: data.message || 'Isu berhasil dihapus!',
+                            timer: 3000,
+                            timerProgressBar: true,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    } else {
+                        // Tampilkan pesan error dengan SweetAlert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: data.message || 'Gagal menghapus isu.',
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan saat menghapus isu.',
+                    });
+                });
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan saat menghapus isu.');
         });
     }
 </script>
