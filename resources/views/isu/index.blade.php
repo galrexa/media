@@ -336,17 +336,25 @@
 // Ubah script pada bagian penanganan aksi tolak
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Inisialisasi modal
+    if (window.isuActionInitialized) return;
+    window.isuActionInitialized = true;
+    
+    console.log("Inisialisasi handler aksi isu...");
+    
     const rejectModal = document.getElementById('rejectModal');
+    if (!rejectModal) {
+        console.error("Modal penolakan tidak ditemukan!");
+        return;
+    }
+    
     const modalInstance = new bootstrap.Modal(rejectModal);
     const confirmRejectBtn = document.getElementById('confirm-reject');
     const rejectionReasonInput = document.getElementById('rejection-reason-input');
     const massActionForm = document.getElementById('mass-action-form');
+    const massActionInput = document.getElementById('mass-action');
+    const selectedIdsInput = document.getElementById('selected-ids');
+    const rejectionReasonHiddenInput = document.getElementById('rejection-reason');
     
-    // Tambahkan referensi untuk tombol close dan batal
-    const closeBtn = rejectModal.querySelector('.btn-close');
-    const cancelBtn = rejectModal.querySelector('.btn-secondary');
-
     // Fungsi untuk mengumpulkan ID isu yang dipilih
     function getSelectedIds(tabId) {
         const checkboxes = document.querySelectorAll(`.isu-checkbox[data-tab="${tabId}"]:checked`);
@@ -355,38 +363,62 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fungsi untuk reset form dan state modal
     function resetModalState() {
-        rejectionReasonInput.value = '';
-        rejectionReasonInput.classList.remove('is-invalid');
-        confirmRejectBtn.disabled = false;
-        confirmRejectBtn.innerHTML = '<i class="fas fa-times-circle me-1"></i> Tolak Isu';
-        // Reset ID yang dipilih jika diperlukan
-        document.getElementById('selected-ids').value = '';
-        document.getElementById('rejection-reason').value = '';
+        console.log("Reset state modal");
+        if (rejectionReasonInput) rejectionReasonInput.value = '';
+        if (rejectionReasonInput) rejectionReasonInput.classList.remove('is-invalid');
+        if (confirmRejectBtn) {
+            confirmRejectBtn.disabled = false;
+            confirmRejectBtn.innerHTML = '<i class="fas fa-times-circle me-1"></i> Tolak Isu';
+        }
+    }
+    
+    // Fungsi untuk menyimpan nilai ke form
+    function setFormValues(action, selectedIds, reason = null) {
+        console.log(`Setting form values: action=${action}, selectedIds=${selectedIds.length} items`);
+        if (massActionInput) massActionInput.value = action;
+        if (selectedIdsInput) selectedIdsInput.value = JSON.stringify(selectedIds);
+        if (reason && rejectionReasonHiddenInput) rejectionReasonHiddenInput.value = reason;
     }
 
-    // Event listener untuk semua aksi massal
+    // Event listener untuk tombol dengan data-action
     document.querySelectorAll('[data-action]').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
+            
             const action = this.getAttribute('data-action');
             const tabId = this.id.split('-').slice(-1)[0]; // Ambil tabId dari ID tombol
             const selectedIds = getSelectedIds(tabId);
-
+            
+            console.log(`Button clicked: action=${action}, tabId=${tabId}, selectedIds=${selectedIds.length}`);
+            
             if (selectedIds.length === 0) {
-                alert('Pilih setidaknya satu isu.');
+                alert('Pilih setidaknya satu isu untuk diproses.');
                 return;
             }
-
-            // Ubah format data - JSON stringify array ID yang dipilih
-            document.getElementById('selected-ids').value = JSON.stringify(selectedIds);
-            document.getElementById('mass-action').value = action;
-
-            // Jika aksi adalah reject, tampilkan modal
+            
+            // Set nilai form terlebih dahulu
+            setFormValues(action, selectedIds);
+            
+            // Penanganan aksi
             if (action === 'reject') {
+                // Reset dan tampilkan modal
                 resetModalState();
                 modalInstance.show();
+                
+                // Double check: pastikan nilai form masih ada
+                setTimeout(() => {
+                    if (!massActionInput.value || massActionInput.value !== 'reject') {
+                        console.warn("Nilai action hilang, mengatur ulang...");
+                        massActionInput.value = 'reject';
+                    }
+                    
+                    if (!selectedIdsInput.value || selectedIdsInput.value === '[]') {
+                        console.warn("Nilai selected_ids hilang, mengatur ulang...");
+                        selectedIdsInput.value = JSON.stringify(selectedIds);
+                    }
+                }, 100);
             } else {
-                // Konfirmasi aksi lainnya
+                // Konfirmasi untuk aksi selain reject
                 let actionText = '';
                 switch(action) {
                     case 'delete': actionText = 'hapus'; break;
@@ -403,53 +435,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Validasi dan submit form penolakan
+    // Handler untuk tombol konfirmasi di modal
     if (confirmRejectBtn) {
         confirmRejectBtn.addEventListener('click', function(e) {
-            const rejectionReason = rejectionReasonInput.value.trim();
-
-            // Validasi minimal 10 karakter
+            console.log("Confirm button clicked");
+            
+            // Validasi alasan penolakan
+            const rejectionReason = rejectionReasonInput ? rejectionReasonInput.value.trim() : '';
+            
             if (rejectionReason.length < 10) {
-                rejectionReasonInput.classList.add('is-invalid');
+                if (rejectionReasonInput) rejectionReasonInput.classList.add('is-invalid');
                 alert('Alasan penolakan minimal 10 karakter.');
                 return;
             }
-
-            // Hapus class invalid jika validasi lolos
-            rejectionReasonInput.classList.remove('is-invalid');
-
-            // Isi form tersembunyi
-            document.getElementById('rejection-reason').value = rejectionReason;
-
-            // Nonaktifkan tombol dan tampilkan loading state
+            
+            // Remove invalid class
+            if (rejectionReasonInput) rejectionReasonInput.classList.remove('is-invalid');
+            
+            // PENTING: Double check nilai action dan selected_ids
+            if (massActionInput && (!massActionInput.value || massActionInput.value !== 'reject')) {
+                console.warn("Action value missing, resetting to 'reject'");
+                massActionInput.value = 'reject';
+            }
+            
+            if (selectedIdsInput && (!selectedIdsInput.value || selectedIdsInput.value === '[]')) {
+                console.error("Selected IDs missing or empty!");
+                alert('Error: Tidak ada isu yang dipilih. Silakan pilih isu terlebih dahulu.');
+                modalInstance.hide();
+                return;
+            }
+            
+            // Set alasan penolakan
+            if (rejectionReasonHiddenInput) {
+                rejectionReasonHiddenInput.value = rejectionReason;
+            }
+            
+            // Set loading state
             confirmRejectBtn.disabled = true;
             confirmRejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
-
+            
+            // Log form data sebelum submit
+            console.log("Form data before submit:", {
+                action: massActionInput ? massActionInput.value : 'N/A',
+                selected_ids: selectedIdsInput ? selectedIdsInput.value : 'N/A',
+                rejection_reason: rejectionReasonHiddenInput ? rejectionReasonHiddenInput.value : 'N/A'
+            });
+            
             // Submit form
             massActionForm.submit();
         });
     }
 
-    // Event listener untuk tombol close dan Batal pada modal
+    // Event listeners untuk tombol close dan batal
+    const closeBtn = rejectModal.querySelector('.btn-close');
+    const cancelBtn = rejectModal.querySelector('.btn-secondary');
+    
     if (closeBtn) closeBtn.addEventListener('click', resetModalState);
     if (cancelBtn) cancelBtn.addEventListener('click', resetModalState);
-
-    // Reset form dan tombol saat modal ditutup
+    
+    // Reset state saat modal ditutup
     rejectModal.addEventListener('hidden.bs.modal', resetModalState);
-
-    // Escape key untuk menutup modal
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && rejectModal.classList.contains('show')) {
-            modalInstance.hide();
-            resetModalState();
-        }
-    });
-
-    // Cek jika ada error validasi dari server
+    
+    // Penanganan error validasi dari server
     @if($errors->has('rejection_reason'))
         modalInstance.show();
-        rejectionReasonInput.classList.add('is-invalid');
+        if (rejectionReasonInput) rejectionReasonInput.classList.add('is-invalid');
     @endif
+    
+    console.log("Inisialisasi handler aksi isu selesai!");
 });
 </script>
 <script src="{{ asset('js/isu/index.js') }}"></script>
