@@ -767,7 +767,7 @@ class IsuController extends Controller
 
             // Gunakan pesan sukses berdasarkan aksi yang dilakukan
             $successMessage = $statusAction ? "Isu berhasil {$statusAction}!" : "Isu berhasil diperbarui!";
-            return redirect()->route('isu.edit', $isu)
+            return redirect()->route('isu.index', $isu)
                             ->with('success', $successMessage);
 
         } catch (\Exception $e) {
@@ -894,23 +894,6 @@ class IsuController extends Controller
      */
     public function edit(Isu $isu)
     {
-        // $user = Auth::user();
-        
-        // // Admin selalu memiliki akses
-        // if ($user->isAdmin()) {
-        //     // Lanjut ke proses edit
-        // }
-        // // Cek peran lain
-        // else {
-        //     $role = $user->getHighestRoleName();
-            
-        //     // Cek apakah user berhak mengedit isu ini berdasarkan role dan status
-        //     if (!$isu->canBeEditedBy($role)) {
-        //         return redirect()->route('isu.index')
-        //             ->with('error', 'Anda tidak memiliki hak untuk mengedit isu ini.');
-        //     }
-        // }
-
         // Ambil data isu beserta referensinya
         $isu->load('referensi');
 
