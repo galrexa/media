@@ -180,7 +180,8 @@
                                     <i class="fas fa-eye"></i>
                                 </a> -->
                                 @auth
-                                @if((auth()->user()->isEditor() && $isu->created_by == auth()->user()->id && $isu->canBeEditedBy('editor')) ||
+                                @if((auth()->user()->isAdmin()) ||
+                                    (auth()->user()->isEditor() && $isu->created_by == auth()->user()->id && $isu->canBeEditedBy('editor')) ||
                                     (auth()->user()->hasRole('verifikator1') && $isu->canBeEditedBy('verifikator1')) ||
                                     (auth()->user()->hasRole('verifikator2') && $isu->canBeEditedBy('verifikator2')))
                                     <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
