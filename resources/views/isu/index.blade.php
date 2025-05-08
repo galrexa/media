@@ -332,6 +332,9 @@
 
 @section('scripts')
 <script>
+// File: resources/views/isu/index.blade.php
+// Ubah script pada bagian penanganan aksi tolak
+
 document.addEventListener('DOMContentLoaded', function() {
     // Inisialisasi modal
     const rejectModal = document.getElementById('rejectModal');
@@ -361,24 +364,42 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('rejection-reason').value = '';
     }
 
-    // Event listener untuk opsi "Tolak" di dropdown aksi massal
-    document.querySelectorAll('[data-action="reject"]').forEach(button => {
+    // Event listener untuk semua aksi massal
+    document.querySelectorAll('[data-action]').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
+            const action = this.getAttribute('data-action');
             const tabId = this.id.split('-').slice(-1)[0]; // Ambil tabId dari ID tombol
             const selectedIds = getSelectedIds(tabId);
 
             if (selectedIds.length === 0) {
-                alert('Pilih setidaknya satu isu untuk ditolak.');
+                alert('Pilih setidaknya satu isu.');
                 return;
             }
 
-            // Reset modal state sebelum menampilkan
-            resetModalState();
-            
-            // Simpan selectedIds untuk digunakan saat submit
-            document.getElementById('selected-ids').value = selectedIds.join(',');
-            modalInstance.show();
+            // Ubah format data - JSON stringify array ID yang dipilih
+            document.getElementById('selected-ids').value = JSON.stringify(selectedIds);
+            document.getElementById('mass-action').value = action;
+
+            // Jika aksi adalah reject, tampilkan modal
+            if (action === 'reject') {
+                resetModalState();
+                modalInstance.show();
+            } else {
+                // Konfirmasi aksi lainnya
+                let actionText = '';
+                switch(action) {
+                    case 'delete': actionText = 'hapus'; break;
+                    case 'send-to-verif1': actionText = 'kirim ke Verifikator 1'; break;
+                    case 'send-to-verif2': actionText = 'kirim ke Verifikator 2'; break;
+                    case 'publish': actionText = 'publikasikan'; break;
+                    default: actionText = action;
+                }
+                
+                if (confirm(`Apakah Anda yakin ingin ${actionText} ${selectedIds.length} isu terpilih?`)) {
+                    massActionForm.submit();
+                }
+            }
         });
     });
 
@@ -398,7 +419,6 @@ document.addEventListener('DOMContentLoaded', function() {
             rejectionReasonInput.classList.remove('is-invalid');
 
             // Isi form tersembunyi
-            document.getElementById('mass-action').value = 'reject';
             document.getElementById('rejection-reason').value = rejectionReason;
 
             // Nonaktifkan tombol dan tampilkan loading state
@@ -410,26 +430,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Event listener untuk tombol close (X) pada modal
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            resetModalState();
-        });
-    }
-    
-    // Event listener untuk tombol Batal pada modal
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', function() {
-            resetModalState();
-        });
-    }
+    // Event listener untuk tombol close dan Batal pada modal
+    if (closeBtn) closeBtn.addEventListener('click', resetModalState);
+    if (cancelBtn) cancelBtn.addEventListener('click', resetModalState);
 
-    // Reset form dan tombol saat modal ditutup (event dari Bootstrap)
-    rejectModal.addEventListener('hidden.bs.modal', function() {
-        resetModalState();
-    });
+    // Reset form dan tombol saat modal ditutup
+    rejectModal.addEventListener('hidden.bs.modal', resetModalState);
 
-    // Tambahkan event escape key untuk menutup modal dan reset
+    // Escape key untuk menutup modal
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && rejectModal.classList.contains('show')) {
             modalInstance.hide();

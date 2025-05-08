@@ -1308,7 +1308,13 @@ class IsuController extends Controller
 
         // Decode selected IDs - ini adalah perbaikan utama
         try {
+            // Coba decode sebagai JSON
             $selectedIds = json_decode($request->selected_ids);
+            
+            // Jika bukan array/object JSON, coba parse sebagai comma-separated string
+            if ($selectedIds === null && json_last_error() !== JSON_ERROR_NONE) {
+                $selectedIds = array_filter(explode(',', $request->selected_ids));
+            }
             
             // Pastikan hasil decode adalah array
             if (!is_array($selectedIds)) {
@@ -1319,7 +1325,18 @@ class IsuController extends Controller
             if (empty($selectedIds)) {
                 return back()->with('error', 'Tidak ada isu yang dipilih.');
             }
+            
+            // Log untuk debugging
+            Log::info('Mass action ids received', [
+                'selected_ids_raw' => $request->selected_ids,
+                'parsed_ids' => $selectedIds,
+                'action' => $request->action
+            ]);
         } catch (\Exception $e) {
+            Log::error('Error parsing selected IDs', [
+                'error' => $e->getMessage(),
+                'input' => $request->selected_ids
+            ]);
             return back()->with('error', 'Format ID tidak valid: ' . $e->getMessage());
         }
 
@@ -1652,6 +1669,14 @@ class IsuController extends Controller
             return back()->with('error', 'Anda tidak memiliki izin untuk menolak isu.');
         }
 
+        // Log untuk debugging
+        Log::info('Processing rejection for IDs', [
+            'ids' => $selectedIds,
+            'user' => $user->name,
+            'role' => $user->getHighestRoleName()
+        ]);
+        
+
         DB::beginTransaction();
         try {
             // Query untuk menyeleksi isu yang akan ditolak
@@ -1667,8 +1692,16 @@ class IsuController extends Controller
                 $query->where('status_id', RefStatus::getVerifikasi2Id());
             }
 
+            // Log query untuk debugging jika diperlukan
+            $querySQL = $query->toSql();
+            Log::info('Rejection query', ['sql' => $querySQL, 'bindings' => $query->getBindings()]);
+
             $isusToReject = $query->get();
             $rejectedCount = 0;
+
+            // Log jumlah isu yang akan diupdate
+            Log::info('Found issues to reject', ['count' => $isusToReject->count()]);
+
 
             foreach ($isusToReject as $isu) {
                 // Simpan status lama untuk log
@@ -1704,11 +1737,6 @@ class IsuController extends Controller
                     RefStatus::getDitolakId()
                 );
 
-                // Kirim notifikasi penolakan jika service tersedia
-                // if (class_exists('App\\Services\\IsuNotificationService')) {
-                //     IsuNotificationService::notifyForRejection($isu, $rejectionReason, $user);
-                // }
-
                 $rejectedCount++;
             }
 
@@ -1717,10 +1745,15 @@ class IsuController extends Controller
             if ($rejectedCount > 0) {
                 return back()->with('success', $rejectedCount . ' isu berhasil ditolak.');
             } else {
+                Log::warning('No issues were rejected despite finding issues', [
+                    'selected_ids' => $selectedIds,
+                    'found_issues' => $isusToReject->count()
+                ]);
                 return back()->with('error', 'Tidak ada isu yang ditolak. Mungkin Anda tidak memiliki izin untuk menolak isu yang dipilih.');
             }
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Rejection error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return back()->with('error', 'Terjadi kesalahan saat menolak isu: ' . $e->getMessage());
         }
     }
