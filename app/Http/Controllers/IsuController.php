@@ -279,12 +279,15 @@ class IsuController extends Controller
             $isusGabunganQuery = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator']);
             
             // Filter berdasarkan status yang relevan untuk verifikator
-            $isusGabunganQuery->whereIn('status_id', [
+            $relevantStatuses = [
                 RefStatus::getVerifikasi1Id(),
                 RefStatus::getVerifikasi2Id(),
                 RefStatus::getDipublikasiId(),
                 RefStatus::getDitolakId()
-            ]);
+            ];
+            
+            // Jika verifikator1, tambahkan kondisi untuk melihat isu yang sudah dikirim ke verifikator2
+            $isusGabunganQuery->whereIn('status_id', $relevantStatuses);
             
             // Filter dari sidebar (filter_status)
             if ($request->has('filter_status')) {
@@ -377,32 +380,8 @@ class IsuController extends Controller
                     case 'rejected':
                         $isusStrategisQuery->where('status_id', RefStatus::getDitolakId());
                         $isusLainnyaQuery->where('status_id', RefStatus::getDitolakId());
-                        
-                        // Untuk editor, hanya tampilkan isu yang ditolak miliknya
-                        if ($user->isEditor()) {
-                            $isusStrategisQuery->where('created_by', $userId);
-                            $isusLainnyaQuery->where('created_by', $userId);
-                        }
                         break;
                 }
-            }
-            else {
-                // Filter berdasarkan role jika tidak ada filter sidebar
-                if ($user->isEditor()) {
-                    // Modifikasi untuk menampilkan:
-                    // 1. Semua isu yang dibuat editor sendiri (terlepas status)
-                    // 2. Semua isu yang sudah dipublikasi (dibuat siapapun)
-                    $isusStrategisQuery->where(function($query) use ($user) {
-                        $query->where('created_by', $user->id)
-                            ->orWhere('status_id', RefStatus::getDipublikasiId());
-                    });
-                    
-                    $isusLainnyaQuery->where(function($query) use ($user) {
-                        $query->where('created_by', $user->id)
-                            ->orWhere('status_id', RefStatus::getDipublikasiId());
-                    });
-                }
-                // Admin melihat semua isu (tidak ada filter tambahan)
             }
             
             // Filter berdasarkan status dari form
