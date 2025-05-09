@@ -139,18 +139,36 @@
                 <div>
                     <span class="text-muted">Tanggal: {{ $isu->tanggal->translatedFormat('d F Y') }}</span>
                 </div>
-                @if(Auth::check() && (Auth::user()->isAdmin() || Auth::user()->isEditor()))
+                @if(Auth::check() && (
+                    // Admin memiliki akses penuh untuk edit
+                    Auth::user()->isAdmin() || 
+                    // Editor hanya bisa mengedit isu yang dia buat sendiri dan dalam status yang memungkinkan
+                    (Auth::user()->isEditor() && $isu->created_by == Auth::user()->id && $isu->canBeEditedBy('editor')) ||
+                    // Verifikator1 hanya bisa mengedit jika isu dalam status yang sesuai dengan perannya
+                    // dan tidak dalam status menunggu_verifikasi2 atau dipublikasikan
+                    (Auth::user()->hasRole('verifikator1') && $isu->canBeEditedBy('verifikator1') && 
+                    !in_array($isu->status, ['menunggu_verifikasi2', 'dipublikasikan'])) ||
+                    // Verifikator2 hanya bisa mengedit jika isu dalam status yang sesuai dengan perannya
+                    // dan tidak dalam status dipublikasikan
+                    (Auth::user()->hasRole('verifikator2') && $isu->canBeEditedBy('verifikator2') && 
+                    $isu->status != 'dipublikasikan')
+                ))
                     <div>
-                        <a href="{{ route('isu.edit', $isu) }}" class="btn btn-warning btn-sm me-2">
-                            <i class="fas fa-pencil-alt"></i>Edit
+                        <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
+                            <i class="fas fa-edit"></i>
                         </a>
-                        <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
-                                <i class="fas fa-trash"></i>Hapus
-                            </button>
-                        </form>
+
+                        @if(Auth::user()->isAdmin() || 
+                        (Auth::user()->isEditor() && $isu->created_by == Auth::user()->id && $isu->canBeDeleted()))
+                            <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-action btn-delete" title="Hapus" aria-label="Hapus isu" 
+                                        onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 @endif
 
