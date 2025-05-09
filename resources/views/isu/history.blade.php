@@ -110,26 +110,30 @@
                                                     <strong>{{ $log->field_changed }}</strong>
                                                     
                                                     @php
-                                                    // Pengecekan khusus untuk kolom kategori
-                                                    $oldFormatted = $log->getFormattedOldValue();
-                                                    $newFormatted = $log->getFormattedNewValue();
-                                                    $showDiff = true;
-                                                    
-                                                    // Jika field adalah kategori, pastikan nilai ditampilkan dengan benar
-                                                    if ($log->field_changed === 'kategori') {
-                                                        // Pastikan nilai ditampilkan dalam urutan yang benar
-                                                        $tempOld = $oldFormatted;
-                                                        $tempNew = $newFormatted;
-                                                        
-                                                        // Periksa apakah nilai baru lebih panjang dari nilai lama
-                                                        // Yang mengindikasikan penambahan kategori bukan pengurangan
-                                                        if (strlen($tempNew) > strlen($tempOld)) {
-                                                            // Tukar nilai untuk menampilkan dalam urutan yang benar
-                                                            $oldFormatted = $tempNew;
-                                                            $newFormatted = $tempOld;
-                                                        }
-                                                    }
-                                                @endphp
+													// Pengecekan khusus untuk kolom kategori
+													$oldFormatted = $log->getFormattedOldValue();
+													$newFormatted = $log->getFormattedNewValue();
+													$showDiff = true;
+
+													// Jika field adalah kategori, pastikan nilai ditampilkan dengan benar
+													if ($log->field_changed === 'kategori') {
+														// Bandingkan konten sebenarnya dari kedua nilai
+														// dan tentukan mana yang mungkin merupakan nilai yang lebih baru
+														// berdasarkan kompleksitas atau panjangnya
+														$isOldMoreComplex = (substr_count($oldFormatted, '[') > 0 || substr_count($oldFormatted, '{') > 0);
+														$isNewMoreComplex = (substr_count($newFormatted, '[') > 0 || substr_count($newFormatted, '{') > 0);
+														
+														// Jika nilai lama kosong atau nilai baru lebih kompleks, itu mungkin penambahan
+														if ($oldFormatted === '(kosong)' || ($isNewMoreComplex && !$isOldMoreComplex)) {
+															// Nilai seperti ini, jangan tukar
+														} else if ($newFormatted === '(kosong)' || (!$isNewMoreComplex && $isOldMoreComplex)) {
+															// Nilai mungkin dihapus, tukar untuk menampilkan dengan benar
+															$tempOld = $oldFormatted;
+															$oldFormatted = $newFormatted;
+															$newFormatted = $tempOld;
+														}
+													}
+													@endphp
                                                     
                                                     @if($showDiff && !str_contains($log->field_changed, 'tanggal'))
                                                         <div class="small">
