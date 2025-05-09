@@ -4,6 +4,116 @@
  */
 
 /**
+ * Utility function untuk menampilkan toast notification dengan SweetAlert
+ * @param {string} message - Pesan yang akan ditampilkan
+ * @param {string} type - Tipe notifikasi ('success', 'error', 'warning', 'info')
+ */
+function showToast(message, type = "info") {
+    const Toast = Swal.mixin({
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+        customClass: {
+            container: "toast-container-admin",
+        },
+        didOpen: (toast) => {
+            toast.addEventListener("mouseenter", Swal.stopTimer);
+            toast.addEventListener("mouseleave", Swal.resumeTimer);
+        },
+    });
+
+    Toast.fire({
+        icon: type,
+        title: message,
+    });
+}
+
+/**
+ * Utility function untuk menampilkan alert standar dengan SweetAlert
+ * @param {string} title - Judul alert
+ * @param {string} message - Pesan yang akan ditampilkan
+ * @param {string} type - Tipe alert ('success', 'error', 'warning', 'info')
+ * @param {Function} callback - Fungsi yang akan dijalankan setelah alert ditutup (opsional)
+ */
+function showAlert(title, message, type = "info", callback = null) {
+    Swal.fire({
+        title: title,
+        text: message,
+        icon: type,
+        confirmButtonColor: type === "error" ? "#dc3545" : "#3085d6",
+        customClass: {
+            container: "toast-container-admin",
+        },
+    }).then(() => {
+        if (callback && typeof callback === "function") {
+            callback();
+        }
+    });
+}
+
+/**
+ * Utility function untuk menampilkan konfirmasi dengan SweetAlert
+ * @param {string} title - Judul konfirmasi
+ * @param {string} message - Pesan yang akan ditampilkan
+ * @param {Function} confirmCallback - Fungsi yang akan dijalankan jika user mengkonfirmasi
+ * @param {string} type - Tipe konfirmasi ('question', 'warning', etc.)
+ * @param {string} confirmButtonText - Teks untuk tombol konfirmasi
+ * @param {string} confirmButtonColor - Warna untuk tombol konfirmasi
+ */
+function showConfirm(
+    title,
+    message,
+    confirmCallback,
+    type = "question",
+    confirmButtonText = "Ya",
+    confirmButtonColor = "#3085d6"
+) {
+    // Pastikan parameter yang benar diteruskan ke SweetAlert
+    Swal.fire({
+        title: title,
+        text: message,
+        icon: type,
+        showCancelButton: true,
+        confirmButtonColor: confirmButtonColor,
+        cancelButtonColor: "#6c757d",
+        confirmButtonText: confirmButtonText,
+        cancelButtonText: "Batal",
+        customClass: {
+            container: "toast-container-admin",
+        },
+    }).then((result) => {
+        if (result.isConfirmed && typeof confirmCallback === "function") {
+            confirmCallback();
+        }
+    });
+}
+
+/**
+ * Utility function untuk menampilkan loading dengan SweetAlert
+ * @param {string} message - Pesan loading
+ * @returns {Function} - Fungsi untuk menutup loading
+ */
+function showLoading(message = "Memproses...") {
+    Swal.fire({
+        title: message,
+        html: "Mohon tunggu sebentar...",
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        },
+        customClass: {
+            container: "toast-container-admin",
+        },
+    });
+
+    return () => {
+        Swal.close();
+    };
+}
+
+/**
  * Inisialisasi semua fungsi ketika DOM sudah siap
  */
 document.addEventListener("DOMContentLoaded", function () {
@@ -21,50 +131,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Inisialisasi rejection modal
     initRejectModal();
-
-    initAllStatus();
 });
-
-function initAllStatus() {
-    // Get active tab from hidden input
-    const activeTabInput = document.getElementById("active_tab_input");
-
-    // Setup tabs based on user role
-    const isVerificator =
-        document.body.classList.contains("role-verifikator1") ||
-        document.body.classList.contains("role-verifikator2");
-
-    if (isVerificator) {
-        // For verificator, we only have one tab (semua)
-        const tab = document.getElementById("semua-tab");
-        if (tab) {
-            // Tab is already active by default
-            const tabPane = document.getElementById("semua");
-            if (tabPane) tabPane.classList.add("show", "active");
-        }
-    } else {
-        // For other users, handle tab switching between strategis and lainnya
-        const activeTab = activeTabInput.value || "strategis";
-        const tab = document.getElementById(`${activeTab}-tab`);
-
-        if (tab) {
-            tab.classList.add("active");
-            const tabPane = document.getElementById(activeTab);
-            if (tabPane) tabPane.classList.add("show", "active");
-        }
-
-        // Add event listeners to tabs
-        document
-            .querySelectorAll(".custom-tab-link")
-            .forEach(function (tabLink) {
-                tabLink.addEventListener("click", function (e) {
-                    const tabId = this.id.replace("-tab", "");
-                    document.getElementById("search_active_tab").value = tabId;
-                    activeTabInput.value = tabId;
-                });
-            });
-    }
-}
 
 /**
  * Inisialisasi tooltip Bootstrap
@@ -248,10 +315,9 @@ function updateSelectedCount(tabId) {
  * Inisialisasi event handler untuk tombol aksi massal
  */
 function initMassActionButtons() {
-    // Handler untuk tombol aksi massal
     document
         .querySelectorAll(
-            '[id^="delete-selected-"], [id^="send-to-verif1-selected-"], [id^="send-to-verif2-selected-"], [id^="publish-selected-"], [id^="export-selected-"]'
+            '[id^="delete-selected-"], [id^="send-to-verif1-selected-"], [id^="send-to-verif2-selected-"], [id^="publish-selected-"], [id^="export-selected-"], [id^="reject-selected-"]'
         )
         .forEach(function (button) {
             button.addEventListener("click", function (e) {
@@ -266,44 +332,175 @@ function initMassActionButtons() {
                 ).map((el) => el.value);
 
                 if (selectedIds.length === 0) {
-                    alert("Silakan pilih setidaknya satu isu.");
+                    showAlert(
+                        "Tidak Ada Item Dipilih",
+                        "Pilih setidaknya satu isu.",
+                        "warning"
+                    );
                     return;
                 }
 
-                let confirmMessage = "";
+                // Handler untuk aksi reject
+                if (action === "reject") {
+                    const rejectModal = document.getElementById("rejectModal");
+                    const modalInstance = new bootstrap.Modal(rejectModal);
+                    rejectModal.setAttribute(
+                        "data-selected-ids",
+                        JSON.stringify(selectedIds)
+                    );
+                    modalInstance.show();
+                    return;
+                }
 
-                // Set confirmation message based on action
+                // Konfigurasi untuk setiap aksi
+                let config = {};
                 switch (action) {
                     case "delete":
-                        confirmMessage = `Apakah Anda yakin ingin menghapus ${selectedIds.length} isu yang dipilih?`;
+                        config = {
+                            title: "Hapus Isu",
+                            text: `Apakah Anda yakin ingin menghapus ${selectedIds.length} isu yang dipilih?`,
+                            icon: "warning",
+                            confirmButtonText: "Hapus",
+                            confirmButtonColor: "#dc3545",
+                        };
                         break;
                     case "send-to-verif1":
-                        confirmMessage = `Apakah Anda yakin ingin mengirim ${selectedIds.length} isu ke Verifikator 1?`;
+                        config = {
+                            title: "Kirim ke Verifikator 1",
+                            text: `Apakah Anda yakin ingin mengirim ${selectedIds.length} isu ke Verifikator 1?`,
+                            icon: "question",
+                            confirmButtonText: "Kirim",
+                            confirmButtonColor: "#3085d6",
+                        };
                         break;
                     case "send-to-verif2":
-                        confirmMessage = `Apakah Anda yakin ingin mengirim ${selectedIds.length} isu ke Verifikator 2?`;
+                        config = {
+                            title: "Kirim ke Verifikator 2",
+                            text: `Apakah Anda yakin ingin mengirim ${selectedIds.length} isu ke Verifikator 2?`,
+                            icon: "question",
+                            confirmButtonText: "Kirim",
+                            confirmButtonColor: "#3085d6",
+                        };
                         break;
                     case "publish":
-                        confirmMessage = `Apakah Anda yakin ingin mempublikasikan ${selectedIds.length} isu yang dipilih?`;
+                        config = {
+                            title: "Publikasikan Isu",
+                            text: `Apakah Anda yakin ingin mempublikasikan ${selectedIds.length} isu yang dipilih?`,
+                            icon: "question",
+                            confirmButtonText: "Publikasi",
+                            confirmButtonColor: "#28a745",
+                        };
                         break;
                     case "export":
-                        // No confirmation needed for export
-                        break;
+                        // Langsung submit untuk export
+                        document.getElementById("mass-action").value = action;
+                        document.getElementById("selected-ids").value =
+                            JSON.stringify(selectedIds);
+                        document.getElementById("mass-action-form").submit();
+                        return;
                     default:
-                        return; // Invalid action
+                        return;
                 }
 
-                if (confirmMessage && !confirm(confirmMessage)) {
-                    return;
-                }
-
-                // Set form values
-                document.getElementById("mass-action").value = action;
-                document.getElementById("selected-ids").value =
-                    JSON.stringify(selectedIds);
-
-                // Submit form
-                document.getElementById("mass-action-form").submit();
+                // Tampilkan konfirmasi
+                showConfirm(
+                    config.title,
+                    config.text,
+                    () => {
+                        const closeLoading = showLoading("Memproses...");
+                        document.getElementById("mass-action").value = action;
+                        document.getElementById("selected-ids").value =
+                            JSON.stringify(selectedIds);
+                        setTimeout(() => {
+                            document
+                                .getElementById("mass-action-form")
+                                .submit();
+                            closeLoading();
+                        }, 200);
+                    },
+                    config.icon,
+                    config.confirmButtonText,
+                    config.confirmButtonColor
+                );
             });
         });
+}
+
+/**
+ * Inisialisasi modal penolakan isu
+ */
+function initRejectModal() {
+    const rejectModal = document.getElementById("rejectModal");
+    if (!rejectModal) return;
+
+    const modalInstance = new bootstrap.Modal(rejectModal);
+    const confirmRejectBtn = document.getElementById("confirm-reject");
+    const rejectionReasonInput = document.getElementById(
+        "rejection-reason-input"
+    );
+    const massActionInput = document.getElementById("mass-action");
+    const selectedIdsInput = document.getElementById("selected-ids");
+    const rejectionReasonHiddenInput =
+        document.getElementById("rejection-reason");
+    const massActionForm = document.getElementById("mass-action-form");
+
+    if (confirmRejectBtn) {
+        confirmRejectBtn.addEventListener("click", function () {
+            const rejectionReason = rejectionReasonInput.value.trim();
+
+            if (rejectionReason.length < 10) {
+                rejectionReasonInput.classList.add("is-invalid");
+                showAlert(
+                    "Validasi Gagal",
+                    "Alasan penolakan minimal 10 karakter.",
+                    "error"
+                );
+                return;
+            }
+
+            rejectionReasonInput.classList.remove("is-invalid");
+            massActionInput.value = "reject";
+            const selectedIds = JSON.parse(
+                rejectModal.getAttribute("data-selected-ids") || "[]"
+            );
+
+            if (!selectedIds.length) {
+                showAlert("Error", "Tidak ada isu yang dipilih.", "error");
+                return;
+            }
+
+            selectedIdsInput.value = JSON.stringify(selectedIds);
+            rejectionReasonHiddenInput.value = rejectionReason;
+
+            modalInstance.hide();
+
+            showConfirm(
+                "Konfirmasi Penolakan",
+                `Apakah Anda yakin ingin menolak ${selectedIds.length} isu yang dipilih?`,
+                () => {
+                    const closeLoading = showLoading("Memproses Penolakan...");
+                    setTimeout(() => {
+                        massActionForm.submit();
+                        closeLoading();
+                    }, 200);
+                },
+                "warning",
+                "Tolak", // Text tombol yang benar
+                "#dc3545" // Warna tombol
+            );
+        });
+    }
+
+    rejectModal.addEventListener("hidden.bs.modal", function () {
+        rejectionReasonInput.value = "";
+        rejectionReasonInput.classList.remove("is-invalid");
+    });
+
+    const hasServerValidationError = document.getElementById(
+        "rejection-validation-error"
+    );
+    if (hasServerValidationError && hasServerValidationError.value === "true") {
+        modalInstance.show();
+        rejectionReasonInput.classList.add("is-invalid");
+    }
 }
