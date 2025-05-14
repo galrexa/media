@@ -263,7 +263,7 @@
                         document.getElementById('logout-form').submit();
                     },
                     'question',
-                    'Ya, Logout',
+                    'Logout',
                     '#4361ee'
                 );
             });
@@ -330,7 +330,7 @@
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Ya, Hapus!',
+                confirmButtonText: 'Hapus',
                 cancelButtonText: 'Batal',
                 reverseButtons: true,
                 focusCancel: true
