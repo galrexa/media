@@ -1,70 +1,95 @@
 <!-- resources/views/partials/_isu_table.blade.php -->
 @if($isus->isNotEmpty())
-    <div class="selected-actions mb-3" style="display: none;">
-        <div class="d-flex align-items-center">
-            <span class="me-2 fw-medium"><span id="selected-count-{{ $tabId }}">0</span> item terpilih</span>
-            <div class="btn-group">
-                <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-tasks me-1"></i> Aksi Massal
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                    <!-- Kirim: Admin, Editor ke Verifikator 1, Verifikator 1 ke Verifikator 2 -->
-                    @if(Auth::user()->isAdmin())
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif1-selected-{{ $tabId }}" data-action="send-to-verif1">
-                                <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 1
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif2-selected-{{ $tabId }}" data-action="send-to-verif2">
-                                <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 2
-                            </a>
-                        </li>
-                    @elseif(Auth::user()->isEditor())
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif1-selected-{{ $tabId }}" data-action="send-to-verif1">
-                                <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 1
-                            </a>
-                        </li>
-                    @elseif(Auth::user()->hasRole('verifikator1'))
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif2-selected-{{ $tabId }}" data-action="send-to-verif2">
-                                <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 2
-                            </a>
-                        </li>
-                    @endif
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="selected-actions" style="display: none;">
+            <div class="d-flex align-items-center">
+                <span class="me-2 fw-medium"><span id="selected-count-{{ $tabId }}">0</span> item terpilih</span>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-tasks me-1"></i> Aksi Massal
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <!-- Kirim: Admin, Editor ke Verifikator 1, Verifikator 1 ke Verifikator 2 -->
+                        @if(Auth::user()->isAdmin())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif1-selected-{{ $tabId }}" data-action="send-to-verif1">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 1
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif2-selected-{{ $tabId }}" data-action="send-to-verif2">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 2
+                                </a>
+                            </li>
+                        @elseif(Auth::user()->isEditor())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif1-selected-{{ $tabId }}" data-action="send-to-verif1">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 1
+                                </a>
+                            </li>
+                        @elseif(Auth::user()->isVerifikator1())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif2-selected-{{ $tabId }}" data-action="send-to-verif2">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 2
+                                </a>
+                            </li>
+                        @endif
 
-                    <!-- Tolak: Admin, Verifikator 1, dan Verifikator 2 -->
-                    @if(Auth::user()->isAdmin() || Auth::user()->hasRole('verifikator1') || Auth::user()->hasRole('verifikator2'))
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="reject-selected-{{ $tabId }}" data-action="reject" data-bs-toggle="modal" data-bs-target="#rejectModal">
-                                <i class="fas fa-ban me-2 text-danger"></i> Tolak
-                            </a>
-                        </li>
-                    @endif
+                        <!-- Tolak: Admin, Verifikator 1, dan Verifikator 2 -->
+                        @if(Auth::user()->isAdmin() || Auth::user()->isVerifikator1() || Auth::user()->isVerifikator2())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="reject-selected-{{ $tabId }}" data-action="reject" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                    <i class="fas fa-ban me-2 text-danger"></i> Tolak
+                                </a>
+                            </li>
+                        @endif
 
-                    <!-- Publish: Admin, Verifikator 2 -->
-                    @if(Auth::user()->isAdmin() || Auth::user()->hasRole('verifikator2'))
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="publish-selected-{{ $tabId }}" data-action="publish">
-                                <i class="fas fa-globe me-2 text-success"></i> Publikasikan
-                            </a>
-                        </li>
-                    @endif
+                        <!-- Publish: Admin, Verifikator 2 -->
+                        @if(Auth::user()->isAdmin() || Auth::user()->isVerifikator2())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="publish-selected-{{ $tabId }}" data-action="publish">
+                                    <i class="fas fa-globe me-2 text-success"></i> Publikasikan
+                                </a>
+                            </li>
+                        @endif
 
-                    <!-- Hapus: Admin dan Editor -->
-                    @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
-                        <li>
-                            <a class="dropdown-item d-flex align-items-center" href="#" id="delete-selected-{{ $tabId }}" data-action="delete">
-                                <i class="fas fa-trash me-2 text-danger"></i> Hapus
-                            </a>
-                        </li>
-                    @endif
+                        <!-- Hapus: Admin dan Editor -->
+                        @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="delete-selected-{{ $tabId }}" data-action="delete">
+                                    <i class="fas fa-trash me-2 text-danger"></i> Hapus
+                                </a>
+                            </li>
+                        @endif
 
-                </ul>
+                    </ul>
+                </div>
             </div>
         </div>
+
+
+        <div class="d-flex align-items-center ms-auto">
+            <label for="per-page-{{ $tabId }}" class="me-2 mb-0">Tampilkan:</label>
+            <select id="per-page-{{ $tabId }}" class="form-select form-select-sm perPage-select" style="width: auto;">
+                <option value="10" {{ request('perPage', 10) == 10 ? 'selected' : '' }}>10</option>
+                <option value="25" {{ request('perPage') == 25 ? 'selected' : '' }}>25</option>
+                <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
+                <option value="100" {{ request('perPage') == 100 ? 'selected' : '' }}>100</option>
+                <option value="all" {{ request('perPage') == 'all' ? 'selected' : '' }}>Semua</option>
+            </select>
+        </div>
+        
     </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+            <div class="text-muted small">
+                @if(request('perPage') === 'all')
+                    Menampilkan semua {{ $isus->total() }} data
+                @else
+                    Menampilkan {{ $isus->firstItem() ?? 0 }} sampai {{ $isus->lastItem() ?? 0 }} dari {{ $isus->total() }} data
+                @endif
+            </div>
+        </div>
 
     <div class="card shadow-sm">
         <div class="table-responsive">
@@ -182,8 +207,8 @@
                                 @auth
                                 @if((auth()->user()->isAdmin()) ||
                                     (auth()->user()->isEditor() && $isu->created_by == auth()->user()->id && $isu->canBeEditedBy('editor')) ||
-                                    (auth()->user()->hasRole('verifikator1') && $isu->canBeEditedBy('verifikator1')) ||
-                                    (auth()->user()->hasRole('verifikator2') && $isu->canBeEditedBy('verifikator2')))
+                                    (auth()->user()->isVerifikator1() && $isu->canBeEditedBy('verifikator1')) ||
+                                    (auth()->user()->isVerifikator2() && $isu->canBeEditedBy('verifikator2')))
                                     <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
                                         <i class="fas fa-edit"></i>
                                     </a>
@@ -215,9 +240,7 @@
         @endauth
     </div>
 @endif
-<!-- Di bagian bawah file Blade -->
 <script>
-    // Ganti fungsi deleteIsu di _isu_table.blade.php dengan kode ini
     function deleteIsu(event, element) {
         event.preventDefault(); // Mencegah aksi default link
 
@@ -229,7 +252,7 @@
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Ya, Hapus!',
+            confirmButtonText: 'Hapus',
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -278,4 +301,31 @@
             }
         });
     }
+
+    // NEW: Handler untuk perubahan jumlah item per halaman
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi handler untuk setiap select perPage
+        const perPageSelects = document.querySelectorAll('.perPage-select');
+        
+        perPageSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                // Dapatkan URL saat ini
+                let url = new URL(window.location.href);
+                let params = new URLSearchParams(url.search);
+                
+                // Update parameter perPage
+                if (this.value === 'all') {
+                    params.set('perPage', 'all');
+                } else {
+                    params.set('perPage', this.value);
+                }
+                
+                // Reset halaman ke 1 saat mengubah jumlah item per halaman
+                params.set('page', '1');
+                
+                // Redirect ke URL dengan parameter baru
+                window.location.href = `${url.pathname}?${params.toString()}`;
+            });
+        });
+    });
 </script>

@@ -368,7 +368,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <span class="recent-item-date">{{ $isu->tanggal->format('d M Y') }}</span>
+                                <span class="recent-item-date">{{ $isu->tanggal->translatedFormat('d M Y') }}</span>
                             </a>
                         </li>
                     @empty
