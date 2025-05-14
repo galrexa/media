@@ -157,9 +157,9 @@
                         <a href="{{ route('isu.edit', $isu) }}" class="btn btn-warning btn-sm me-2" title="Edit" aria-label="Edit isu">
                             <i class="fas fa-edit me-1"></i> Edit
                         </a>
+                        @endif
 
-                        @if(Auth::user()->isAdmin() || 
-                        (Auth::user()->isEditor() && $isu->created_by == Auth::user()->id && $isu->canBeDeleted()))
+                        @if(Auth::user()->isAdmin() || (Auth::user()->isVerifikator2()))
                             <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline" id="delete-form">
                                 @csrf
                                 @method('DELETE')
@@ -170,7 +170,7 @@
                             </form>
                         @endif
                     </div>
-                @endif
+                
             </div>
             @if($isu->status && $isu->status->nama == 'Ditolak' && $isu->alasan_penolakan)
                 <div class="alert alert-danger mt-3 border-start border-danger border-4 shadow-sm">

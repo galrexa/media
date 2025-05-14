@@ -9,6 +9,7 @@ use App\Models\RefStatus;
 use App\Models\RefTone;
 use App\Models\Kategori;
 use App\Helpers\LogHelper;
+use App\Helpers\AlertHelper;
 use App\Helpers\ThumbnailHelper;
 use App\Models\User;
 use App\Models\LogIsu;
@@ -225,15 +226,14 @@ class IsuController extends Controller
             $statusMessage = $statusId == RefStatus::getDraftId()
                 ? 'disimpan sebagai draft'
                 : 'dikirim untuk verifikasi';
-
-            return redirect()->route('isu.show', $isu)
-                            ->with('success', "Isu berhasil {$statusMessage}!");
+            
+            AlertHelper::success('Berhasil', "Isu berhasil {$statusMessage}!");
+            return redirect()->route('isu.show', $isu);
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            AlertHelper::error('Gagal', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect()->back()->withInput();
         }
     }
 
@@ -243,16 +243,15 @@ class IsuController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\View\View
      */
-
     public function index(Request $request)
     {
         $user = Auth::user();
         $role = $user->getHighestRoleName();
         $userId = $user->id;
-    
+
         // Ambil filter status dari request
         $filterStatus = $request->input('filter_status');
-    
+
         // Reset badge untuk filter rejected
         if ($filterStatus === 'rejected') {
             Session::put('rejected_badge_hidden', true);
@@ -260,16 +259,21 @@ class IsuController extends Controller
             Cache::put($cacheKey, true, now()->addDays(7));
             Log::info("Badge ditolak direset oleh User ID: {$userId} ({$user->name}) melalui akses halaman");
         }
-    
+
         // Sorting
         $sortField = $request->get('sort', 'tanggal');
         $sortDirection = in_array(strtolower($request->get('direction', 'desc')), ['asc', 'desc'])
             ? strtolower($request->get('direction', 'desc'))
             : 'desc';
-    
+
         // Whitelist kolom yang diizinkan untuk sorting
         $allowedSortFields = ['tanggal', 'skala', 'tone', 'status_id'];
         $sortField = in_array($sortField, $allowedSortFields) ? $sortField : 'tanggal';
+        
+        // NEW: Determine items per page
+        $perPage = $request->input('perPage', 10);
+        $isShowAll = $perPage === 'all';
+        $perPageValue = $isShowAll ? PHP_INT_MAX : (int) $perPage;
         
         // Cek apakah user adalah verifikator
         $isVerifikator = $user->hasRole('verifikator1') || $user->hasRole('verifikator2');
@@ -334,8 +338,24 @@ class IsuController extends Controller
             // Sorting
             $isusGabunganQuery->orderBy($sortField, $sortDirection);
             
-            // Pagination
-            $isusGabungan = $isusGabunganQuery->paginate(10, ['*'], 'semua');
+            // NEW: Handle 'all' option
+            if ($isShowAll) {
+                $allResults = $isusGabunganQuery->get();
+                $totalCount = $allResults->count();
+                
+                // Create a LengthAwarePaginator with all results
+                $isusGabungan = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allResults,
+                    $totalCount,
+                    $totalCount > 0 ? $totalCount : 1,
+                    $request->input('semua', 1),
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            } else {
+                // Regular pagination
+                $isusGabungan = $isusGabunganQuery->paginate($perPageValue, ['*'], 'semua');
+            }
+            
             $isusGabungan->appends($request->except('semua'));
             
             // Dapatkan daftar status untuk dropdown filter
@@ -345,7 +365,8 @@ class IsuController extends Controller
             return view('isu.index', [
                 'isusGabungan' => $isusGabungan,
                 'statusList' => $statusList,
-                'isRejectedPage' => ($filterStatus === 'rejected')
+                'isRejectedPage' => ($filterStatus === 'rejected'),
+                'perPage' => $perPage // NEW: Pass perPage to view
             ]);
         } else {
             
@@ -426,9 +447,38 @@ class IsuController extends Controller
             $isusStrategisQuery->orderBy($sortField, $sortDirection);
             $isusLainnyaQuery->orderBy($sortField, $sortDirection);
             
-            // Pagination
-            $isusStrategis = $isusStrategisQuery->paginate(10, ['*'], 'strategis');
-            $isusLainnya = $isusLainnyaQuery->paginate(10, ['*'], 'lainnya');
+            // NEW: Handle 'all' option for both queries
+            if ($isShowAll) {
+                // Get all results for strategis
+                $allStrategisResults = $isusStrategisQuery->get();
+                $totalStrategisCount = $allStrategisResults->count();
+                
+                // Create a LengthAwarePaginator with all strategis results
+                $isusStrategis = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allStrategisResults,
+                    $totalStrategisCount,
+                    $totalStrategisCount > 0 ? $totalStrategisCount : 1,
+                    $request->input('strategis', 1),
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+                
+                // Get all results for lainnya
+                $allLainnyaResults = $isusLainnyaQuery->get();
+                $totalLainnyaCount = $allLainnyaResults->count();
+                
+                // Create a LengthAwarePaginator with all lainnya results
+                $isusLainnya = new \Illuminate\Pagination\LengthAwarePaginator(
+                    $allLainnyaResults,
+                    $totalLainnyaCount,
+                    $totalLainnyaCount > 0 ? $totalLainnyaCount : 1,
+                    $request->input('lainnya', 1),
+                    ['path' => $request->url(), 'query' => $request->query()]
+                );
+            } else {
+                // Regular pagination
+                $isusStrategis = $isusStrategisQuery->paginate($perPageValue, ['*'], 'strategis');
+                $isusLainnya = $isusLainnyaQuery->paginate($perPageValue, ['*'], 'lainnya');
+            }
             
             // Pastikan semua parameter disertakan di URL pagination
             $isusStrategis->appends($request->except('strategis'));
@@ -445,7 +495,8 @@ class IsuController extends Controller
                 'isusStrategis' => $isusStrategis,
                 'isusLainnya' => $isusLainnya,
                 'statusList' => $statusList,
-                'isRejectedPage' => ($filterStatus === 'rejected')
+                'isRejectedPage' => ($filterStatus === 'rejected'),
+                'perPage' => $perPage // NEW: Pass perPage to view
             ], $sidebarData));
         }
     }
@@ -591,17 +642,15 @@ class IsuController extends Controller
         $narasi_negatif = !empty($request->narasi_negatif) ? Purify::clean($request->narasi_negatif) : '<p>Tidak ada data</p>';
 
         // Tetapkan nilai untuk skala dan tone
-        // Gunakan null jika tidak ada nilai yang dipilih
         $skala = !empty($validated['skala']) ? $validated['skala'] : null;
         $tone = !empty($validated['tone']) ? $validated['tone'] : null;
 
         // Tentukan status berdasarkan action dan role
-        $newStatusId = $isu->status_id; // Default: status tetap sama
+        $newStatusId = $isu->status_id;
         $statusAction = '';
 
         // Logika perubahan status berdasarkan action dan role
         if ($request->has('action')) {
-            // Encapsulate complex status change logic in a separate method
             list($newStatusId, $statusAction) = $this->determineNewStatus($request->action, $role, $isu->status_id);
         }
 
@@ -767,15 +816,14 @@ class IsuController extends Controller
 
             // Gunakan pesan sukses berdasarkan aksi yang dilakukan
             $successMessage = $statusAction ? "Isu berhasil {$statusAction}!" : "Isu berhasil diperbarui!";
-            return redirect()->route('isu.index', $isu)
-                            ->with('success', $successMessage);
+            AlertHelper::animationBounce('Berhasil', $successMessage);
+            return redirect()->route('isu.index', $isu);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            AlertHelper::error('Gagal', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect()->back()->withInput();
         }
     }
 
@@ -944,34 +992,33 @@ class IsuController extends Controller
     public function destroy(Isu $isu)
     {
         $user = Auth::user();
-        // Perbaikan: Menggunakan isAdmin() bukan hasRole()
-        if (!auth()->user()->isAdmin() && !auth()->user()->isEditor() && $isu->created_by != auth()->id()) {
-            abort(403, 'Unauthorized');
+        if ($user->isAdmin() || $user->isVerifikator2() || ($user->isEditor() && $isu->created_by == $user->id)) {
+            DB::beginTransaction();
+            try {
+                // Log penghapusan sebelum menghapus data
+                LogHelper::logIsuActivity(
+                    $isu->id,
+                    'DELETE',
+                    null,
+                    json_encode($isu->toArray()),
+                    null,
+                    request()
+                );
+                $isu->delete();
+
+                DB::commit();
+
+                AlertHelper::toastSuccess('Isu berhasil dihapus!', 'top-end', 3000);
+                return redirect()->route('isu.index');
+            } catch (\Exception $e) {
+                DB::rollBack();
+                AlertHelper::toastError('Terjadi kesalahan: ' . $e->getMessage());
+                return redirect()->back();
+            }
+        } else {
+            abort(403, 'Anda tidak memiliki hak akses untuk menghapus isu ini.');
         }
-
-        DB::beginTransaction();
-        try {
-            // Log penghapusan sebelum menghapus data
-            LogHelper::logIsuActivity(
-                $isu->id,
-                'DELETE',
-                null,
-                json_encode($isu->toArray()),
-                null,
-                request()
-            );
-        $isu->delete();
-
-        DB::commit();
-
-        return redirect()->route('isu.index')
-                         ->with('success', 'Isu berhasil dihapus!');
-                        } catch (\Exception $e) {
-                            DB::rollBack();
-                            return redirect()->back()
-                                            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
-                        }
-                    }
+    }
 
     /**
      * Mengambil preview dari URL untuk referensi.
@@ -1238,14 +1285,15 @@ class IsuController extends Controller
             DB::commit();
 
             // Redirect ke halaman index dengan pesan sukses
-            return redirect()->route('isu.index')
-                ->with('success', 'Isu berhasil ditolak dengan alasan yang diberikan.');
+            AlertHelper::success('Berhasil', 'Isu berhasil ditolak dengan alasan yang diberikan.', [
+                'icon' => 'warning'
+            ]);
+            return redirect()->route('isu.index');
         } catch (\Exception $e) {
             DB::rollBack();
 
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            AlertHelper::error('Gagal', 'Terjadi kesalahan: ' . $e->getMessage());
+            return redirect()->back()->withInput();
         }
     }
 
@@ -1481,11 +1529,13 @@ class IsuController extends Controller
                     // Tidak perlu menampilkan pesan error karena aksi utama berhasil
                 }
                 
-                return back()->with('success', $message);
+                AlertHelper::positionTopCenter('Berhasil', $message, 'success');
+                return back();
             } else {
                 // Tidak ada yang berhasil, rollback
                 DB::rollBack();
-                return back()->with('error', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
+                AlertHelper::error('Tidak Ada Perubahan', 'Tidak ada isu yang dikirim. Mungkin Anda tidak memiliki izin untuk mengirim isu yang dipilih.');
+                return back();
             }
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1623,7 +1673,8 @@ class IsuController extends Controller
     {
         // Validasi alasan penolakan
         if (empty($rejectionReason)) {
-            return back()->with('error', 'Alasan penolakan harus diisi.');
+            AlertHelper::error('Validasi Gagal', 'Alasan penolakan harus diisi.');
+            return back();
         }
 
         // Hanya admin, verifikator 1, dan verifikator 2 yang bisa menolak
@@ -1705,7 +1756,11 @@ class IsuController extends Controller
             DB::commit();
 
             if ($rejectedCount > 0) {
-                return back()->with('success', $rejectedCount . ' isu berhasil ditolak.');
+                AlertHelper::warning('Berhasil', $rejectedCount . ' isu berhasil ditolak.', [
+                    'timer' => 4000,
+                    'timerProgressBar' => true
+                ]);
+                return back();
             } else {
                 Log::warning('No issues were rejected despite finding issues', [
                     'selected_ids' => $selectedIds,
@@ -1716,7 +1771,8 @@ class IsuController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Rejection error', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return back()->with('error', 'Terjadi kesalahan saat menolak isu: ' . $e->getMessage());
+            AlertHelper::error('Tidak Ada Perubahan', 'Tidak ada isu yang ditolak. Mungkin Anda tidak memiliki izin untuk menolak isu yang dipilih.');
+            return back();
         }
     }
 
@@ -1781,10 +1837,16 @@ class IsuController extends Controller
             DB::commit();
 
             if ($publishedCount > 0) {
-                return back()->with('success', $publishedCount . ' isu berhasil dipublikasikan.');
+                AlertHelper::customImage(
+                    'Berhasil', 
+                    $publishedCount . ' isu berhasil dipublikasikan.', 
+                    'https://cdn.example.com/assets/publish-success.svg',
+                    'Publikasi Berhasil'
+                );
+                return back();
             } else {
-                return back()->with('error', 'Tidak ada isu yang dipublikasikan. Mungkin Anda tidak memiliki izin untuk mempublikasikan isu yang dipilih.');
-            }
+                AlertHelper::error('Tidak Ada Perubahan', 'Tidak ada isu yang dipublikasikan. Mungkin Anda tidak memiliki izin untuk mempublikasikan isu yang dipilih.');
+                return back();            }
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan saat mempublikasikan isu: ' . $e->getMessage());
