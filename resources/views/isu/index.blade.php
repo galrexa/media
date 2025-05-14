@@ -23,8 +23,9 @@
         <div class="col-md-6 text-md-end">
             @auth
                 @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
-                    <a href="{{ route('isu.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus-circle me-2"></i> Tambah Isu Baru
+                    <a href="{{ route('isu.create') }}" class="btn btn-primary responsive-btn">
+                        <span class="icon-part"><i class="fas fa-plus-circle"></i></span>
+                        <span class="text-part">Tambah Isu</span>
                     </a>
                 @endif
             @endauth
@@ -65,13 +66,15 @@
                             </div>
                             
                             <div class="col-md-2 d-flex">
-                                <button type="submit" class="btn btn-primary me-2 flex-grow-1">
-                                    <i class="fas fa-filter me-1"></i> Filter
+                                <button type="submit" class="btn btn-primary me-2 flex-grow-1 responsive-btn">
+                                    <span class="icon-part"><i class="fas fa-filter"></i></span>
+                                    <span class="text-part">Filter</span>
                                 </button>
                                 @if(request('search') || request('status') || request('filter_status') || request('date_from') || request('date_to'))
-                                    <a href="{{ route('isu.index') }}" class="btn btn-outline-secondary"
-                                       aria-label="Reset filter">
-                                        <i class="fas fa-times-circle"></i>
+                                    <a href="{{ route('isu.index') }}" class="btn btn-outline-secondary responsive-btn"
+                                    aria-label="Reset filter">
+                                        <span class="icon-part"><i class="fas fa-times-circle"></i></span>
+                                        <span class="text-part">Reset</span>
                                     </a>
                                 @endif
                             </div>
@@ -92,25 +95,28 @@
                 <ul class="custom-tabs" id="issuTabs" role="tablist">
                     @if(auth()->user()->hasRole('verifikator1') || auth()->user()->hasRole('verifikator2'))
                         <li class="custom-tab-item nav-item" role="presentation">
-                            <button class="custom-tab-link nav-link active" id="semua-tab"
-                                    data-bs-toggle="tab" data-bs-target="#semua" type="button"
-                                    role="tab" aria-controls="semua" aria-selected="true">
-                                <i class="fas fa-list me-2"></i>Semua Isu
+                            <button class="custom-tab-link nav-link active responsive-btn" id="semua-tab"
+                                data-bs-toggle="tab" data-bs-target="#semua" type="button"
+                                role="tab" aria-controls="semua" aria-selected="true">
+                                <span class="icon-part"><i class="fas fa-list"></i></span>
+                                <span class="text-part">Semua Isu</span>
                             </button>
                         </li>
                     @else
                         <li class="custom-tab-item nav-item" role="presentation">
-                            <button class="custom-tab-link nav-link active" id="strategis-tab"
+                            <button class="custom-tab-link nav-link active responsive-btn" id="strategis-tab"
                                     data-bs-toggle="tab" data-bs-target="#strategis" type="button"
                                     role="tab" aria-controls="strategis" aria-selected="true">
-                                <i class="fas fa-chart-line me-2"></i>Isu Strategis
+                                <span class="icon-part"><i class="fas fa-chart-line"></i></span>
+                                <span class="text-part">Isu Strategis</span>
                             </button>
                         </li>
                         <li class="custom-tab-item nav-item" role="presentation">
-                            <button class="custom-tab-link nav-link" id="lainnya-tab"
+                            <button class="custom-tab-link nav-link responsive-btn" id="lainnya-tab"
                                     data-bs-toggle="tab" data-bs-target="#lainnya" type="button"
                                     role="tab" aria-controls="lainnya" aria-selected="false">
-                                <i class="fas fa-list-alt me-2"></i>Isu Regional
+                                <span class="icon-part"><i class="fas fa-list-alt"></i></span>
+                                <span class="text-part">Isu Regional</span>
                             </button>
                         </li>
                     @endif
@@ -331,10 +337,8 @@
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-// File: resources/views/isu/index.blade.php
-// Ubah script pada bagian penanganan aksi tolak
-
 document.addEventListener('DOMContentLoaded', function() {
     if (window.isuActionInitialized) return;
     window.isuActionInitialized = true;
@@ -380,19 +384,68 @@ document.addEventListener('DOMContentLoaded', function() {
         if (reason && rejectionReasonHiddenInput) rejectionReasonHiddenInput.value = reason;
     }
 
+        function ensureCorrectTabStructure() {
+        const tabButtons = document.querySelectorAll('.custom-tab-link');
+        
+        tabButtons.forEach(button => {
+            // Jika struktur tidak memiliki icon-part dan text-part
+            if (!button.querySelector('.icon-part') || !button.querySelector('.text-part')) {
+                console.log('Memperbaiki struktur tab:', button.id);
+                
+                // Simpan ikon dan teks
+                const iconElement = button.querySelector('i');
+                const buttonText = button.textContent.trim();
+                
+                // Bersihkan konten button
+                button.innerHTML = '';
+                
+                // Tambahkan kelas responsive-btn jika belum ada
+                if (!button.classList.contains('responsive-btn')) {
+                    button.classList.add('responsive-btn');
+                }
+                
+                // Buat struktur baru
+                const iconPart = document.createElement('span');
+                iconPart.className = 'icon-part';
+                iconPart.appendChild(iconElement.cloneNode(true));
+                
+                const textPart = document.createElement('span');
+                textPart.className = 'text-part';
+                textPart.textContent = buttonText;
+                
+                // Tambahkan ke button
+                button.appendChild(iconPart);
+                button.appendChild(textPart);
+            }
+        });
+    }
+    
+    // Panggil fungsi saat halaman dimuat
+    ensureCorrectTabStructure();
+    
+    // Juga ketika tab diaktifkan
+    const tabElements = document.querySelectorAll('[data-bs-toggle="tab"]');
+    tabElements.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', ensureCorrectTabStructure);
+    });
+
     // Event listener untuk tombol dengan data-action
     document.querySelectorAll('[data-action]').forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             
             const action = this.getAttribute('data-action');
-            const tabId = this.id.split('-').slice(-1)[0]; // Ambil tabId dari ID tombol
+            const tabId = this.id.split('-').slice(-1)[0];
             const selectedIds = getSelectedIds(tabId);
             
             console.log(`Button clicked: action=${action}, tabId=${tabId}, selectedIds=${selectedIds.length}`);
             
             if (selectedIds.length === 0) {
-                alert('Pilih setidaknya satu isu untuk diproses.');
+                showAlert(
+                    'Tidak Ada Item Dipilih',
+                    'Pilih setidaknya satu isu untuk diproses.',
+                    'warning'
+                );
                 return;
             }
             
@@ -401,11 +454,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Penanganan aksi
             if (action === 'reject') {
-                // Reset dan tampilkan modal
                 resetModalState();
                 modalInstance.show();
                 
-                // Double check: pastikan nilai form masih ada
+                // Double check form values
+                // Double check form values
                 setTimeout(() => {
                     if (!massActionInput.value || massActionInput.value !== 'reject') {
                         console.warn("Nilai action hilang, mengatur ulang...");
@@ -418,19 +471,63 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }, 100);
             } else {
-                // Konfirmasi untuk aksi selain reject
-                let actionText = '';
+                // Konfigurasi untuk aksi lain
+                let config = {};
                 switch(action) {
-                    case 'delete': actionText = 'hapus'; break;
-                    case 'send-to-verif1': actionText = 'kirim ke Verifikator 1'; break;
-                    case 'send-to-verif2': actionText = 'kirim ke Verifikator 2'; break;
-                    case 'publish': actionText = 'publikasikan'; break;
-                    default: actionText = action;
+                    case 'delete':
+                        config = {
+                            title: 'Hapus Isu',
+                            text: `Apakah Anda yakin ingin menghapus ${selectedIds.length} isu terpilih?`,
+                            icon: 'warning',
+                            confirmButtonText: 'Hapus',
+                            confirmButtonColor: '#dc3545'
+                        };
+                        break;
+                    case 'send-to-verif1':
+                        config = {
+                            title: 'Kirim ke Verifikator 1',
+                            text: `Apakah Anda yakin ingin mengirim ${selectedIds.length} isu ke Verifikator 1?`,
+                            icon: 'question',
+                            confirmButtonText: 'Kirim',
+                            confirmButtonColor: '#3085d6'
+                        };
+                        break;
+                    case 'send-to-verif2':
+                        config = {
+                            title: 'Kirim ke Verifikator 2',
+                            text: `Apakah Anda yakin ingin mengirim ${selectedIds.length} isu ke Verifikator 2?`,
+                            icon: 'question',
+                            confirmButtonText: 'Ya',
+                            confirmButtonColor: '#3085d6'
+                        };
+                        break;
+                    case 'publish':
+                        config = {
+                            title: 'Publikasikan Isu',
+                            text: `Apakah Anda yakin ingin mempublikasikan ${selectedIds.length} isu terpilih?`,
+                            icon: 'question',
+                            confirmButtonText: 'Ya',
+                            confirmButtonColor: '#28a745'
+                        };
+                        break;
+                    default:
+                        return;
                 }
                 
-                if (confirm(`Apakah Anda yakin ingin ${actionText} ${selectedIds.length} isu terpilih?`)) {
-                    massActionForm.submit();
-                }
+                showConfirm(
+                    'Konfirmasi Penolakan',
+                    `Apakah Anda yakin ingin menolak ${JSON.parse(selectedIdsInput.value).length} isu yang dipilih?`,
+                    () => {
+                        const closeLoading = showLoading('Memproses Penolakan...');
+                        setTimeout(() => {
+                            massActionForm.submit();
+                            closeLoading();
+                        }, 200);
+                    },
+                    'warning',           // type parameter
+                    'Tolak',        // confirmButtonText parameter
+                    '#dc3545'            // confirmButtonColor parameter
+                );
             }
         });
     });
@@ -440,19 +537,20 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmRejectBtn.addEventListener('click', function(e) {
             console.log("Confirm button clicked");
             
-            // Validasi alasan penolakan
             const rejectionReason = rejectionReasonInput ? rejectionReasonInput.value.trim() : '';
             
             if (rejectionReason.length < 10) {
                 if (rejectionReasonInput) rejectionReasonInput.classList.add('is-invalid');
-                alert('Alasan penolakan minimal 10 karakter.');
+                showAlert(
+                    'Validasi Gagal',
+                    'Alasan penolakan minimal 10 karakter.',
+                    'error'
+                );
                 return;
             }
             
-            // Remove invalid class
             if (rejectionReasonInput) rejectionReasonInput.classList.remove('is-invalid');
             
-            // PENTING: Double check nilai action dan selected_ids
             if (massActionInput && (!massActionInput.value || massActionInput.value !== 'reject')) {
                 console.warn("Action value missing, resetting to 'reject'");
                 massActionInput.value = 'reject';
@@ -460,29 +558,42 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (selectedIdsInput && (!selectedIdsInput.value || selectedIdsInput.value === '[]')) {
                 console.error("Selected IDs missing or empty!");
-                alert('Error: Tidak ada isu yang dipilih. Silakan pilih isu terlebih dahulu.');
-                modalInstance.hide();
+                showAlert(
+                    'Error',
+                    'Tidak ada isu yang dipilih. Silakan pilih isu terlebih dahulu.',
+                    'error',
+                    () => modalInstance.hide()
+                );
                 return;
             }
             
-            // Set alasan penolakan
             if (rejectionReasonHiddenInput) {
                 rejectionReasonHiddenInput.value = rejectionReason;
             }
             
-            // Set loading state
             confirmRejectBtn.disabled = true;
-            confirmRejectBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
+            confirmRejectBtn.innerHTML = '<span class="Spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Memproses...';
             
-            // Log form data sebelum submit
             console.log("Form data before submit:", {
                 action: massActionInput ? massActionInput.value : 'N/A',
                 selected_ids: selectedIdsInput ? selectedIdsInput.value : 'N/A',
                 rejection_reason: rejectionReasonHiddenInput ? rejectionReasonHiddenInput.value : 'N/A'
             });
             
-            // Submit form
-            massActionForm.submit();
+            showConfirm(
+                'Konfirmasi Penolakan',
+                `Apakah Anda yakin ingin menolak ${JSON.parse(selectedIdsInput.value).length} isu yang dipilih?`,
+                () => {
+                    const closeLoading = showLoading('Memproses Penolakan...');
+                    setTimeout(() => {
+                        massActionForm.submit();
+                        closeLoading();
+                    }, 200);
+                },
+                'warning',
+                'Tolak',
+                '#dc3545'
+            );
         });
     }
 
@@ -500,6 +611,11 @@ document.addEventListener('DOMContentLoaded', function() {
     @if($errors->has('rejection_reason'))
         modalInstance.show();
         if (rejectionReasonInput) rejectionReasonInput.classList.add('is-invalid');
+        showAlert(
+            'Validasi Gagal',
+            '{{ $errors->first("rejection_reason") }}',
+            'error'
+        );
     @endif
     
     console.log("Inisialisasi handler aksi isu selesai!");
