@@ -114,7 +114,7 @@ Route::middleware('auth')->group(function () {
         });
 
         // Hapus isu hanya bisa dilakukan admin atau editor (dengan status Draft)
-        Route::middleware('role:admin,editor')->delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
+        Route::middleware('role:admin,verifikator2,editor')->delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
     });
 
     // Document Management

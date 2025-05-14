@@ -36,7 +36,7 @@ class Isu extends Model
         'rangkuman',
         'narasi_positif',
         'narasi_negatif',
-        'alasan_penolakan', // Tambahan kolom alasan penolakan
+        'alasan_penolakan',
         'created_by',
         'updated_by'
     ];
@@ -190,43 +190,4 @@ class Isu extends Model
         return $this->status_id === RefStatus::DITOLAK;
     }
 
-    /**
-     * Menentukan apakah isu dapat dihapus berdasarkan aturan bisnis
-     * 
-     * @return bool
-     */
-    public function canBeDeleted()
-    {
-        // Admin dapat menghapus semua isu, tapi tetap dibatasi oleh kondisi tertentu
-        
-        // Cek 1: Isu tidak dapat dihapus jika sudah dipublikasi
-        if ($this->isPublished()) {
-            return false;
-        }
-        
-        // Cek 2: Isu tidak dapat dihapus jika dalam proses verifikasi
-        if ($this->status_id === RefStatus::VERIFIKASI_1 || 
-            $this->status_id === RefStatus::VERIFIKASI_2) {
-            return false;
-        }
-        
-        // Cek 3: Isu hanya dapat dihapus jika masih draft atau ditolak
-        if ($this->status_id === RefStatus::DRAFT || 
-            $this->status_id === RefStatus::DITOLAK) {
-            return true;
-        }
-        
-        // Cek 4: Alternatif - isu dapat dihapus jika dibuat dalam 24 jam terakhir
-        // dan belum memiliki relasi log (kecuali log pembuatan)
-        $createdTime = strtotime($this->created_at);
-        $currentTime = time();
-        $hoursSinceCreation = ($currentTime - $createdTime) / 3600;
-        
-        if ($hoursSinceCreation <= 24 && $this->logs()->count() <= 1) {
-            return true;
-        }
-        
-        // Secara default tidak dapat dihapus
-        return false;
-    }
 }
