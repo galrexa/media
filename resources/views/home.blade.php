@@ -35,9 +35,9 @@
                         $isPrevDate2Available = in_array($prevDate2->format('Y-m-d'), $availableDates ?? []);
                     @endphp
                     <a href="{{ route('home', ['offset' => $prevOffset2]) }}" class="date-button {{ !$isPrevDate2Available ? 'date-disabled' : '' }}">
-                        <div class="date-day">{{ $prevDate2->format('d') }}</div>
-                        <div class="date-month">{{ strtoupper($prevDate2->format('M')) }}</div>
-                        <div class="date-year">{{ $prevDate2->format('Y') }}</div>
+                        <div class="date-day">{{ $prevDate2->translatedFormat('d') }}</div>
+                        <div class="date-month">{{ strtoupper($prevDate2->translatedFormat('M')) }}</div>
+                        <div class="date-year">{{ $prevDate2->translatedFormat('Y') }}</div>
                     </a>
 
                     <!-- Satu hari sebelumnya -->
@@ -47,9 +47,9 @@
                         $isPrevDate1Available = in_array($prevDate1->format('Y-m-d'), $availableDates ?? []);
                     @endphp
                     <a href="{{ route('home', ['offset' => $prevOffset1]) }}" class="date-button {{ !$isPrevDate1Available ? 'date-disabled' : '' }}">
-                        <div class="date-day">{{ $prevDate1->format('d') }}</div>
-                        <div class="date-month">{{ strtoupper($prevDate1->format('M')) }}</div>
-                        <div class="date-year">{{ $prevDate1->format('Y') }}</div>
+                        <div class="date-day">{{ $prevDate1->translatedFormat('d') }}</div>
+                        <div class="date-month">{{ strtoupper($prevDate1->translatedFormat('M')) }}</div>
+                        <div class="date-year">{{ $prevDate1->translatedFormat('Y') }}</div>
                     </a>
 
                     <!-- Tanggal yang aktif/dipilih (lebih besar) -->
@@ -58,9 +58,9 @@
                         $isCurrentDateAvailable = in_array($currentDate->format('Y-m-d'), $availableDates ?? []);
                     @endphp
                     <div class="date-button date-button-active {{ !$isCurrentDateAvailable ? 'date-disabled' : '' }}">
-                        <div class="date-day">{{ $currentDate->format('d') }}</div>
-                        <div class="date-month">{{ strtoupper($currentDate->format('M')) }}</div>
-                        <div class="date-year">{{ $currentDate->format('Y') }}</div>
+                        <div class="date-day">{{ $currentDate->translatedFormat('d') }}</div>
+                        <div class="date-month">{{ strtoupper($currentDate->translatedFormat('M')) }}</div>
+                        <div class="date-year">{{ $currentDate->translatedFormat('Y') }}</div>
                     </div>
 
                     <!-- Tombol navigasi hari berikutnya (panah saja) -->
@@ -72,7 +72,7 @@
                     @if(($offset ?? 0) != 0)
                     <a href="{{ route('home') }}" class="today-button">
                         <div class="today-dot"></div>
-                        <span>{{ Carbon\Carbon::now()->format('d') }} {{ strtoupper(Carbon\Carbon::now()->format('M')) }}</span>
+                        <span>{{ Carbon\Carbon::now()->translatedFormat('d') }} {{ strtoupper(Carbon\Carbon::now()->translatedFormat('M')) }}</span>
                     </a>
                     @endif
 
@@ -277,14 +277,14 @@
                                                         <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
                                                     </div>
                                                     <div class="trend-info">
-                                                        <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                        <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->translatedFormat('H:i') }}</span>
                                                     </div>
                                                 </div>
                                             </li>
                                         @empty
                                             <li class="trend-item empty-trend">
                                                 <div class="text-center w-100 py-3">
-                                                    <p class="text-muted mb-0">Belum ada trending Google untuk tanggal {{ $selectedDate->format('d M Y') }}</p>
+                                                    <p class="text-muted mb-0">Belum ada trending Google untuk tanggal {{ $selectedDate->translatedFormat('d M Y') }}</p>
                                                 </div>
                                             </li>
                                         @endforelse
@@ -306,7 +306,7 @@
                             <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
                         </div>
                         <div class="trend-info">
-                            <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                            <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->translatedFormat('H:i') }}</span>
                         </div>
                     </div>
                 </li>
@@ -330,7 +330,7 @@
                                                             <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
                                                         </div>
                                                         <div class="trend-info">
-                                                            <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                            <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->translatedFormat('H:i') }}</span>
                                                         </div>
                                                     </div>
                                                 </li>
@@ -389,14 +389,14 @@
                                                             <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
                                                         </div>
                                                         <div class="trend-info">
-                                                            <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                            <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->translatedFormat('H:i') }}</span>
                                                         </div>
                                                     </div>
                                                 </li>
                                             @empty
                                                 <li class="trend-item empty-trend">
                                                     <div class="text-center w-100 py-3">
-                                                        <p class="text-muted mb-0">Belum ada trending X untuk tanggal {{ $selectedDate->format('d M Y') }}</p>
+                                                        <p class="text-muted mb-0">Belum ada trending X untuk tanggal {{ $selectedDate->translatedFormat('d M Y') }}</p>
                                                     </div>
                                                 </li>
                                             @endforelse
@@ -418,7 +418,7 @@
                                                                 <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
                                                             </div>
                                                             <div class="trend-info">
-                                                                <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                                <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->translatedFormat('H:i') }}</span>
                                                             </div>
                                                         </div>
                                                     </li>
@@ -442,7 +442,7 @@
                                                                     <a href="{{ $trend->url }}" target="_blank">{{ $trend->judul }}</a>
                                                                 </div>
                                                                 <div class="trend-info">
-                                                                    <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->format('H:i') }}</span>
+                                                                    <span class="trend-time"><i class="bi bi-clock"></i> {{ $trend->tanggal->translatedFormat('H:i') }}</span>
                                                                 </div>
                                                             </div>
                                                         </li>
