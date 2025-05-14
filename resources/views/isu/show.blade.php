@@ -23,7 +23,7 @@
             @auth
                 @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
                     <a href="{{ route('isu.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus-circle me-2"></i> Tambah Isu Baru
+                        <i class="fas fa-plus-circle me-2"></i> Tambah Isu
                     </a>
                 @endif
             @endauth
@@ -154,30 +154,35 @@
                     $isu->status != 'dipublikasikan')
                 ))
                     <div>
-                        <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
-                            <i class="fas fa-edit"></i>
+                        <a href="{{ route('isu.edit', $isu) }}" class="btn btn-warning btn-sm me-2" title="Edit" aria-label="Edit isu">
+                            <i class="fas fa-edit me-1"></i> Edit
                         </a>
 
                         @if(Auth::user()->isAdmin() || 
                         (Auth::user()->isEditor() && $isu->created_by == Auth::user()->id && $isu->canBeDeleted()))
-                            <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline">
+                            <form action="{{ route('isu.destroy', $isu) }}" method="POST" class="d-inline" id="delete-form">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-action btn-delete" title="Hapus" aria-label="Hapus isu" 
-                                        onclick="return confirm('Apakah Anda yakin ingin menghapus isu ini?')">
-                                    <i class="fas fa-trash"></i>
+                                <button type="button" class="btn btn-danger btn-sm" title="Hapus" aria-label="Hapus isu" 
+                                        id="delete-button">
+                                    <i class="fas fa-trash me-1"></i> Hapus
                                 </button>
                             </form>
                         @endif
                     </div>
                 @endif
-
-
             </div>
             @if($isu->status && $isu->status->nama == 'Ditolak' && $isu->alasan_penolakan)
-                <div class="alert alert-danger mt-3">
-                    <h5 class="alert-heading"><i class="fas fa-times-circle me-2"></i>Alasan Penolakan: </h5>
-                    <p class="mb-0">{{ $isu->alasan_penolakan }}</p>
+                <div class="alert alert-danger mt-3 border-start border-danger border-4 shadow-sm">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-times-circle fs-3 me-3 text-danger"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="alert-heading">Alasan Penolakan:</h5>
+                            <p class="mb-0">{{ $isu->alasan_penolakan }}</p>
+                        </div>
+                    </div>
                 </div>
             @endif
         </div>
@@ -187,9 +192,111 @@
 
 @section('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 <style>
     .card-header h2 {
         font-size: 1.75rem;
     }
+    
+    /* Styling for alert */
+    .alert-danger {
+        background-color: rgba(220, 53, 69, 0.05);
+        border: none;
+        border-radius: 8px;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .alert-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    .alert-heading {
+        color: #dc3545;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Button styles */
+    .btn-action {
+        transition: all 0.2s ease;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Animation for delete confirmation */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .shake {
+        animation: shake 0.5s ease-in-out;
+    }
 </style>
+@endsection
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Delete button confirmation
+    const deleteButton = document.getElementById('delete-button');
+    if (deleteButton) {
+        deleteButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Apakah Anda yakin ingin menghapus isu ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                focusCancel: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Show loading state
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        text: 'Sedang memproses penghapusan',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    // Submit the form
+                    document.getElementById('delete-form').submit();
+                }
+            });
+        });
+    }
+    
+    // Styling for rejection alert
+    const rejectionAlert = document.querySelector('.alert-danger');
+    if (rejectionAlert) {
+        // Animate the rejection alert
+        rejectionAlert.classList.add('animate__animated', 'animate__fadeIn');
+        
+        // Add a close button
+        const closeButton = document.createElement('button');
+        closeButton.type = 'button';
+        closeButton.className = 'btn-close';
+        closeButton.setAttribute('data-bs-dismiss', 'alert');
+        closeButton.setAttribute('aria-label', 'Close');
+        
+        rejectionAlert.appendChild(closeButton);
+        
+        // Make alert dismissible
+        rejectionAlert.classList.add('alert-dismissible', 'fade', 'show');
+    }
+});
+</script>
 @endsection
