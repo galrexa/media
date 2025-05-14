@@ -66,6 +66,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
 });
 
+
 // Routes yang memerlukan autentikasi
 Route::middleware('auth')->group(function () {
     // Dashboard
@@ -102,7 +103,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/{isu}/history', [IsuController::class, 'history'])->name('history');
 
         // Routes yang dapat diakses oleh semua level (admin, editor, verifikator)
-        // Edit dan update diperiksa lebih lanjut di controller (berdasarkan status isu)
         Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
             Route::get('/{isu}/edit', [IsuController::class, 'edit'])->name('edit');
             Route::put('/{isu}', [IsuController::class, 'update'])->name('update');
@@ -114,7 +114,7 @@ Route::middleware('auth')->group(function () {
         });
 
         // Hapus isu hanya bisa dilakukan admin atau editor (dengan status Draft)
-        Route::middleware('role:admin,editor')->delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
+        Route::middleware('role:admin,verifikator2,editor')->delete('/{isu}', [IsuController::class, 'destroy'])->name('destroy');
     });
 
     // Document Management
