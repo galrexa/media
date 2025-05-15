@@ -64,24 +64,11 @@
                             @enderror
                         </div>
 
-                        <div class="mb-3">
-                            <label for="keyword" class="form-label">Kata Kunci Pencarian</label>
-                            <input type="text" class="form-control @error('keyword') is-invalid @enderror" id="keyword" name="keyword" value="{{ old('keyword') }}" required>
-                            <div class="form-text">Kata kunci ini akan digunakan untuk membuat URL pencarian.</div>
-                            @error('keyword')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_selected" name="is_selected" value="1" {{ old('is_selected') ? 'checked' : '' }}>
-                                <label class="form-check-label" for="is_selected">
-                                    Tambahkan ke trending yang ditampilkan
-                                </label>
-                                <div class="form-text">Jika dicentang, trending ini akan langsung ditambahkan ke daftar trending yang ditampilkan.</div>
-                            </div>
-                        </div>
+                        <!-- Hidden field for keyword - akan diisi otomatis dari judul -->
+                        <input type="hidden" id="keyword" name="keyword" value="{{ old('keyword') }}">
+                        
+                        <!-- Hidden field untuk is_selected yang selalu bernilai 1 -->
+                        <input type="hidden" id="is_selected" name="is_selected" value="1">
 
                         <div class="mb-3">
                             <label for="generated_url" class="form-label">URL yang Akan Dibuat</label>
@@ -89,7 +76,7 @@
                                 <span class="input-group-text" id="url-prefix">https://</span>
                                 <input type="text" class="form-control" id="generated_url" readonly disabled>
                             </div>
-                            <div class="form-text">URL akan dibuat otomatis berdasarkan platform dan kata kunci.</div>
+                            <div class="form-text">URL akan dibuat otomatis berdasarkan platform dan judul trending.</div>
                         </div>
 
                         <input type="hidden" id="url" name="url" value="{{ old('url') }}">
@@ -122,26 +109,30 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const mediaSosialSelect = document.getElementById('media_sosial_id');
+    const judulInput = document.getElementById('judul');
     const keywordInput = document.getElementById('keyword');
     const generatedUrlInput = document.getElementById('generated_url');
     const urlInput = document.getElementById('url');
 
-    // Fungsi untuk mengupdate URL
+    // Fungsi untuk mengupdate URL dan keyword dari judul
     function updateUrl() {
         const platform = mediaSosialSelect.options[mediaSosialSelect.selectedIndex] ?
                         mediaSosialSelect.options[mediaSosialSelect.selectedIndex].text : '';
-        const keyword = keywordInput.value.trim();
-
+        const judul = judulInput.value.trim();
+        
+        // Set keyword sama dengan judul
+        keywordInput.value = judul;
+        
         let url = '';
 
-        if (platform && keyword) {
+        if (platform && judul) {
             if (platform === 'Google') {
                 // Membuat URL untuk Google Trends/News
-                const encodedKeyword = encodeURIComponent(keyword);
+                const encodedKeyword = encodeURIComponent(judul);
                 url = `news.google.com/search?hl=id&gl=ID&ceid=ID:id&q=${encodedKeyword}`;
             } else if (platform === 'X') {
                 // Membuat URL untuk X (Twitter)
-                const encodedKeyword = encodeURIComponent(keyword);
+                const encodedKeyword = encodeURIComponent(judul);
                 url = `twitter.com/search?q=${encodedKeyword}&src=trend`;
             }
         }
@@ -152,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listeners untuk perubahan
     mediaSosialSelect.addEventListener('change', updateUrl);
-    keywordInput.addEventListener('input', updateUrl);
+    judulInput.addEventListener('input', updateUrl);
 
     // Inisialisasi URL jika data sudah ada
     updateUrl();
