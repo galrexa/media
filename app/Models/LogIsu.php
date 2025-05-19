@@ -116,24 +116,48 @@ class LogIsu extends Model
         // Format berdasarkan jenis field
         switch ($field) {
             case 'kategori':
-                if (is_string($value) && $this->isJson($value)) {
-                    $categories = json_decode($value, true);
-                    if (is_array($categories)) {
-                        $formatted = implode(', ', $categories);
-                        return $this->handleLongText($formatted);
+                // 🔧 PERBAIKAN: Handle semua kemungkinan tipe data
+                $formatted = '';
+                
+                if (is_string($value)) {
+                    // Cek apakah string adalah JSON
+                    if ($this->isJson($value)) {
+                        $categories = json_decode($value, true);
+                        if (is_array($categories)) {
+                            $formatted = implode(', ', $categories);
+                        } else {
+                            // JSON decode gagal menghasilkan array
+                            $formatted = $value;
+                        }
+                    } else {
+                        // String biasa, bukan JSON
+                        $formatted = $value;
                     }
-                }
-                elseif (is_array($value)) {
+                } elseif (is_array($value)) {
+                    // ✅ Sudah array, langsung implode
                     $formatted = implode(', ', $value);
-                    return $this->handleLongText($formatted);
+                } elseif (is_object($value)) {
+                    // Object, convert ke JSON string
+                    try {
+                        $formatted = json_encode($value, JSON_UNESCAPED_UNICODE);
+                    } catch (\Exception $e) {
+                        $formatted = '(data kompleks)';
+                    }
+                } else {
+                    // Tipe data lain, convert ke string
+                    $formatted = (string) $value;
                 }
-                $formatted = (string) $value;
+                
                 return $this->handleLongText($formatted);
                 
             case 'status':
                 if (is_numeric($value)) {
-                    $status = RefStatus::find($value);
-                    $formatted = $status ? $status->nama : (string) $value;
+                    try {
+                        $status = \App\Models\RefStatus::find($value);
+                        $formatted = $status ? $status->nama : (string) $value;
+                    } catch (\Exception $e) {
+                        $formatted = (string) $value;
+                    }
                 } else {
                     $formatted = (string) $value;
                 }
@@ -142,7 +166,7 @@ class LogIsu extends Model
             case 'tanggal':
             case 'tanggal_mulai':
             case 'tanggal_selesai':
-                if (strtotime($value)) {
+                if (is_string($value) && strtotime($value)) {
                     $formatted = date('d/m/Y', strtotime($value));
                 } else {
                     $formatted = (string) $value;
@@ -157,9 +181,16 @@ class LogIsu extends Model
                 return $this->handleLongText($strValue);
                 
             default:
+                // 🔧 PERBAIKAN: Handle semua tipe data dengan aman
+                $formatted = '';
+                
                 if (is_array($value)) {
                     try {
-                        $formatted = implode(', ', $value);
+                        // Filter out non-scalar values untuk menghindari error
+                        $scalarValues = array_filter($value, function($item) {
+                            return is_scalar($item) || is_null($item);
+                        });
+                        $formatted = implode(', ', $scalarValues);
                     } catch (\Exception $e) {
                         $formatted = '(data kompleks)';
                     }
@@ -170,8 +201,10 @@ class LogIsu extends Model
                         $formatted = '(data kompleks)';
                     }
                 } else {
+                    // Scalar value atau null
                     $formatted = (string) $value;
                 }
+                
                 return $this->handleLongText($formatted);
         }
     }
