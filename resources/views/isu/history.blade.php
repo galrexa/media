@@ -110,35 +110,48 @@
                                                     <strong>{{ $log->field_changed }}</strong>
                                                     
                                                     @php
-													// Pengecekan khusus untuk kolom kategori
-													$oldFormatted = $log->getFormattedOldValue();
-													$newFormatted = $log->getFormattedNewValue();
-													$showDiff = true;
-
-													// Jika field adalah kategori, pastikan nilai ditampilkan dengan benar
-													if ($log->field_changed === 'kategori') {
-														// Bandingkan konten sebenarnya dari kedua nilai
-														// dan tentukan mana yang mungkin merupakan nilai yang lebih baru
-														// berdasarkan kompleksitas atau panjangnya
-														$isOldMoreComplex = (substr_count($oldFormatted, '[') > 0 || substr_count($oldFormatted, '{') > 0);
-														$isNewMoreComplex = (substr_count($newFormatted, '[') > 0 || substr_count($newFormatted, '{') > 0);
-														
-														// Jika nilai lama kosong atau nilai baru lebih kompleks, itu mungkin penambahan
-														if ($oldFormatted === '(kosong)' || ($isNewMoreComplex && !$isOldMoreComplex)) {
-															// Nilai seperti ini, jangan tukar
-														} else if ($newFormatted === '(kosong)' || (!$isNewMoreComplex && $isOldMoreComplex)) {
-															// Nilai mungkin dihapus, tukar untuk menampilkan dengan benar
-															$tempOld = $oldFormatted;
-															$oldFormatted = $newFormatted;
-															$newFormatted = $tempOld;
-														}
-													}
-													@endphp
+                                                    // 🔍 DAPATKAN DATA DENGAN SUPPORT EXPAND/COLLAPSE
+                                                    $oldData = $log->getFormattedOldValueData();
+                                                    $newData = $log->getFormattedNewValueData();
+                                                    $showDiff = true;
+                                                    
+                                                    // Logika khusus untuk field kategori (jika masih diperlukan)
+                                                    if ($log->field_changed === 'kategori') {
+                                                        // Handle kategori logic jika diperlukan
+                                                    }
+                                                    @endphp
                                                     
                                                     @if($showDiff && !str_contains($log->field_changed, 'tanggal'))
                                                         <div class="small">
-                                                            <div class="text-danger">- {{ $oldFormatted }}</div>
-                                                            <div class="text-success">+ {{ $newFormatted }}</div>
+                                                            <!-- ❌ NILAI LAMA (MERAH) dengan Expand/Collapse -->
+                                                            <div class="text-danger mb-1">
+                                                                - <span class="change-text" id="old-{{ $log->id }}">{{ $oldData['short'] }}</span>
+                                                                @if($oldData['truncated'])
+                                                                    <span class="truncated-text" id="old-full-{{ $log->id }}" style="display: none;">{{ $oldData['full'] }}</span>
+                                                                    <button type="button" 
+                                                                            class="btn btn-link btn-sm p-0 ms-1 text-decoration-underline expand-btn" 
+                                                                            data-target="old-{{ $log->id }}"
+                                                                            data-full-target="old-full-{{ $log->id }}"
+                                                                            style="font-size: 0.75rem;">
+                                                                        ... lihat semua
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                            
+                                                            <!-- ✅ NILAI BARU (HIJAU) dengan Expand/Collapse -->
+                                                            <div class="text-success">
+                                                                + <span class="change-text" id="new-{{ $log->id }}">{{ $newData['short'] }}</span>
+                                                                @if($newData['truncated'])
+                                                                    <span class="truncated-text" id="new-full-{{ $log->id }}" style="display: none;">{{ $newData['full'] }}</span>
+                                                                    <button type="button" 
+                                                                            class="btn btn-link btn-sm p-0 ms-1 text-decoration-underline expand-btn" 
+                                                                            data-target="new-{{ $log->id }}"
+                                                                            data-full-target="new-full-{{ $log->id }}"
+                                                                            style="font-size: 0.75rem;">
+                                                                        ... lihat semua
+                                                                    </button>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     @else
                                                         <div class="small text-muted">
@@ -152,6 +165,7 @@
                                                 <div class="text-muted">Isu dihapus</div>
                                             @endif
                                         </div>
+                                        
                                         @if(!$loop->last)
                                             <hr class="timeline-divider">
                                         @endif
@@ -286,6 +300,44 @@
     border-top: 1px dashed #ddd;
 }
 
+.expand-btn {
+    color: #6c757d !important;
+    font-weight: normal;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.expand-btn:hover {
+    color: #495057 !important;
+    text-decoration: underline;
+}
+
+.expand-btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,123,255,.25);
+    border-radius: 2px;
+}
+
+.change-text {
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.truncated-text {
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+/* Animasi smooth untuk expand/collapse */
+.expand-animation {
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
 /* Responsive design */
 @media screen and (max-width: 768px) {
     .timeline::after {
@@ -321,4 +373,41 @@
     }
 }
 </style>
+@endsection
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 🔄 HANDLE EXPAND/COLLAPSE FUNCTIONALITY
+    document.querySelectorAll('.expand-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const fullTargetId = this.getAttribute('data-full-target');
+            const shortText = document.getElementById(targetId);
+            const fullText = document.getElementById(fullTargetId);
+            
+            // Check current state
+            const isExpanded = fullText.style.display !== 'none';
+            
+            if (isExpanded) {
+                // 📁 COLLAPSE - Tampilkan versi pendek
+                fullText.style.display = 'none';
+                shortText.style.display = 'inline';
+                this.innerHTML = '... lihat semua';
+                this.setAttribute('aria-expanded', 'false');
+            } else {
+                // 📂 EXPAND - Tampilkan versi lengkap
+                shortText.style.display = 'none';
+                fullText.style.display = 'inline';
+                this.innerHTML = '... lebih sedikit';
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
+        
+        // Set initial ARIA state
+        button.setAttribute('aria-expanded', 'false');
+        button.setAttribute('role', 'button');
+        button.setAttribute('aria-label', 'Expand or collapse full text');
+    });
+});
+</script>
 @endsection

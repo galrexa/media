@@ -96,125 +96,153 @@ class LogIsu extends Model
     }
 
     /**
+     * Memformat nilai sesuai tipe field dengan kontrol expand/collapse
+     * 
+     * @param string $value
+     * @param string $field
+     * @return array ['short' => string, 'full' => string, 'truncated' => bool]
+     */
+    protected function formatValue($value, $field)
+    {
+        // Jika nilai kosong atau null
+        if ($value === null || $value === '') {
+            return [
+                'short' => '(kosong)',
+                'full' => '(kosong)',
+                'truncated' => false
+            ];
+        }
+
+        // Format berdasarkan jenis field
+        switch ($field) {
+            case 'kategori':
+                if (is_string($value) && $this->isJson($value)) {
+                    $categories = json_decode($value, true);
+                    if (is_array($categories)) {
+                        $formatted = implode(', ', $categories);
+                        return $this->handleLongText($formatted);
+                    }
+                }
+                elseif (is_array($value)) {
+                    $formatted = implode(', ', $value);
+                    return $this->handleLongText($formatted);
+                }
+                $formatted = (string) $value;
+                return $this->handleLongText($formatted);
+                
+            case 'status':
+                if (is_numeric($value)) {
+                    $status = RefStatus::find($value);
+                    $formatted = $status ? $status->nama : (string) $value;
+                } else {
+                    $formatted = (string) $value;
+                }
+                return $this->handleLongText($formatted);
+
+            case 'tanggal':
+            case 'tanggal_mulai':
+            case 'tanggal_selesai':
+                if (strtotime($value)) {
+                    $formatted = date('d/m/Y', strtotime($value));
+                } else {
+                    $formatted = (string) $value;
+                }
+                return $this->handleLongText($formatted);
+
+            // 🔥 TEXT PANJANG DENGAN EXPAND/COLLAPSE
+            case 'deskripsi':
+            case 'konten':
+            case 'keterangan':
+                $strValue = strip_tags((string) $value);
+                return $this->handleLongText($strValue);
+                
+            default:
+                if (is_array($value)) {
+                    try {
+                        $formatted = implode(', ', $value);
+                    } catch (\Exception $e) {
+                        $formatted = '(data kompleks)';
+                    }
+                } elseif (is_object($value)) {
+                    try {
+                        $formatted = json_encode($value, JSON_UNESCAPED_UNICODE);
+                    } catch (\Exception $e) {
+                        $formatted = '(data kompleks)';
+                    }
+                } else {
+                    $formatted = (string) $value;
+                }
+                return $this->handleLongText($formatted);
+        }
+    }
+
+    /**
+     * Handle teks panjang dengan support expand/collapse
+     * 
+     * @param string $text
+     * @param int $limit
+     * @return array
+     */
+    protected function handleLongText($text, $limit = 100)
+    {
+        $text = trim($text);
+        
+        if (strlen($text) <= $limit) {
+            return [
+                'short' => $text,
+                'full' => $text,
+                'truncated' => false
+            ];
+        }
+        
+        return [
+            'short' => substr($text, 0, $limit),
+            'full' => $text,
+            'truncated' => true
+        ];
+    }
+
+    /**
+     * Mendapatkan data formatted untuk old value
+     * 
+     * @return array
+     */
+    public function getFormattedOldValueData()
+    {
+        return $this->formatValue($this->old_value, $this->field_changed);
+    }
+
+    /**
+     * Mendapatkan data formatted untuk new value
+     * 
+     * @return array
+     */
+    public function getFormattedNewValueData()
+    {
+        return $this->formatValue($this->new_value, $this->field_changed);
+    }
+
+    /**
      * Memformat nilai lama untuk ditampilkan di history
      * 
      * @return string
      */
     public function getFormattedOldValue()
     {
-        return $this->formatValue($this->old_value, $this->field_changed);
+        $data = $this->getFormattedOldValueData();
+        return $data['short'] . ($data['truncated'] ? '...' : '');
     }
 
     /**
-     * Memformat nilai baru untuk ditampilkan di history
+     * Backward compatibility - tetap support method lama
      * 
      * @return string
      */
     public function getFormattedNewValue()
     {
-        return $this->formatValue($this->new_value, $this->field_changed);
+        $data = $this->getFormattedNewValueData();
+        return $data['short'] . ($data['truncated'] ? '...' : '');
     }
-
-	/**
-	 * Memformat nilai sesuai tipe field
-	 * 
-	 * @param string $value
-	 * @param string $field
-	 * @return string
-	 */
-	protected function formatValue($value, $field)
-	{
-		// Jika nilai kosong atau null
-		if ($value === null || $value === '') {
-			return '(kosong)';
-		}
-
-		// Format berdasarkan jenis field
-		switch ($field) {
-			case 'kategori':
-				// Penanganan berbagai format kategori
-				if (is_string($value)) {
-					// Cek jika string berbentuk JSON array
-					if ($this->isJson($value)) {
-						$decoded = json_decode($value, true);
-						
-						// Format: [{"value":"Makan Bergizi Gratis"}]
-						if (is_array($decoded) && isset($decoded[0]) && isset($decoded[0]['value'])) {
-							return implode(', ', array_column($decoded, 'value'));
-						}
-						
-						// Format: ["Makan Bergizi Gratis"] atau array sederhana lainnya
-						elseif (is_array($decoded)) {
-							return implode(', ', array_map(function($item) {
-								return is_array($item) ? json_encode($item) : $item;
-							}, $decoded));
-						}
-					}
-					
-					// Jika hanya string biasa, kembalikan apa adanya
-					return $value;
-				}
-				// Jika sudah berbentuk array
-				elseif (is_array($value)) {
-					// Cek format [{"value":"Makan Bergizi Gratis"}]
-					if (isset($value[0]) && isset($value[0]['value'])) {
-						return implode(', ', array_column($value, 'value'));
-					}
-					
-					// Format array biasa
-					return implode(', ', array_map(function($item) {
-						return is_array($item) || is_object($item) ? json_encode($item) : $item;
-					}, $value));
-				}
-				
-				// Fallback: kembalikan sebagai string
-				return (string) $value;
-				
-			case 'status':
-				// Cek apakah nilai adalah ID status
-				if (is_numeric($value)) {
-					$status = RefStatus::find($value);
-					return $status ? $status->nama : (string) $value;
-				}
-				return (string) $value;
-
-			// Format untuk tanggal
-			case 'tanggal':
-			case 'tanggal_mulai':
-			case 'tanggal_selesai':
-				if (strtotime($value)) {
-					return date('d/m/Y', strtotime($value));
-				}
-				return (string) $value;
-
-			// Format untuk kolom WYSIWYG atau text panjang
-			case 'deskripsi':
-			case 'konten':
-			case 'keterangan':
-			case 'rangkuman':
-			case 'narasi_positif':
-			case 'narasi_negatif':
-				$strValue = (string) $value;
-				return strlen($strValue) > 100 ? substr(strip_tags($strValue), 0, 100) . '...' : strip_tags($strValue);
-				
-			default:
-				// Pastikan nilai selalu dikembalikan sebagai string
-				if (is_array($value)) {
-					try {
-						return json_encode($value, JSON_UNESCAPED_UNICODE);
-					} catch (\Exception $e) {
-						return '(data kompleks)';
-					}
-				} elseif (is_object($value)) {
-					try {
-						return json_encode($value, JSON_UNESCAPED_UNICODE);
-					} catch (\Exception $e) {
-						return '(data kompleks)';
-					}
-				}
-				return (string) $value;
-		}
-	}
 
     /**
      * Mengecek apakah string adalah JSON valid
