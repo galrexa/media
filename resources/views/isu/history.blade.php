@@ -214,8 +214,28 @@
                                                         
                                                         @if($showDiff)
                                                             <div class="small">
-                                                                <div class="text-danger">- {{ $oldFormatted }}</div>
-                                                                <div class="text-success">+ {{ $newFormatted }}</div>
+                                                                <div class="text-danger">
+                                                                    - @if(strlen($oldFormatted) > 100)
+                                                                        <span class="short-text" id="old-{{ $log->id }}">{{ substr($oldFormatted, 0, 100) }}</span>
+                                                                        <span class="full-text" id="old-full-{{ $log->id }}" style="display:none;">{{ $oldFormatted }}</span>
+                                                                        <a href="#" class="text-primary toggle-text ms-1" 
+                                                                        data-target="old-{{ $log->id }}"
+                                                                        data-full-target="old-full-{{ $log->id }}">... lihat semua</a>
+                                                                    @else
+                                                                        {{ $oldFormatted }}
+                                                                    @endif
+                                                                </div>
+                                                                <div class="text-success">
+                                                                    + @if(strlen($newFormatted) > 100)
+                                                                        <span class="short-text" id="new-{{ $log->id }}">{{ substr($newFormatted, 0, 100) }}</span>
+                                                                        <span class="full-text" id="new-full-{{ $log->id }}" style="display:none;">{{ $newFormatted }}</span>
+                                                                        <a href="#" class="text-primary toggle-text ms-1" 
+                                                                        data-target="new-{{ $log->id }}"
+                                                                        data-full-target="new-full-{{ $log->id }}">... lihat semua</a>
+                                                                    @else
+                                                                        {{ $newFormatted }}
+                                                                    @endif
+                                                                </div>
                                                             </div>
                                                         @else
                                                             <div class="small text-muted">
@@ -418,11 +438,6 @@
                         </div>
                     @endforelse
                 </div>
-            </div>
-
-            <!-- Pagination -->
-            <div class="d-flex justify-content-center mt-4">
-                {{ $logs->links() }}
             </div>
 
             <!-- Tombol Kembali -->
@@ -646,42 +661,42 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (container) {
                     const targetShort = container.querySelector('.short-text');
                     const targetFull = container.querySelector('.full-text');
-                    
+
                     if (targetShort && targetFull) {
-                        if (targetFull.style.display === 'none') {
-                            targetShort.style.display = 'none';
-                            targetFull.style.display = 'inline';
-                            this.textContent = '... lebih sedikit';
-                        } else {
-                            targetFull.style.display = 'none';
-                            targetShort.style.display = 'inline';
-                            this.textContent = '... lihat semua';
-                        }
-                    }
-                }
-            }
-            
-            // Untuk kasus data-short dan data-full
-            const shortSelector = this.getAttribute('data-short');
-            const fullSelector = this.getAttribute('data-full');
-            if (shortSelector && fullSelector) {
-                const shortElement = document.querySelector(shortSelector);
-                const fullElement = document.querySelector(fullSelector);
-                
-                if (shortElement && fullElement) {
-                    if (fullElement.style.display === 'none') {
-                        shortElement.style.display = 'none';
-                        fullElement.style.display = 'inline';
-                        this.textContent = '... lebih sedikit';
-                    } else {
-                        fullElement.style.display = 'none';
-                        shortElement.style.display = 'inline';
-                        this.textContent = '... lihat semua';
-                    }
-                }
-            }
-        });
-    });
+                       if (targetFull.style.display === 'none') {
+                           targetShort.style.display = 'none';
+                           targetFull.style.display = 'inline';
+                           this.textContent = '... lebih sedikit';
+                       } else {
+                           targetFull.style.display = 'none';
+                           targetShort.style.display = 'inline';
+                           this.textContent = '... lihat semua';
+                       }
+                   }
+               }
+           }
+           
+           // Untuk kasus data-short dan data-full
+           const shortSelector = this.getAttribute('data-short');
+           const fullSelector = this.getAttribute('data-full');
+           if (shortSelector && fullSelector) {
+               const shortElement = document.querySelector(shortSelector);
+               const fullElement = document.querySelector(fullSelector);
+               
+               if (shortElement && fullElement) {
+                   if (fullElement.style.display === 'none') {
+                       shortElement.style.display = 'none';
+                       fullElement.style.display = 'inline';
+                       this.textContent = '... lebih sedikit';
+                   } else {
+                       fullElement.style.display = 'none';
+                       shortElement.style.display = 'inline';
+                       this.textContent = '... lihat semua';
+                   }
+               }
+           }
+       });
+   });
 });
 </script>
 @endsection
