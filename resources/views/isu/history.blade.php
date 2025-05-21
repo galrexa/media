@@ -103,53 +103,309 @@
                                     </div>
                                     <div class="timeline-body">
                                     <!-- Di bagian view, pada file history.blade.php -->
-                                    @foreach($group['logs'] as $log)
-                                        <div class="timeline-change">
-                                            @if($log->action == 'UPDATE')
-                                                <div class="mb-2">
-                                                    <strong>{{ $log->field_changed }}</strong>
-                                                    
-                                                    @php
-                                                    // Pengecekan khusus untuk kolom kategori
-                                                    $oldFormatted = $log->getFormattedOldValue();
-                                                    $newFormatted = $log->getFormattedNewValue();
-                                                    $showDiff = true;
-                                                    
-                                                    // Jika field adalah kategori, pastikan nilai ditampilkan dengan benar
-                                                    if ($log->field_changed === 'kategori') {
-                                                        // Pastikan nilai ditampilkan dalam urutan yang benar
-                                                        $tempOld = $oldFormatted;
-                                                        $tempNew = $newFormatted;
+                                    @foreach($group['logs'] as $index => $log)
+                                        @php
+                                            // Untuk UPDATE, cek dulu apakah ada perubahan substantif
+                                            $skipUpdate = false;
+                                            
+                                            if ($log->action == 'UPDATE') {
+                                                // Siapkan nilai yang akan ditampilkan
+                                                $oldFormatted = $log->getProcessedOldValue();
+                                                $newFormatted = $log->getProcessedNewValue();
+                                                
+                                                // Normalisasi untuk perbandingan
+                                                $oldNormalized = is_string($oldFormatted) ? trim(html_entity_decode($oldFormatted, ENT_QUOTES | ENT_HTML5, 'UTF-8')) : $oldFormatted;
+                                                $newNormalized = is_string($newFormatted) ? trim(html_entity_decode($newFormatted, ENT_QUOTES | ENT_HTML5, 'UTF-8')) : $newFormatted;
+                                                
+                                                // Skip jika tidak ada perubahan substantif
+                                                $skipUpdate = ($oldNormalized === $newNormalized);
+                                            }
+                                        @endphp
+                                        
+                                        @if(!$skipUpdate)
+                                            <div class="timeline-change">
+                                                @if($log->action == 'UPDATE')
+                                                    <div class="mb-2">
+                                                        <strong>{{ ucfirst(str_replace('_', ' ', $log->field_changed)) }}</strong>
                                                         
-                                                        // Periksa apakah nilai baru lebih panjang dari nilai lama
-                                                        // Yang mengindikasikan penambahan kategori bukan pengurangan
-                                                        if (strlen($tempNew) > strlen($tempOld)) {
-                                                            // Tukar nilai untuk menampilkan dalam urutan yang benar
-                                                            $oldFormatted = $tempNew;
-                                                            $newFormatted = $tempOld;
+                                                        @php
+                                                        // Siapkan nilai yang akan ditampilkan (sudah dihitung di atas)
+                                                        // $oldFormatted dan $newFormatted
+                                                        
+                                                        // Jika field adalah kategori, pastikan nilai ditampilkan dengan benar
+                                                        if ($log->field_changed === 'kategori') {
+                                                            // Pastikan nilai ditampilkan dalam urutan yang benar
+                                                            $tempOld = $oldFormatted;
+                                                            $tempNew = $newFormatted;
+                                                            
+                                                            // Periksa apakah nilai baru lebih panjang dari nilai lama
+                                                            if (strlen($tempNew) > strlen($tempOld)) {
+                                                                // Tukar nilai untuk menampilkan dalam urutan yang benar
+                                                                $oldFormatted = $tempNew;
+                                                                $newFormatted = $tempOld;
+                                                            }
                                                         }
-                                                    }
-                                                @endphp
-                                                    
-                                                    @if($showDiff && !str_contains($log->field_changed, 'tanggal'))
-                                                        <div class="small">
-                                                            <div class="text-danger">- {{ $oldFormatted }}</div>
-                                                            <div class="text-success">+ {{ $newFormatted }}</div>
-                                                        </div>
-                                                    @else
-                                                        <div class="small text-muted">
-                                                            <em>{{ str_contains($log->field_changed, 'tanggal') ? 'Perubahan tanggal' : 'Perubahan format' }}</em>
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            @elseif($log->action == 'CREATE')
-                                                <div class="text-muted">Isu baru dibuat</div>
-                                            @elseif($log->action == 'DELETE')
-                                                <div class="text-muted">Isu dihapus</div>
+                                                        
+                                                        // Hilangkan tag HTML jika field tertentu
+                                                        if (in_array($log->field_changed, ['rangkuman', 'narasi_positif', 'narasi_negatif', 'deskripsi'])) {
+                                                            $oldFormatted = strip_tags($oldFormatted);
+                                                            $newFormatted = strip_tags($newFormatted);
+                                                        }
+                                                        
+                                                        // Format status jika JSON
+                                                        if ($log->field_changed === 'status' && strpos($oldFormatted, '{') === 0) {
+                                                            try {
+                                                                $statusData = json_decode($oldFormatted, true);
+                                                                if (isset($statusData['nama'])) {
+                                                                    $oldFormatted = $statusData['nama'];
+                                                                }
+                                                            } catch (\Exception $e) {}
+                                                        }
+                                                        
+                                                        if ($log->field_changed === 'status' && strpos($newFormatted, '{') === 0) {
+                                                            try {
+                                                                $statusData = json_decode($newFormatted, true);
+                                                                if (isset($statusData['nama'])) {
+                                                                    $newFormatted = $statusData['nama'];
+                                                                }
+                                                            } catch (\Exception $e) {}
+                                                        }
+                                                        
+                                                        // Format tone ID ke nama
+                                                        if ($log->field_changed === 'tone' && is_numeric($oldFormatted)) {
+                                                            try {
+                                                                $tone = \App\Models\RefTone::find($oldFormatted);
+                                                                if ($tone) {
+                                                                    $oldFormatted = $tone->nama;
+                                                                }
+                                                            } catch (\Exception $e) {}
+                                                        }
+                                                        
+                                                        if ($log->field_changed === 'tone' && is_numeric($newFormatted)) {
+                                                            try {
+                                                                $tone = \App\Models\RefTone::find($newFormatted);
+                                                                if ($tone) {
+                                                                    $newFormatted = $tone->nama;
+                                                                }
+                                                            } catch (\Exception $e) {}
+                                                        }
+                                                        
+                                                        // Format skala ID ke nama
+                                                        if ($log->field_changed === 'skala' && is_numeric($oldFormatted)) {
+                                                            try {
+                                                                $skala = \App\Models\RefSkala::find($oldFormatted);
+                                                                if ($skala) {
+                                                                    $oldFormatted = $skala->nama;
+                                                                }
+                                                            } catch (\Exception $e) {}
+                                                        }
+                                                        
+                                                        if ($log->field_changed === 'skala' && is_numeric($newFormatted)) {
+                                                            try {
+                                                                $skala = \App\Models\RefSkala::find($newFormatted);
+                                                                if ($skala) {
+                                                                    $newFormatted = $skala->nama;
+                                                                }
+                                                            } catch (\Exception $e) {}
+                                                        }
+                                                        
+                                                        $showDiff = !str_contains($log->field_changed, 'tanggal');
+                                                        @endphp
+                                                        
+                                                        @if($showDiff)
+                                                            <div class="small">
+                                                                <div class="text-danger">- {{ $oldFormatted }}</div>
+                                                                <div class="text-success">+ {{ $newFormatted }}</div>
+                                                            </div>
+                                                        @else
+                                                            <div class="small text-muted">
+                                                                <em>{{ str_contains($log->field_changed, 'tanggal') ? 'Perubahan tanggal' : 'Perubahan format' }}</em>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @elseif($log->action == 'CREATE' && $index === 0)
+                                                    <div class="mb-2">
+                                                        <div class="text-muted mb-2">Isu baru dibuat dengan data awal:</div>
+                                                        
+                                                        @php
+                                                            // Kumpulkan semua field dari log CREATE di grup yang sama
+                                                            $createFields = [];
+                                                            foreach ($group['logs'] as $createLog) {
+                                                                if ($createLog->action == 'CREATE' && $createLog->field_changed) {
+                                                                    $value = $createLog->getFormattedNewValue() ?: $createLog->getFormattedOldValue();
+                                                                    $createFields[$createLog->field_changed] = $value;
+                                                                }
+                                                            }
+                                                            
+                                                            // PRIORITASKAN DATA LANGSUNG DARI MODEL ISU
+                                                            if ($log->isu) {
+                                                                $isu = $log->isu;
+                                                                
+                                                                // Daftar semua field yang ingin kita tampilkan
+                                                                $allFields = [
+                                                                    'judul', 'deskripsi', 'kategori', 'status',
+                                                                    'rangkuman', 'narasi_positif', 'narasi_negatif',
+                                                                    'tone', 'skala'
+                                                                ];
+                                                                
+                                                                // Periksa dan tambahkan nilai dari model Isu jika tersedia
+                                                                foreach ($allFields as $field) {
+                                                                    if (!isset($createFields[$field]) || $createFields[$field] == '(kosong)') {
+                                                                        // Coba dengan method getter khusus terlebih dahulu
+                                                                        if (method_exists($isu, 'get' . ucfirst($field) . 'Name')) {
+                                                                            $method = 'get' . ucfirst($field) . 'Name';
+                                                                            $value = $isu->$method();
+                                                                            if ($value) {
+                                                                                $createFields[$field] = $value;
+                                                                            }
+                                                                        }
+                                                                        // Coba dengan property langsung
+                                                                        elseif (property_exists($isu, $field) || isset($isu->$field)) {
+                                                                            $value = $isu->$field;
+                                                                            if ($value) {
+                                                                                $createFields[$field] = $value;
+                                                                            }
+                                                                        }
+                                                                        // Khusus untuk relasi
+                                                                        elseif ($field == 'tone' && $isu->tone_id) {
+                                                                            try {
+                                                                                $tone = \App\Models\RefTone::find($isu->tone_id);
+                                                                                if ($tone) {
+                                                                                    $createFields['tone'] = $tone->nama;
+                                                                                } else {
+                                                                                    $createFields['tone'] = $isu->tone_id;
+                                                                                }
+                                                                            } catch (\Exception $e) {
+                                                                                $createFields['tone'] = $isu->tone_id;
+                                                                            }
+                                                                        }
+                                                                        elseif ($field == 'skala' && $isu->skala_id) {
+                                                                            try {
+                                                                                $skala = \App\Models\RefSkala::find($isu->skala_id);
+                                                                                if ($skala) {
+                                                                                    $createFields['skala'] = $skala->nama;
+                                                                                } else {
+                                                                                    $createFields['skala'] = $isu->skala_id;
+                                                                                }
+                                                                            } catch (\Exception $e) {
+                                                                                $createFields['skala'] = $isu->skala_id;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            
+                                                            // Tambahan untuk field judul dan status jika masih kosong
+                                                            if (!isset($createFields['judul']) && $log->isu) {
+                                                                $createFields['judul'] = $log->isu->judul;
+                                                            }
+                                                            
+                                                            if (!isset($createFields['status'])) {
+                                                                $createFields['status'] = 'Draft';
+                                                            }
+                                                            
+                                                            // Proses formatting untuk field dalam createFields
+                                                            foreach ($createFields as $field => $value) {
+                                                                // Hilangkan tag HTML jika field tertentu dan normalisasi
+                                                                if (in_array($field, ['rangkuman', 'narasi_positif', 'narasi_negatif', 'deskripsi'])) {
+                                                                    $value = strip_tags($value);
+                                                                    // Normalisasi string untuk menghilangkan whitespace berlebih dan entity HTML
+                                                                    if (is_string($value)) {
+                                                                        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                                                                        $value = preg_replace('/\s+/', ' ', $value);
+                                                                        $value = trim($value);
+                                                                        $createFields[$field] = $value;
+                                                                    }
+                                                                }
+                                                                
+                                                                // Format status jika JSON
+                                                                if ($field === 'status' && is_string($value) && strpos($value, '{') === 0) {
+                                                                    try {
+                                                                        $statusData = json_decode($value, true);
+                                                                        if (isset($statusData['nama'])) {
+                                                                            $createFields[$field] = $statusData['nama'];
+                                                                        }
+                                                                    } catch (\Exception $e) {}
+                                                                }
+                                                                
+                                                                // Format tone ID ke nama jika belum diproses
+                                                                if ($field === 'tone' && is_numeric($value)) {
+                                                                    try {
+                                                                        $tone = \App\Models\RefTone::find($value);
+                                                                        if ($tone) {
+                                                                            $createFields[$field] = $tone->nama;
+                                                                        }
+                                                                    } catch (\Exception $e) {}
+                                                                }
+                                                                
+                                                                // Format skala ID ke nama jika belum diproses
+                                                                if ($field === 'skala' && is_numeric($value)) {
+                                                                    try {
+                                                                        $skala = \App\Models\RefSkala::find($value);
+                                                                        if ($skala) {
+                                                                            $createFields[$field] = $skala->nama;
+                                                                        }
+                                                                    } catch (\Exception $e) {}
+                                                                }
+                                                                
+                                                                // Normalisasi umum untuk semua string
+                                                                if (is_string($createFields[$field])) {
+                                                                    $createFields[$field] = html_entity_decode($createFields[$field], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                                                                    $createFields[$field] = preg_replace('/\s+/', ' ', $createFields[$field]);
+                                                                    $createFields[$field] = trim($createFields[$field]);
+                                                                }
+                                                            }
+                                                            
+                                                            // Urutkan field untuk ditampilkan
+                                                            $fieldOrder = [
+                                                                'judul', 'deskripsi', 'kategori',
+                                                                'rangkuman', 'narasi_positif', 'narasi_negatif',
+                                                                'tone', 'skala'
+                                                            ];
+                                                        @endphp
+                                                        
+                                                        <!-- Detail data awal -->
+                                                        @foreach($fieldOrder as $fieldName)
+                                                            @php
+                                                                $fieldValue = isset($createFields[$fieldName]) ? $createFields[$fieldName] : null;
+                                                                
+                                                                // Skip jika tidak ada nilai atau kosong
+                                                                if (!$fieldValue || $fieldValue == '(kosong)') {
+                                                                    continue;
+                                                                }
+                                                                
+                                                                // Format nama field untuk tampilan
+                                                                $displayName = ucfirst(str_replace('_', ' ', $fieldName));
+                                                                if ($fieldName == 'narasi_positif') $displayName = 'Narasi Positif';
+                                                                if ($fieldName == 'narasi_negatif') $displayName = 'Narasi Negatif';
+                                                            @endphp
+                                                            
+                                                            <div class="mb-2">
+                                                                <strong>{{ $displayName }}</strong>
+                                                                <div class="small">
+                                                                    <div class="text-success">
+                                                                        @if(strlen($fieldValue) > 100)
+                                                                            <span class="short-text">{{ substr($fieldValue, 0, 100) }}</span>
+                                                                            <span class="full-text" style="display:none;">{{ $fieldValue }}</span>
+                                                                            <a href="#" class="text-primary toggle-text ms-1" 
+                                                                            data-toggle="expand" 
+                                                                            data-target-id="create-{{ $fieldName }}-{{ $log->id }}">... lihat semua</a>
+                                                                        @else
+                                                                            {{ $fieldValue }}
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @elseif($log->action == 'DELETE')
+                                                    <div class="text-muted">Isu dihapus</div>
+                                                @endif
+                                            </div>
+                                            
+                                            @if(!$loop->last && !($log->action == 'CREATE' && isset($group['logs'][$index+1]) && $group['logs'][$index+1]->action == 'CREATE'))
+                                                <hr class="timeline-divider">
                                             @endif
-                                        </div>
-                                        @if(!$loop->last)
-                                            <hr class="timeline-divider">
                                         @endif
                                     @endforeach
                                     </div>
@@ -282,6 +538,45 @@
     border-top: 1px dashed #ddd;
 }
 
+/* Styling untuk initial data container */
+.initial-data-container {
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-top: 8px;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.initial-value {
+    padding-left: 12px;
+    border-left: 3px solid #f0f0f0;
+    margin-bottom: 8px;
+}
+
+/* Styling untuk nama field */
+.initial-data-container strong {
+    color: #555;
+    min-width: 120px;
+    display: inline-block;
+}
+
+.toggle-text {
+    font-size: 0.8rem;
+    font-weight: normal;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.toggle-text:hover {
+    text-decoration: underline;
+}
+
+.short-text, .full-text {
+    word-wrap: break-word;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
 /* Responsive design */
 @media screen and (max-width: 768px) {
     .timeline::after {
@@ -317,4 +612,76 @@
     }
 }
 </style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle untuk expand/collapse text - versi unified yang bekerja untuk semua
+    document.querySelectorAll('.toggle-text').forEach(function(toggleBtn) {
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Cari parent container dan elements short/full
+            const parent = this.closest('div');
+            const shortText = parent.querySelector('.short-text');
+            const fullText = parent.querySelector('.full-text');
+            
+            // Toggle visibility
+            if (shortText && fullText) {
+                if (fullText.style.display === 'none') {
+                    // Expand
+                    shortText.style.display = 'none';
+                    fullText.style.display = 'inline';
+                    this.textContent = '... lebih sedikit';
+                } else {
+                    // Collapse
+                    fullText.style.display = 'none';
+                    shortText.style.display = 'inline';
+                    this.textContent = '... lihat semua';
+                }
+            }
+            
+            // Untuk format yang mungkin menggunakan data-target-id
+            const targetId = this.getAttribute('data-target-id');
+            if (targetId) {
+                const container = document.getElementById(targetId);
+                if (container) {
+                    const targetShort = container.querySelector('.short-text');
+                    const targetFull = container.querySelector('.full-text');
+                    
+                    if (targetShort && targetFull) {
+                        if (targetFull.style.display === 'none') {
+                            targetShort.style.display = 'none';
+                            targetFull.style.display = 'inline';
+                            this.textContent = '... lebih sedikit';
+                        } else {
+                            targetFull.style.display = 'none';
+                            targetShort.style.display = 'inline';
+                            this.textContent = '... lihat semua';
+                        }
+                    }
+                }
+            }
+            
+            // Untuk kasus data-short dan data-full
+            const shortSelector = this.getAttribute('data-short');
+            const fullSelector = this.getAttribute('data-full');
+            if (shortSelector && fullSelector) {
+                const shortElement = document.querySelector(shortSelector);
+                const fullElement = document.querySelector(fullSelector);
+                
+                if (shortElement && fullElement) {
+                    if (fullElement.style.display === 'none') {
+                        shortElement.style.display = 'none';
+                        fullElement.style.display = 'inline';
+                        this.textContent = '... lebih sedikit';
+                    } else {
+                        fullElement.style.display = 'none';
+                        shortElement.style.display = 'inline';
+                        this.textContent = '... lihat semua';
+                    }
+                }
+            }
+        });
+    });
+});
+</script>
 @endsection
