@@ -280,6 +280,7 @@
                     <a href="{{ route('isu.index') }}" class="btn btn-light border">
                         <i class="bi bi-x-circle"></i> Batal
                     </a>
+                        <!-- Tombol yang berbeda berdasarkan peran pengguna -->
                     <!-- Tombol untuk Editor -->
                     @if(auth()->user()->isEditor())
                         <button type="submit" name="action" value="simpan" class="btn btn-primary">

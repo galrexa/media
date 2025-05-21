@@ -977,8 +977,9 @@ class IsuController extends Controller
             abort(403, 'Unauthorized');
         }
 
-        // Ambil log dengan eager loading user
-        $logs = $isu->logs()->with('user')->paginate(20);
+        $logs = LogIsu::where('isu_id', $isu->id)
+                    ->orderBy('created_at', 'desc')
+                    ->get();
 
         return view('isu.history', compact('isu', 'logs'));
     }
