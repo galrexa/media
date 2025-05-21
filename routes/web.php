@@ -29,13 +29,6 @@ Route::get('/', function () {
     return redirect()->route('login');
 })->name('home');
 
-//Tes Page Error
-if (app()->environment('local')) {
-    Route::get('/test-error/{code}', function ($code) {
-        abort($code);
-    })->where('code', '[0-9]+');
-}
-
 // Dashboard sebagai landing page untuk admin/editor
 Route::get('/dashboard-landing', function () {
     $user = auth()->user();
