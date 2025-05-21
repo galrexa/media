@@ -1,0 +1,331 @@
+<!-- resources/views/partials/_isu_table.blade.php -->
+@if($isus->isNotEmpty())
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="selected-actions" style="display: none;">
+            <div class="d-flex align-items-center">
+                <span class="me-2 fw-medium"><span id="selected-count-{{ $tabId }}">0</span> item terpilih</span>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-tasks me-1"></i> Aksi Massal
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <!-- Kirim: Admin, Editor ke Verifikator 1, Verifikator 1 ke Verifikator 2 -->
+                        @if(Auth::user()->isAdmin())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif1-selected-{{ $tabId }}" data-action="send-to-verif1">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 1
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif2-selected-{{ $tabId }}" data-action="send-to-verif2">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 2
+                                </a>
+                            </li>
+                        @elseif(Auth::user()->isEditor())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif1-selected-{{ $tabId }}" data-action="send-to-verif1">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 1
+                                </a>
+                            </li>
+                        @elseif(Auth::user()->isVerifikator1())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="send-to-verif2-selected-{{ $tabId }}" data-action="send-to-verif2">
+                                    <i class="fas fa-paper-plane me-2 text-primary"></i> Kirim ke Verifikator 2
+                                </a>
+                            </li>
+                        @endif
+
+                        <!-- Tolak: Admin, Verifikator 1, dan Verifikator 2 -->
+                        @if(Auth::user()->isAdmin() || Auth::user()->isVerifikator1() || Auth::user()->isVerifikator2())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="reject-selected-{{ $tabId }}" data-action="reject" data-bs-toggle="modal" data-bs-target="#rejectModal">
+                                    <i class="fas fa-ban me-2 text-danger"></i> Tolak
+                                </a>
+                            </li>
+                        @endif
+
+                        <!-- Publish: Admin, Verifikator 2 -->
+                        @if(Auth::user()->isAdmin() || Auth::user()->isVerifikator2())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="publish-selected-{{ $tabId }}" data-action="publish">
+                                    <i class="fas fa-globe me-2 text-success"></i> Publikasikan
+                                </a>
+                            </li>
+                        @endif
+
+                        <!-- Hapus: Admin dan Editor -->
+                        @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="#" id="delete-selected-{{ $tabId }}" data-action="delete">
+                                    <i class="fas fa-trash me-2 text-danger"></i> Hapus
+                                </a>
+                            </li>
+                        @endif
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="d-flex align-items-center ms-auto">
+            <label for="per-page-{{ $tabId }}" class="me-2 mb-0">Tampilkan:</label>
+            <select id="per-page-{{ $tabId }}" class="form-select form-select-sm perPage-select" style="width: auto;">
+                <option value="10" {{ request('perPage', 10) == 10 ? 'selected' : '' }}>10</option>
+                <option value="25" {{ request('perPage') == 25 ? 'selected' : '' }}>25</option>
+                <option value="50" {{ request('perPage') == 50 ? 'selected' : '' }}>50</option>
+                <option value="100" {{ request('perPage') == 100 ? 'selected' : '' }}>100</option>
+                <option value="all" {{ request('perPage') == 'all' ? 'selected' : '' }}>Semua</option>
+            </select>
+        </div>
+        
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+            <div class="text-muted small">
+                @if(request('perPage') === 'all')
+                    Menampilkan semua {{ $isus->total() }} data
+                @else
+                    Menampilkan {{ $isus->firstItem() ?? 0 }} sampai {{ $isus->lastItem() ?? 0 }} dari {{ $isus->total() }} data
+                @endif
+            </div>
+        </div>
+
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover custom-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th width="40">
+                            <div class="form-check">
+                                <input class="form-check-input select-all" type="checkbox" id="select-all-{{ $tabId }}" aria-label="Pilih Semua">
+                            </div>
+                        </th>
+                        <th>
+                            Judul
+                        </th>
+                        <th width="120" class="sortable" data-sort="tanggal">
+                            Tanggal
+                            @if(request('sort') == 'tanggal')
+                                <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                            @else
+                                <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                            @endif
+                        </th>
+                        <th width="300">Kategori</th>
+                        <th width="100" class="sortable" data-sort="tone">
+                            Tone
+                            @if(request('sort') == 'tone')
+                                <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                            @else
+                                <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                            @endif
+                        </th>
+                        <th width="100" class="sortable" data-sort="skala">
+                            Skala
+                            @if(request('sort') == 'skala')
+                                <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                            @else
+                                <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                            @endif
+                        </th>
+                        <th width="200" class="sortable" data-sort="status_id">
+                            Status
+                            @if(request('sort') == 'status_id')
+                                <i class="fas fa-sort-{{ request('direction') == 'asc' ? 'up' : 'down' }} ms-1"></i>
+                            @else
+                                <i class="fas fa-sort ms-1 text-muted opacity-50"></i>
+                            @endif
+                        </th>
+                        <th width="120" class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($isus as $isu)
+                        <tr>
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input isu-checkbox" type="checkbox" value="{{ $isu->id }}" data-tab="{{ $tabId }}" id="isu-{{ $isu->id }}-{{ $tabId }}">
+                                </div>
+                            </td>
+                            <td>
+                                <h6>
+                                    <a href="{{ route('isu.show', $isu) }}" class="recent-item-title text-decoration-none" title="Lihat detail isu" aria-label="Lihat detail isu {{ $isu->judul }}">{{ $isu->judul }}</a>
+                                </h6>
+                                @if(!auth()->user()->isEditor())
+                                <div class="recent-item-meta mt-1">
+                                    <span class="status-badge {{ $isu->isu_strategis ? 'bg-strategis' : 'bg-regional' }}">
+                                        <i class="{{ $isu->isu_strategis ? 'fas fa-star' : 'far fa-star' }} me-1"></i>
+                                        {{ $isu->isu_strategis ? 'Isu Strategis' : 'Isu Regional' }}
+                                    </span>
+                                </div>
+                                @endif
+                            </td>
+                            <td>{{ \Carbon\Carbon::parse($isu->tanggal)->format('d/m/Y') }}</td>
+                            <td>
+                                @if($isu->kategoris->isNotEmpty())
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach($isu->kategoris as $kategori)
+                                            <span class="badge bg-secondary">{{ $kategori->nama }}</span>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge-custom" style="background-color: {{ $isu->refTone && $isu->tone ? $isu->refTone->warna : '#d3d3d3' }}">
+                                    {{ $isu->refTone && $isu->tone ? $isu->refTone->nama : '-' }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge-custom" style="background-color: {{ $isu->refSkala && $isu->skala ? $isu->refSkala->warna : '#d3d3d3' }}">
+                                    {{ $isu->refSkala && $isu->skala ? $isu->refSkala->nama : '-' }}
+                                </span>
+                            </td>
+                            <td>
+                                @if($isu->status && $isu->status->nama == 'Ditolak' && $isu->alasan_penolakan)
+                                    <span class="badge-custom position-relative"
+                                        style="background-color: {{ $isu->status ? $isu->status->warna : '#d3d3d3' }}"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-html="true"
+                                        title="<strong>Alasan Penolakan:</strong><br>{{ htmlspecialchars($isu->alasan_penolakan) }}">
+                                        {{ $isu->status ? $isu->status->nama : 'Draft' }}
+                                        <i class="fas fa-info-circle ms-1"></i>
+                                    </span>
+                                @else
+                                    <span class="badge-custom" style="background-color: {{ $isu->status ? $isu->status->warna : '#d3d3d3' }}">
+                                        {{ $isu->status ? $isu->status->nama : 'Draft' }}
+                                    </span>
+                                @endif
+                            </td>
+                            <td>
+                            <div class="action-buttons">
+                                <!-- <a href="{{ route('isu.show', $isu) }}" class="btn-action btn-view" title="Lihat Detail" aria-label="Lihat detail isu">
+                                    <i class="fas fa-eye"></i>
+                                </a> -->
+                                @auth
+                                @if((auth()->user()->isAdmin()) ||
+                                    (auth()->user()->isEditor() && $isu->created_by == auth()->user()->id && $isu->canBeEditedBy('editor')) ||
+                                    (auth()->user()->isVerifikator1() && $isu->canBeEditedBy('verifikator1')) ||
+                                    (auth()->user()->isVerifikator2() && $isu->canBeEditedBy('verifikator2')))
+                                    <a href="{{ route('isu.edit', $isu) }}" class="btn-action btn-edit" title="Edit" aria-label="Edit isu">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                @endif
+                                    <a href="{{ route('isu.history', $isu) }}" class="btn-action btn-log" title="Riwayat" aria-label="Lihat riwayat isu">
+                                        <i class="fas fa-clock-rotate-left"></i>
+                                    </a>
+                                @endauth
+                            </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="pagination-container mt-4">
+        {{ $isus->appends(request()->except(['page', $tabId == 'strategis' ? 'lainnya' : 'strategis']))->links() }}
+    </div>
+@else
+    <div class="empty-state">
+        <i class="fas fa-info-circle"></i>
+        <p>{{ $emptyMessage }}</p>
+        @auth
+            @if(auth()->user()->isAdmin() || auth()->user()->isEditor())
+                <a href="{{ route('isu.create') }}" class="btn btn-outline-primary mt-3">Tambah Isu Baru
+                </a>
+            @endif
+        @endauth
+    </div>
+@endif
+<script>
+    function deleteIsu(event, element) {
+        event.preventDefault(); // Mencegah aksi default link
+
+        // Gunakan SweetAlert untuk konfirmasi
+        Swal.fire({
+            title: 'Hapus Isu',
+            text: 'Apakah Anda yakin ingin menghapus isu ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Kirim permintaan DELETE menggunakan Fetch API
+                fetch(element.getAttribute('data-url'), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Hapus elemen dari DOM
+                        element.closest('tr').remove();
+                        
+                        // Tampilkan notifikasi sukses dengan SweetAlert
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: data.message || 'Isu berhasil dihapus!',
+                            timer: 3000,
+                            timerProgressBar: true,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    } else {
+                        // Tampilkan pesan error dengan SweetAlert
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: data.message || 'Gagal menghapus isu.',
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan saat menghapus isu.',
+                    });
+                });
+            }
+        });
+    }
+
+    // NEW: Handler untuk perubahan jumlah item per halaman
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inisialisasi handler untuk setiap select perPage
+        const perPageSelects = document.querySelectorAll('.perPage-select');
+        
+        perPageSelects.forEach(select => {
+            select.addEventListener('change', function() {
+                // Dapatkan URL saat ini
+                let url = new URL(window.location.href);
+                let params = new URLSearchParams(url.search);
+                
+                // Update parameter perPage
+                if (this.value === 'all') {
+                    params.set('perPage', 'all');
+                } else {
+                    params.set('perPage', this.value);
+                }
+                
+                // Reset halaman ke 1 saat mengubah jumlah item per halaman
+                params.set('page', '1');
+                
+                // Redirect ke URL dengan parameter baru
+                window.location.href = `${url.pathname}?${params.toString()}`;
+            });
+        });
+    });
+</script>
