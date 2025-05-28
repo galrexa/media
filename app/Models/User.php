@@ -1,5 +1,5 @@
 <?php
-// app/Models/User.php - Corrected and Simplified for KSP API
+// app/Models/User.php - Complete with missing methods
 
 namespace App\Models;
 
@@ -124,6 +124,24 @@ class User extends Authenticatable
     }
 
     /**
+     * MISSING METHOD: Helper method untuk cek kolom exists dengan safe error handling
+     * 
+     * @param string $column
+     * @return bool
+     */
+    public function columnExists(string $column): bool
+    {
+        try {
+            return Schema::hasColumn($this->getTable(), $column);
+        } catch (\Exception $e) {
+            \Log::warning("Cannot check if column exists: {$this->getTable()}.{$column}", [
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * Update data user dari response API KSP - FIELD TERPILIH SAJA
      * Hanya mengambil: namalengkap, position, department, profile_photo, user_id, employee_id, email
      * 
@@ -139,6 +157,7 @@ class User extends Authenticatable
                 'user_id' => $this->id,
                 'username' => $this->username,
                 'selected_fields_only' => true,
+                'received_api_data' => array_keys($apiData), // DEBUG: Log field names yang diterima
             ]);
             
             // 1. NAMA LENGKAP - dari field 'namalengkap'
@@ -152,7 +171,14 @@ class User extends Authenticatable
                 if ($this->columnExists('position')) {
                     $updateData['position'] = trim($apiData['jabatan']);
                     \Log::info("Updated position from 'jabatan'", ['value' => $updateData['position']]);
+                } else {
+                    \Log::warning("Position column does not exist in users table");
                 }
+            } else {
+                \Log::info("No 'jabatan' field in API data or value is empty", [
+                    'jabatan_exists' => isset($apiData['jabatan']),
+                    'jabatan_value' => $apiData['jabatan'] ?? 'N/A'
+                ]);
             }
             
             // 3. DEPARTMENT - dari field 'satuankerja'
@@ -160,7 +186,14 @@ class User extends Authenticatable
                 if ($this->columnExists('department')) {
                     $updateData['department'] = trim($apiData['satuankerja']);
                     \Log::info("Updated department from 'satuankerja'", ['value' => $updateData['department']]);
+                } else {
+                    \Log::warning("Department column does not exist in users table");
                 }
+            } else {
+                \Log::info("No 'satuankerja' field in API data or value is empty", [
+                    'satuankerja_exists' => isset($apiData['satuankerja']),
+                    'satuankerja_value' => $apiData['satuankerja'] ?? 'N/A'
+                ]);
             }
             
             // 4. PROFILE PHOTO - dari field 'foto' (hanya indikator)
@@ -216,6 +249,9 @@ class User extends Authenticatable
                     'username' => $this->username,
                     'updated_fields' => array_keys($updateData),
                     'field_count' => count($updateData),
+                    // DEBUG: Log nilai akhir
+                    'final_position' => $this->fresh()->position,
+                    'final_department' => $this->fresh()->department,
                 ]);
                 
                 return true;
@@ -233,23 +269,8 @@ class User extends Authenticatable
                 'user_id' => $this->id,
                 'username' => $this->username,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            return false;
-        }
-    }
-
-    /**
-     * Helper method untuk cek kolom exists dengan safe error handling
-     * 
-     * @param string $column
-     * @return bool
-     */
-    private function columnExists(string $column): bool
-    {
-        try {
-            return Schema::hasColumn('users', $column);
-        } catch (\Exception $e) {
-            \Log::warning("Cannot check if column exists: users.{$column}", ['error' => $e->getMessage()]);
             return false;
         }
     }
