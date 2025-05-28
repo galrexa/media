@@ -39,7 +39,7 @@ class BadgeController extends Controller
         Cache::put($cacheKey, true, now()->addDays(7)); // Simpan selama 7 hari
 
         // Log untuk audit trail
-        Log::info('User ' . auth()->user()->name . ' (ID: ' . $userId . ') reset rejected badge notification');
+        // Log::info('User ' . auth()->user()->name . ' (ID: ' . $userId . ') reset rejected badge notification');
 
         return response()->json([
             'success' => true,
@@ -64,7 +64,7 @@ class BadgeController extends Controller
         Cache::forget($cacheKey);
 
         // Log untuk audit
-        Log::info('User ' . auth()->user()->name . ' (ID: ' . $userId . ') re-enabled rejected badge notification');
+        // Log::info('User ' . auth()->user()->name . ' (ID: ' . $userId . ') re-enabled rejected badge notification');
 
         return response()->json([
             'success' => true,

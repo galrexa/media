@@ -1,4 +1,3 @@
-<!-- resources/views/isu/edit.blade.php dengan CKEditor -->
 @extends(
     auth()->check() &&
     (

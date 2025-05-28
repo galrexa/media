@@ -12,7 +12,7 @@
                 @php
                     $modalContent = \App\Models\Setting::getValue('modal_content', '');
                     // Cek jika konten berisi placeholder tanggal dan ganti dengan tanggal saat ini
-                    $modalContent = str_replace('{tanggal}', session('latestIsuDate', now()->format('d F Y')), $modalContent);
+                    $modalContent = str_replace('{tanggal}', session('latestIsuDate', now()->translatedFormat('d F Y')), $modalContent);
                 @endphp
                 
                 {!! $modalContent !!}
