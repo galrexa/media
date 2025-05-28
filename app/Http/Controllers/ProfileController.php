@@ -30,12 +30,6 @@ class ProfileController extends Controller
         // Mengambil data user yang sedang login dengan eager loading role
         $user = Auth::user()->load('role');
 
-        // Logging untuk audit trail
-        Log::info('User melihat halaman profil', [
-            'user_id' => $user->id,
-            'username' => $user->username
-        ]);
-
         return view('profile.index', compact('user'));
     }
 

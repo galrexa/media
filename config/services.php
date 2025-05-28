@@ -35,4 +35,23 @@ return [
         ],
     ],
 
+    // config/services.php - konfigurasi untuk OpenAI API
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'), // Opsional
+        'model' => env('OPENAI_MODEL', 'gpt-3.5-turbo-instruct'), // Untuk Completion API
+        'chat_model' => env('OPENAI_CHAT_MODEL', 'gpt-3.5-turbo'), // Untuk Chat API
+        'use_chat_api' => env('OPENAI_USE_CHAT_API', true), // true = Chat API, false = Completion API
+        'timeout' => env('OPENAI_TIMEOUT', 60), // Timeout dalam detik
+    ],
+
+    'ksp_api' => [
+        'enabled' => env('KSP_API_ENABLED', true),
+        'url' => env('KSP_API_URL', 'https://layanan-api.ksp.go.id/index.php/login'),
+        'key' => env('KSP_API_KEY', 'e7f0s9Cc9feBf61d49i3Kz5'),
+        'timeout' => env('KSP_API_TIMEOUT', 30),
+        'verify_ssl' => env('KSP_API_VERIFY_SSL', false),
+        'debug_enabled' => env('KSP_API_DEBUG', false),
+        'log_requests' => env('KSP_API_LOG_REQUESTS', true),
+    ],
+
 ];

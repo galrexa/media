@@ -45,7 +45,7 @@ class ResetBadgesCommand extends Command
             Session::forget('rejected_badge_hidden');
 
             $this->info('All badge statuses have been reset.');
-            Log::info('Reset badge status for all users via artisan command');
+            //Log::info('Reset badge status for all users via artisan command');
 
         } elseif ($userId = $this->option('user')) {
             // Reset untuk user tertentu
@@ -55,7 +55,7 @@ class ResetBadgesCommand extends Command
             Cache::forget($cacheKey);
 
             $this->info("Badge status for user {$userId} has been reset.");
-            Log::info("Reset badge status for user {$userId} via artisan command");
+            //Log::info("Reset badge status for user {$userId} via artisan command");
 
         } else {
             $this->error('Please specify --user=ID or --all to reset badges');

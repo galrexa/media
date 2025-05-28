@@ -79,17 +79,17 @@ class SidebarComposer
                 // Cek kolom status di tabel documents (jika ada)
                 try {
                     $pendingDocumentCount = Document::where('status', 'pending')->count();
-                    Log::info("Pending document count: $pendingDocumentCount");
+                    //Log::info("Pending document count: $pendingDocumentCount");
                 } catch (\Exception $e) {
-                    Log::warning('Error counting pending documents: ' . $e->getMessage());
+                    //Log::warning('Error counting pending documents: ' . $e->getMessage());
                 }
 
                 // Cek kolom status di tabel trending (jika ada)
                 try {
                     $pendingTrendingCount = Trending::where('status', 'pending')->count();
-                    Log::info("Pending trending count: $pendingTrendingCount");
+                    //Log::info("Pending trending count: $pendingTrendingCount");
                 } catch (\Exception $e) {
-                    Log::warning('Error counting pending trending items: ' . $e->getMessage());
+                    //Log::warning('Error counting pending trending items: ' . $e->getMessage());
                 }
 
                 // Cek jika URL saat ini adalah halaman rejected
