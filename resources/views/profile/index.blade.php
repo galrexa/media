@@ -38,9 +38,9 @@
                     <a href="{{ route('profile.index') }}" class="list-group-item list-group-item-action active">
                         <i class="bi bi-person me-2"></i> Informasi Profil
                     </a>
-                    <a href="{{ route('profile.password') }}" class="list-group-item list-group-item-action">
+                    <!-- <a href="{{ route('profile.password') }}" class="list-group-item list-group-item-action">
                         <i class="bi bi-key me-2"></i> Ubah Password
-                    </a>
+                    </a> -->
                 </div>
             </div>
         </div>
