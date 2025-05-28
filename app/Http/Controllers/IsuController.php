@@ -257,7 +257,6 @@ class IsuController extends Controller
             Session::put('rejected_badge_hidden', true);
             $cacheKey = 'rejected_badge_hidden_' . $userId;
             Cache::put($cacheKey, true, now()->addDays(7));
-            Log::info("Badge ditolak direset oleh User ID: {$userId} ({$user->name}) melalui akses halaman");
         }
 
         // Sorting

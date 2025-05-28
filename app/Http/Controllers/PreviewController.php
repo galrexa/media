@@ -17,7 +17,6 @@ class PreviewController extends Controller
         ]);
 
         $url = $request->input('url');
-        Log::info('Preview requested for URL: ' . $url);
 
         try {
             $metadata = $this->getWebsiteMetadata($url);

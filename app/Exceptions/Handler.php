@@ -84,6 +84,19 @@ class Handler extends ExceptionHandler
             ], 429);
         }
 
+        if ($e instanceof TokenMismatchException) {
+            // Redirect ke halaman sebelumnya dengan pesan error
+            return redirect()->back()
+                ->withInput($request->except('_token', 'password', 'password_confirmation'))
+                ->with('error', 'Halaman telah kadaluarsa karena tidak ada aktivitas. Silakan coba lagi.');
+            
+            // Atau tampilkan halaman error kustom
+            return response()->view('errors.419', [
+                'user' => $request->user(),
+                'exception' => $e,
+            ], 419);
+        }
+
         if ($e instanceof HttpException && $e->getStatusCode() == 500) {
             return response()->view('errors.500', [
                 'user' => $request->user(),
@@ -105,6 +118,22 @@ class Handler extends ExceptionHandler
                 'user' => $request->user(),
                 'exception' => $e,
             ], 419);
+        }
+
+        if ($e instanceof QueryException) {
+            // Log error dengan detail koneksi (mask informasi sensitif)
+            Log::error('Database Connection Error: ' . $this->maskSensitiveInfo($e->getMessage()), [
+                'error_code' => $e->getCode(),
+                'connection' => config('database.default'),
+                'host' => config('database.connections.' . config('database.default') . '.host'),
+            ]);
+            
+            // Menampilkan halaman error 500 untuk pengguna
+            return response()->view('errors.500', [
+                'user' => $request->user(),
+                'exception' => config('app.debug') ? $e : null,
+                'message' => 'Database connection error. Our team has been notified.'
+            ], 500);
         }
 
         // Jika kita tidak menangani exception secara eksplisit,
@@ -225,5 +254,13 @@ class Handler extends ExceptionHandler
                 }
             }
         }
+    }
+
+    // Tambahkan method ini di class Handler untuk memaskir informasi sensitif
+    private function maskSensitiveInfo($message) {
+        // Mask password dari koneksi string jika ada
+        $message = preg_replace('/password=([^;]*)/', 'password=********', $message);
+        // Mask SQL query params jika perlu
+        return $message;
     }
 }
