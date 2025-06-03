@@ -102,7 +102,7 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('users.index')
-                        ->with('success', "Pengguna {$user->username} berhasil didaftarkan");
+                        ->with('success', "User {$user->username} berhasil didaftarkan");
     }
 
     /**
@@ -230,7 +230,7 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')
-                        ->with('success', "User {$username} berhasil dihapus");
+                        ->with('success', "Pengguna {$username} berhasil dihapus!");
     }
 
     /**
