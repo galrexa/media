@@ -1,4 +1,3 @@
-<!-- resources/views/isu/create.blade.php dengan CKEditor yang diperbaiki -->
 @extends(auth()->check() && (auth()->user()->isAdmin() || auth()->user()->isEditor()) ? 'layouts.admin' : 'layouts.app')
 
 @section('title', 'Tambah Isu Baru')

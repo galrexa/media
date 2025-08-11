@@ -165,10 +165,10 @@ class NotificationController extends Controller
                     'unreadNotificationsCount' => $unreadNotificationsCount,
                 ]);
 
-                Log::info('NotificationComposer loaded data successfully');
+                //Log::info('NotificationComposer loaded data successfully');
 
             } catch (\Exception $e) {
-                Log::error('Error in NotificationComposer: ' . $e->getMessage());
+                //Log::error('Error in NotificationComposer: ' . $e->getMessage());
                 $view->with([
                     'notifications' => collect(),
                     'unreadNotificationsCount' => 0,

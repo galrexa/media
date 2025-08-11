@@ -40,7 +40,7 @@ class ThumbnailHelper
             }
         } catch (\Exception $e) {
             // Log error
-            \Log::error('Error fetching thumbnail: ' . $e->getMessage());
+            // Log::error('Error fetching thumbnail: ' . $e->getMessage());
         }
         
         return null;
@@ -61,7 +61,7 @@ class ThumbnailHelper
                 'url' => $url
             ];
         } catch (\Exception $e) {
-            \Log::error('Error fetching URL metadata: ' . $e->getMessage());
+            // Log::error('Error fetching URL metadata: ' . $e->getMessage());
             return [
                 'title' => '',
                 'description' => '',

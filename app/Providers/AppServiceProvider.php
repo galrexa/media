@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
 use App\Http\ViewComposers\SidebarComposer;
-use App\Http\ViewComposers\NotificationComposer;
+//use App\Http\ViewComposers\NotificationComposer;
 use Illuminate\Support\Facades\View;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +23,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register KSP API Service
+        $this->app->singleton(KspApiService::class, function ($app) {
+            return new KspApiService();
+        });
+    
     }
 
     /**
@@ -44,7 +48,7 @@ class AppServiceProvider extends ServiceProvider
 
         Carbon::setLocale('id');
         View::composer('partials.sidebar', SidebarComposer::class);
-        View::composer('layouts.admin', NotificationComposer::class);
+        //View::composer('layouts.admin', NotificationComposer::class);
         Log::info('AppServiceProvider: ViewComposers registered');
     }
 }
