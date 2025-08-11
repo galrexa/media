@@ -200,9 +200,20 @@
             @endif
 
             <!-- Kategori Pengaturan -->
-            @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
+            @if(Auth::user()->isAdmin() || Auth::user()->isEditor() || Auth::user()->hasRole('verifikator1') || Auth::user()->hasRole('verifikator2'))
             <li class="nav-item category">
                 <span class="nav-category">PENGATURAN</span>
+            </li>
+
+            <!-- Analytics -->
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('analytics.*') ? 'active' : '' }}" href="{{ route('analytics.index') }}">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>Analytics</span>
+                    @if(isset($analytics) && $analytics['today_visitors'] > 0)
+                        <span class="badge bg-info rounded-pill ms-auto">{{ $analytics['today_visitors'] }}</span>
+                    @endif
+                </a>
             </li>
             @endif
 

@@ -176,7 +176,7 @@ class UserController extends Controller
             $message .= "<br><strong>Password cadangan telah direset.</strong>";
         }
         
-        $message .= "<br><em>Catatan: Data nama, email, jabatan, dll akan terupdate otomatis dari API KSP saat user login.</em>";
+        //$message .= "<br><em>Catatan: Data nama, email, jabatan, dll akan terupdate otomatis dari API KSP saat user login.</em>";
 
         return redirect()->route('users.index')->with('success', $message);
     }
