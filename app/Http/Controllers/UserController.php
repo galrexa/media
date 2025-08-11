@@ -102,7 +102,10 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('users.index')
-                        ->with('success', "User {$user->username} berhasil didaftarkan");
+                        ->with('success', 
+                               "Pengguna '{$user->username}' berhasil didaftarkan!<br>" .
+                               "<strong>Password cadangan tersimpan untuk backup authentication.</strong><br>" .
+                               "User dapat login dengan kredensial KSP atau password cadangan jika server KSP tidak dapat diakses.");
     }
 
     /**
@@ -170,7 +173,7 @@ class UserController extends Controller
         // Update user (TIDAK MENGUBAH DATA DARI API)
         $user->update($userData);
 
-        $message = "Data pengguna '{$user->username}' berhasil diperbarui!";
+        $message = "Data user {$user->username} berhasil diperbarui";
         
         if ($passwordUpdated) {
             $message .= "<br><strong>Password cadangan telah direset.</strong>";
@@ -230,7 +233,7 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')
-                        ->with('success', "Pengguna {$username} berhasil dihapus!");
+                        ->with('success', "Pengguna '{$username}' berhasil dihapus!");
     }
 
     /**
@@ -250,7 +253,7 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
                         ->with('success', 
-                               "Password user '{$user->username}' telah direset. " .
+                               "Password user {$user->username} telah direset. " .
                                "Password sementara: {$initialPassword}");
     }
 
@@ -269,6 +272,6 @@ class UserController extends Controller
         $status = $user->is_active ? 'diaktifkan' : 'dinonaktifkan';
         
         return redirect()->route('users.index')
-                        ->with('success', "User '{$user->username}' berhasil {$status}!");
+                        ->with('success', "User {$user->username} berhasil {$status}!");
     }
 }
