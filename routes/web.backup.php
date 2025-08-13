@@ -1,5 +1,5 @@
 <?php
-// routes/web.php - FIXED VERSION
+// routes/web.php - Phase 3: Enhanced Analytics Routes
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
@@ -16,6 +16,12 @@ use App\Http\Controllers\AnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
+| Web Routes - Phase 3: Multi-Role Analytics Implementation
+|--------------------------------------------------------------------------
+*/
+
+/*
+|--------------------------------------------------------------------------
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
@@ -29,21 +35,12 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/up', function () {
-    return response('OK', 200);
-});
-
-/*
-|--------------------------------------------------------------------------
 | TRACKED ROUTES - Multi-Role Analytics Tracking
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['web', 'auth', \App\Http\Middleware\AnalyticsMiddleware::class])->group(function () { 
+Route::middleware(['web', 'auth', \App\Http\Middleware\AnalyticsMiddleware::class])->group(function () {
+    
     // Homepage/Dashboard - tracked untuk semua role
     Route::get('/', function () {
         if (auth()->check()) {
@@ -106,13 +103,12 @@ Route::middleware(['web', 'auth', \App\Http\Middleware\AnalyticsMiddleware::clas
     Route::get('/preview', [PreviewController::class, 'getPreview'])->name('preview.full');
 
     // Admin Management Pages - tracked untuk admin/editor/verifikator
-    // Isu Management - tracked
     Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
-        Route::get('/isu/create', [IsuController::class, 'create'])->name('isu.create');
-        Route::get('/isu/{isu}', [IsuController::class, 'show'])->name('isu.show');
-        Route::get('/isu/{isu}/edit', [IsuController::class, 'edit'])->name('isu.edit');
+        
+        // Isu Management - tracked
         Route::get('/isu', [IsuController::class, 'index'])->name('isu.index');
-
+        Route::get('/isu/create', [IsuController::class, 'create'])->name('isu.create');
+        Route::get('/isu/{isu}/edit', [IsuController::class, 'edit'])->name('isu.edit');
         
         // Trending Management - tracked untuk admin/editor
         Route::middleware('role:admin,editor')->group(function () {
@@ -153,52 +149,24 @@ Route::middleware(['web', 'auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     
-    // Isu Management
-    // Isu Management - COMPLETELY REORDERED
-    Route::prefix('isu')->name('isu.')->middleware('auth')->group(function () {
-        
-        // 1. EXACT ROUTES FIRST - HIGHEST PRIORITY
-        Route::get('/create', [IsuController::class, 'create'])
-            ->name('create')
-            ->middleware('role:admin,editor,verifikator1,verifikator2');
-            
-        Route::post('/', [IsuController::class, 'store'])
-            ->name('store')
-            ->middleware('role:admin,editor,verifikator1,verifikator2');
-        
-        // 2. PARAMETERIZED ROUTES WITH CONSTRAINTS - MEDIUM PRIORITY  
-        Route::get('/{isu}/history', [IsuController::class, 'history'])
-            ->name('history')
-            ->where('isu', '[0-9]+');
-            
-        Route::get('/{isu}/edit', [IsuController::class, 'edit'])
-            ->name('edit')
-            ->middleware('role:admin,editor,verifikator1,verifikator2')
-            ->where('isu', '[0-9]+');
-            
-        Route::put('/{isu}', [IsuController::class, 'update'])
-            ->name('update')
-            ->middleware('role:admin,editor,verifikator1,verifikator2')
-            ->where('isu', '[0-9]+');
-            
-        Route::post('/{isu}/penolakan', [IsuController::class, 'processPenolakan'])
-            ->name('penolakan')
-            ->middleware('role:admin,verifikator1,verifikator2')
-            ->where('isu', '[0-9]+');
-            
-        Route::delete('/{isu}', [IsuController::class, 'destroy'])
-            ->name('destroy')
-            ->middleware('role:admin,verifikator2,editor')
-            ->where('isu', '[0-9]+');
-        
-        // 3. GENERAL ROUTES - LOWEST PRIORITY
-        Route::get('/', [IsuController::class, 'index'])->name('index');
-        Route::post('/isu/mass-action', [IsuController::class, 'massAction'])->name('massAction');
-        
-        // 4. CATCH-ALL ROUTE - ABSOLUTE LAST
-        Route::get('/{isu}', [IsuController::class, 'show'])
-            ->name('show')
-            ->where('isu', '[0-9]+');
+    Route::prefix('isu')->name('isu.')->group(function () {
+        // CRUD operations - tidak di-track
+        Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
+            Route::post('/', [IsuController::class, 'store'])->name('store');
+            Route::put('/{isu}', [IsuController::class, 'update'])->name('update');
+            Route::post('/isu/mass-action', [IsuController::class, 'massAction'])->name('massAction');
+            Route::get('/{isu}/history', [IsuController::class, 'history'])->name('history');
+        });
+
+        // Routes khusus untuk verifikator (penolakan isu)
+        Route::middleware('role:admin,verifikator1,verifikator2')->group(function () {
+            Route::post('/{isu}/penolakan', [IsuController::class, 'processPenolakan'])->name('penolakan');
+        });
+
+        // Hapus isu hanya bisa dilakukan admin atau editor
+        Route::middleware('role:admin,verifikator2,editor')
+             ->delete('/{isu}', [IsuController::class, 'destroy'])
+             ->name('destroy');
     });
 
     /*
@@ -441,6 +409,16 @@ if (config('app.debug')) {
     })->name('analytics.monitor');
 }
 
+/*
+|--------------------------------------------------------------------------
+| Static/Public Routes (Non-tracked)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/up', function () {
+    return response('OK', 200);
+});
+
 // Storage route for file access
 Route::get('/storage/{path}', function ($path) {
     $filePath = storage_path('app/public/' . $path);
@@ -449,107 +427,3 @@ Route::get('/storage/{path}', function ($path) {
     }
     abort(404);
 })->where('path', '.*')->name('storage.local');
-
-
-// Tambahkan di akhir routes/web.php (sebelum closing tag)
-
-// DEBUG ROUTE - HAPUS SETELAH SELESAI
-Route::get('/debug-access', function () {
-    \Log::info('=== DEBUG ACCESS ROUTE CALLED ===');
-    
-    if (!Auth::check()) {
-        return response()->json(['error' => 'Not authenticated'], 401);
-    }
-    
-    $user = Auth::user();
-    
-    $debugInfo = [
-        'authentication' => [
-            'is_authenticated' => true,
-            'user_id' => $user->id,
-            'username' => $user->username,
-            'name' => $user->name,
-            'email' => $user->email,
-            'is_active' => $user->is_active ?? 'not_set',
-        ],
-        'role_info' => [
-            'role_id' => $user->role_id,
-            'getHighestRoleName' => $user->getHighestRoleName(),
-            'isAdmin' => $user->isAdmin(),
-            'isEditor' => $user->isEditor(),
-            'isVerifikator1' => $user->isVerifikator1(),
-            'isVerifikator2' => $user->isVerifikator2(),
-            'isViewer' => $user->isViewer(),
-        ],
-        'role_checks' => [
-            'hasRole_admin' => $user->hasRole('admin'),
-            'hasRole_editor' => $user->hasRole('editor'),
-            'hasRole_verifikator1' => $user->hasRole('verifikator1'),
-            'hasRole_verifikator2' => $user->hasRole('verifikator2'),
-            'hasRole_viewer' => $user->hasRole('viewer'),
-        ],
-        'access_permissions' => [
-            'can_create_isu' => $user->isAdmin() || $user->isEditor(),
-            'can_access_admin_pages' => $user->isAdmin() || $user->isEditor() || $user->isVerifikator1() || $user->isVerifikator2(),
-            'should_pass_role_middleware' => in_array($user->getHighestRoleName(), ['admin', 'editor', 'verifikator1', 'verifikator2']),
-        ],
-        'middleware_simulation' => [
-            'passes_auth' => true,
-            'passes_role_check' => in_array($user->getHighestRoleName(), ['admin', 'editor', 'verifikator1', 'verifikator2']),
-            'analytics_middleware_active' => class_exists('App\\Http\\Middleware\\AnalyticsMiddleware'),
-        ],
-        'system_info' => [
-            'controller_exists' => class_exists('App\\Http\\Controllers\\IsuController'),
-            'method_exists' => method_exists('App\\Http\\Controllers\\IsuController', 'create'),
-            'view_exists' => view()->exists('isu.create'),
-            'app_debug' => config('app.debug'),
-            'app_env' => config('app.env'),
-        ]
-    ];
-    
-    \Log::info('Debug info generated', $debugInfo);
-    
-    return response()->json($debugInfo, 200, [], JSON_PRETTY_PRINT);
-})->middleware(['web', 'auth'])->name('debug.access');
-
-// Tambahkan di routes/web.php 
-
-// TEST DIRECT ACCESS - HAPUS SETELAH DEBUG
-Route::get('/test-direct-isu-create', function () {
-    \Log::info('=== DIRECT ISU CREATE TEST ===');
-    
-    // Simulasi authentication
-    if (!Auth::check()) {
-        return 'User not authenticated - please login first';
-    }
-    
-    try {
-        // Test controller instantiation
-        $controller = app(\App\Http\Controllers\IsuController::class);
-        
-        // Test method exists
-        if (!method_exists($controller, 'create')) {
-            return 'Method create() does not exist in IsuController';
-        }
-        
-        // Simulate request
-        $request = request();
-        
-        \Log::info('Calling IsuController@create directly');
-        
-        // Call method directly
-        $response = $controller->create();
-        
-        \Log::info('IsuController@create executed successfully');
-        
-        return $response;
-        
-    } catch (\Exception $e) {
-        \Log::error('Direct access test failed', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        return 'Error: ' . $e->getMessage();
-    }
-})->name('test.direct.isu.create');
