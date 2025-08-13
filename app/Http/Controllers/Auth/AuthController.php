@@ -1,5 +1,5 @@
 <?php
-// app/Http/Controllers/Auth/AuthController.php
+// app/Http/Controllers/Auth/AuthController.php - Integrated dengan Login Tracking
 
 namespace App\Http\Controllers\Auth;
 
@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Isu;
+use App\Models\LoginHistory; // TAMBAHAN: Import LoginHistory model
 use Carbon\Carbon;
 
 class AuthController extends Controller
@@ -58,13 +59,14 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle proses login dengan Enhanced Failover Authentication System
+     * Handle proses login dengan Enhanced Failover Authentication System + Login Tracking
      * 
      * SECURITY PRIORITY:
      * 1. Validasi user existence & status
      * 2. KSP API Authentication (preferred)
      * 3. Backup Local Password Authentication (failover)
      * 4. Security logging & audit trail
+     * 5. Login history tracking (TAMBAHAN)
      *
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
@@ -268,7 +270,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Attempt KSP API Authentication dengan enhanced error handling
+     * Attempt KSP API Authentication dengan enhanced error handling + Login Tracking
      */
     private function attemptKspApiAuthentication(Request $request, User $localUser, string $username, string $password): array
     {
@@ -289,6 +291,9 @@ class AuthController extends Controller
                 // Login user dan regenerate session
                 Auth::login($localUser);
                 $request->session()->regenerate();
+
+                // TAMBAHAN: Track login history untuk KSP API
+                $this->trackLoginHistory($localUser, 'api', $request);
 
                 // Log successful login
                 $this->logSecurityEvent('LOGIN_SUCCESS_API', $username, $request, [
@@ -322,7 +327,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Attempt Backup Local Authentication dengan enhanced security
+     * Attempt Backup Local Authentication dengan enhanced security + Login Tracking
      */
     private function attemptBackupAuthentication(Request $request, User $localUser, string $username, string $password): array
     {
@@ -340,6 +345,9 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+            
+            // TAMBAHAN: Track login history untuk backup authentication
+            $this->trackLoginHistory($localUser, 'web', $request);
             
             // Log successful backup authentication
             $this->logSecurityEvent('LOGIN_SUCCESS_BACKUP', $username, $request, [
@@ -364,6 +372,40 @@ class AuthController extends Controller
             'success' => false,
             'message' => 'Invalid backup password'
         ];
+    }
+
+    /**
+     * TAMBAHAN: Track login history untuk semua jenis login
+     */
+    private function trackLoginHistory($user, $loginType = 'web', $request = null)
+    {
+        try {
+            $request = $request ?: request();
+            
+            LoginHistory::create([
+                'user_id' => $user->id,
+                'login_type' => $loginType, // 'web', 'api', atau 'api_activity'
+                'login_at' => now(),
+                'ip_address' => $this->getRealIpAddr($request),
+                'user_agent' => $request->userAgent(),
+                'session_id' => session()->getId(),
+                'role_name' => $user->getHighestRoleName(),
+            ]);
+
+            Log::info('Login history tracked', [
+                'user_id' => $user->id,
+                'login_type' => $loginType,
+                'role' => $user->getHighestRoleName(),
+                'ip' => $this->getRealIpAddr($request)
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to track login history', [
+                'user_id' => $user->id,
+                'login_type' => $loginType,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -487,13 +529,16 @@ class AuthController extends Controller
     }
 
     /**
-     * Enhanced logout dengan security logging
+     * Enhanced logout dengan security logging + logout tracking
      */
     public function logout(Request $request)
     {
         $user = Auth::user();
         
         if ($user) {
+            // TAMBAHAN: Track logout history
+            $this->trackLogoutHistory($user, $request);
+            
             $this->logSecurityEvent('LOGOUT', $user->username, $request, [
                 'user_id' => $user->id,
                 'role' => $user->getHighestRoleName(),
@@ -505,6 +550,41 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/')->with('success', 'Anda telah keluar dari sistem.');
+    }
+
+    /**
+     * TAMBAHAN: Track logout history
+     */
+    private function trackLogoutHistory($user, $request)
+    {
+        try {
+            // Update record login terakhir dengan logout time
+            $lastLogin = LoginHistory::where('user_id', $user->id)
+                ->whereNull('logout_at')
+                ->latest('login_at')
+                ->first();
+
+            if ($lastLogin) {
+                $sessionDuration = $lastLogin->login_at->diffInSeconds(now());
+                
+                $lastLogin->update([
+                    'logout_at' => now(),
+                    'session_duration' => $sessionDuration
+                ]);
+
+                Log::info('Logout tracked', [
+                    'user_id' => $user->id,
+                    'session_duration' => $sessionDuration . ' seconds',
+                    'login_type' => $lastLogin->login_type
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to track logout', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

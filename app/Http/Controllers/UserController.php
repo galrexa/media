@@ -102,7 +102,10 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('users.index')
-                        ->with('success', "User {$user->username} berhasil didaftarkan");
+                        ->with('success', 
+                               "Pengguna '{$user->username}' berhasil didaftarkan!<br>" .
+                               "<strong>Password cadangan tersimpan untuk backup authentication.</strong><br>" .
+                               "User dapat login dengan kredensial KSP atau password cadangan jika server KSP tidak dapat diakses.");
     }
 
     /**
@@ -176,7 +179,7 @@ class UserController extends Controller
             $message .= "<br><strong>Password cadangan telah direset.</strong>";
         }
         
-        $message .= "<br><em>Catatan: Data nama, email, jabatan, dll akan terupdate otomatis dari API KSP saat user login.</em>";
+        //$message .= "<br><em>Catatan: Data nama, email, jabatan, dll akan terupdate otomatis dari API KSP saat user login.</em>";
 
         return redirect()->route('users.index')->with('success', $message);
     }
@@ -230,7 +233,7 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')
-                        ->with('success', "Pengguna {$username} berhasil dihapus!");
+                        ->with('success', "Pengguna '{$username}' berhasil dihapus!");
     }
 
     /**

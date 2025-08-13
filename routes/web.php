@@ -1,4 +1,5 @@
 <?php
+// routes/web.php - Phase 3: Enhanced Analytics Routes
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
@@ -11,49 +12,13 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\AnalyticsController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - FIXED: Removed undefined middleware
+| Web Routes - Phase 3: Multi-Role Analytics Implementation
 |--------------------------------------------------------------------------
 */
-
-// Home / Landing page - Fixed untuk API auth
-Route::get('/', function () {
-    if (auth()->check()) {
-        $user = auth()->user();
-        
-        // Cek apakah user masih aktif (jika ada field is_active)
-        if (isset($user->is_active) && !$user->is_active) {
-            auth()->logout();
-            request()->session()->invalidate();
-            request()->session()->regenerateToken();
-            return redirect()->route('login')
-                           ->with('error', 'Akun Anda telah dinonaktifkan. Silakan hubungi administrator.');
-        }
-        
-        // Redirect ke home controller
-        $request = request();
-        return app(HomeController::class)->index($request);
-    }
-    return redirect()->route('login');
-})->name('home');
-
-// Dashboard sebagai landing page untuk admin/editor
-Route::get('/dashboard-landing', function () {
-    $user = auth()->user();
-    if ($user->isAdmin() || $user->isEditor()) {
-        return redirect()->route('dashboard.admin');
-    } else {
-        return redirect()->route('home');
-    }
-})->middleware('auth')->name('dashboard.landing');
-
-// Route untuk halaman home
-Route::get('/home', [HomeController::class, 'index'])
-    ->name('home.index')
-    ->middleware('auth');
 
 /*
 |--------------------------------------------------------------------------
@@ -70,39 +35,106 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 /*
 |--------------------------------------------------------------------------
-| Settings Management - Admin & Editor
+| TRACKED ROUTES - Multi-Role Analytics Tracking
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin,editor'])->prefix('admin')->group(function () {
-    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
-    Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
-    Route::put('/settings/{id}', [SettingsController::class, 'update'])->name('settings.update');
-    Route::delete('/settings/{id}', [SettingsController::class, 'destroy'])->name('settings.destroy');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Profile Management
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-    Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
-    Route::get('/profile/password', [ProfileController::class, 'editPassword'])->name('profile.password');
-    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
-});
-
-/*
-|--------------------------------------------------------------------------
-| Main Application Routes
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware('auth')->group(function () {
+Route::middleware(['web', 'auth', \App\Http\Middleware\AnalyticsMiddleware::class])->group(function () {
     
-    // Dashboard Routes
+    // Homepage/Dashboard - tracked untuk semua role
+    Route::get('/', function () {
+        if (auth()->check()) {
+            $user = auth()->user();
+            
+            // Cek apakah user masih aktif
+            if (isset($user->is_active) && !$user->is_active) {
+                auth()->logout();
+                request()->session()->invalidate();
+                request()->session()->regenerateToken();
+                return redirect()->route('login')
+                               ->with('error', 'Akun Anda telah dinonaktifkan. Silakan hubungi administrator.');
+            }
+            
+            // Redirect berdasarkan role
+            if ($user->isAdmin() || $user->isEditor()) {
+                return redirect()->route('dashboard.admin');
+            }
+            
+            // Viewer ke home controller
+            return app(HomeController::class)->index(request());
+        }
+        return redirect()->route('login');
+    })->name('home');
+
+    Route::get('/home', [HomeController::class, 'index'])->name('home.index');
+
+    Route::get('/dashboard-landing', function () {
+        $user = auth()->user();
+        if ($user->isAdmin() || $user->isEditor()) {
+            return redirect()->route('dashboard.admin');
+        } else {
+            return redirect()->route('home');
+        }
+    })->name('dashboard.landing');
+
+    // Admin Dashboard - tracked untuk admin/editor
+    Route::get('/dashboard/admin', fn() => view('dashboard.admin'))
+        ->middleware('role:admin,editor')
+        ->name('dashboard.admin');
+
+    // Isu Pages - tracked untuk semua role yang akses
+    Route::get('/isu/{isu}', [IsuController::class, 'show'])->name('isu.show');
+    Route::get('/preview-isu', [IsuController::class, 'preview'])->name('preview.isu');
+
+    // Trending Pages - tracked untuk semua role
+    Route::get('/trending', [TrendingController::class, 'index'])->name('trending.index');
+    Route::get('/trending/selected', [TrendingController::class, 'selected'])->name('trending.selected');
+
+    // Documents Pages - tracked untuk semua role
+    Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+
+    // Profile Pages - tracked untuk semua role
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::get('/profile/password', [ProfileController::class, 'editPassword'])->name('profile.password');
+    Route::put('/profile', [ProfileController::class, 'updateProfile'])->name('profile.update');
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+
+    // Preview Pages - tracked untuk semua role
+    Route::get('/preview', [PreviewController::class, 'getPreview'])->name('preview.full');
+
+    // Admin Management Pages - tracked untuk admin/editor/verifikator
+    Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
+        
+        // Isu Management - tracked
+        Route::get('/isu', [IsuController::class, 'index'])->name('isu.index');
+        Route::get('/isu/create', [IsuController::class, 'create'])->name('isu.create');
+        Route::get('/isu/{isu}/edit', [IsuController::class, 'edit'])->name('isu.edit');
+        
+        // Trending Management - tracked untuk admin/editor
+        Route::middleware('role:admin,editor')->group(function () {
+            Route::get('/trending/create', [TrendingController::class, 'create'])->name('trending.create');
+            Route::get('/trending/manual/create', [TrendingController::class, 'createManual'])->name('trending.manual.create');
+            Route::get('/trending/manage-google', [TrendingController::class, 'manageGoogleSelected'])->name('trending.manageGoogleSelected');
+            Route::get('/trending/manage-x', [TrendingController::class, 'manageXSelected'])->name('trending.manageXSelected');
+        });
+        
+        // Document Management - tracked untuk admin/editor
+        Route::middleware('role:admin,editor')->group(function () {
+            Route::get('/documents/upload', [DocumentController::class, 'create'])->name('documents.create');
+            Route::get('/documents/edit/{date?}', [DocumentController::class, 'edit'])->name('documents.edit');
+        });
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| NON-TRACKED ROUTES - CRUD Operations & API Endpoints
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['web', 'auth'])->group(function () {
+    
+    // Dashboard redirect
     Route::get('/dashboard', function () {
         $user = auth()->user();
         if ($user->isAdmin() || $user->isEditor()) {
@@ -111,66 +143,19 @@ Route::middleware('auth')->group(function () {
         return redirect()->route('home');
     })->name('dashboard');
 
-    Route::get('/dashboard/admin', fn() => view('dashboard.admin'))
-        ->middleware('role:admin,editor')
-        ->name('dashboard.admin');
-
-    
     /*
     |--------------------------------------------------------------------------
-    | User Management Routes - Admin Only (FIXED: Removed undefined middleware)
-    |--------------------------------------------------------------------------
-    */
-    
-    // FIXED: Removed 'user.active' and 'audit.trail' middleware yang tidak terdefinisi
-    Route::middleware(['auth', 'role:admin'])->prefix('users')->name('users.')->group(function () {
-        // Standard CRUD routes
-        Route::get('/', [UserController::class, 'index'])->name('index');
-        Route::get('/create', [UserController::class, 'create'])->name('create');
-        Route::post('/', [UserController::class, 'store'])->name('store');
-        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
-        Route::put('/{user}', [UserController::class, 'update'])->name('update');
-        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
-        
-        // Enhanced user management actions dengan backup password support
-        Route::patch('/{user}/toggle-active', [UserController::class, 'toggleActive'])
-             ->name('toggle-active');
-        
-        // NEW: Reset backup password untuk failover mechanism
-        Route::post('/{user}/reset-backup-password', [UserController::class, 'resetBackupPassword'])
-             ->name('reset-backup-password');
-        
-        // NEW: Test backup authentication (debug mode only)
-        Route::post('/{user}/test-backup-auth', [AuthController::class, 'testBackupAuth'])
-             ->name('test-backup-auth');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Issue Management
+    | Issue Management CRUD (Non-tracked)
     |--------------------------------------------------------------------------
     */
     
     Route::prefix('isu')->name('isu.')->group(function () {
-
-        // Routes khusus untuk membuat dan mengedit isu
+        // CRUD operations - tidak di-track
         Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
-            Route::get('/create', [IsuController::class, 'create'])->name('create');
             Route::post('/', [IsuController::class, 'store'])->name('store');
-        });
-
-        // Routes yang bisa diakses semua authenticated users
-        Route::get('/', [IsuController::class, 'index'])->name('index');
-        Route::get('/{isu}', [IsuController::class, 'show'])->name('show');
-        Route::post('/isu/mass-action', [IsuController::class, 'massAction'])->name('massAction');
-
-        // Route untuk history log isu - semua pengguna
-        Route::get('/{isu}/history', [IsuController::class, 'history'])->name('history');
-
-        // Routes yang dapat diakses oleh semua level (admin, editor, verifikator)
-        Route::middleware('role:admin,editor,verifikator1,verifikator2')->group(function () {
-            Route::get('/{isu}/edit', [IsuController::class, 'edit'])->name('edit');
             Route::put('/{isu}', [IsuController::class, 'update'])->name('update');
+            Route::post('/isu/mass-action', [IsuController::class, 'massAction'])->name('massAction');
+            Route::get('/{isu}/history', [IsuController::class, 'history'])->name('history');
         });
 
         // Routes khusus untuk verifikator (penolakan isu)
@@ -178,7 +163,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/{isu}/penolakan', [IsuController::class, 'processPenolakan'])->name('penolakan');
         });
 
-        // Hapus isu hanya bisa dilakukan admin atau editor (dengan status Draft)
+        // Hapus isu hanya bisa dilakukan admin atau editor
         Route::middleware('role:admin,verifikator2,editor')
              ->delete('/{isu}', [IsuController::class, 'destroy'])
              ->name('destroy');
@@ -186,42 +171,27 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Document Management
+    | Document Management CRUD (Non-tracked)
     |--------------------------------------------------------------------------
     */
     
     Route::middleware('role:admin,editor')->prefix('documents')->name('documents.')->group(function () {
-        Route::get('/', [DocumentController::class, 'index'])->name('index');
-        Route::get('/upload', [DocumentController::class, 'create'])->name('create');
         Route::post('/', [DocumentController::class, 'store'])->name('store');
-        Route::get('/edit/{date?}', [DocumentController::class, 'edit'])->name('edit');
         Route::put('/{id}', [DocumentController::class, 'update'])->name('update');
     });
 
     /*
     |--------------------------------------------------------------------------
-    | Trending Management
+    | Trending Management CRUD (Non-tracked)
     |--------------------------------------------------------------------------
     */
     
     Route::prefix('trending')->name('trending.')->group(function () {
-        // Public trending routes - semua authenticated users
-        Route::get('/', [TrendingController::class, 'index'])->name('index');
-        Route::get('/selected', [TrendingController::class, 'selected'])->name('selected');
-
-        // Admin & Editor only trending management
         Route::middleware('role:admin,editor')->group(function () {
-            // Routes untuk tambah manual trending
-            Route::get('/manual/create', [TrendingController::class, 'createManual'])->name('manual.create');
             Route::post('/manual/store', [TrendingController::class, 'storeManual'])->name('manual.store');
-
-            Route::get('/create', [TrendingController::class, 'create'])->name('create');
             Route::post('/', [TrendingController::class, 'store'])->name('store');
             Route::delete('/{trending}', [TrendingController::class, 'destroy'])->name('destroy');
             Route::put('/{trending}/toggle-selected', [TrendingController::class, 'toggleSelected'])->name('toggleSelected');
-
-            Route::get('/manage-google', [TrendingController::class, 'manageGoogleSelected'])->name('manageGoogleSelected');
-            Route::get('/manage-x', [TrendingController::class, 'manageXSelected'])->name('manageXSelected');
 
             Route::get('/refresh-google', [TrendingController::class, 'refreshGoogleTrends'])->name('refreshGoogleTrends');
             Route::get('/refresh-x', [TrendingController::class, 'refreshXTrends'])->name('refreshXTrends');
@@ -244,25 +214,73 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Preview Routes
+    | User Management Routes - Admin Only (Non-tracked)
     |--------------------------------------------------------------------------
     */
     
-    Route::get('/preview-isu', [IsuController::class, 'preview'])->name('preview.isu');
-    Route::get('/preview', [PreviewController::class, 'getPreview'])->name('preview.full');
+    Route::middleware('role:admin')->prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserController::class, 'index'])->name('index');
+        Route::get('/create', [UserController::class, 'create'])->name('create');
+        Route::post('/', [UserController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [UserController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+        Route::patch('/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('/{user}/reset-backup-password', [UserController::class, 'resetBackupPassword'])->name('reset-backup-password');
+        Route::post('/{user}/test-backup-auth', [AuthController::class, 'testBackupAuth'])->name('test-backup-auth');
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | API Endpoints
+    | Settings Management - Admin & Editor (Non-tracked)
     |--------------------------------------------------------------------------
     */
-    
-    Route::get('/api/trending/selected', [TrendingController::class, 'getSelectedTrendings'])
-        ->name('api.trending.selected');
+
+    Route::middleware('role:admin,editor')->prefix('admin')->group(function () {
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingsController::class, 'store'])->name('settings.store');
+        Route::put('/settings/{id}', [SettingsController::class, 'update'])->name('settings.update');
+        Route::delete('/settings/{id}', [SettingsController::class, 'destroy'])->name('settings.destroy');
+    });
 
     /*
     |--------------------------------------------------------------------------
-    | Notification Management
+    | Analytics Routes - Phase 3: Multi-Role Access
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('admin/analytics')->name('analytics.')->group(function () {
+        
+        // Analytics Dashboard - Role-based access
+        Route::get('/', [AnalyticsController::class, 'index'])
+            ->middleware('role:admin,editor,verifikator1,verifikator2,viewer')
+            ->name('index');
+        
+        // Analytics API Endpoints - Role-based access
+        Route::get('/chart-data', [AnalyticsController::class, 'getChartData'])
+            ->middleware('role:admin,editor,verifikator1,verifikator2,viewer')
+            ->name('chart-data');
+        
+        Route::get('/real-time', [AnalyticsController::class, 'getRealTimeData'])
+            ->middleware('role:admin,editor,verifikator1,verifikator2,viewer')
+            ->name('real-time');
+        
+        // Export - Role-based access
+        Route::get('/export', [AnalyticsController::class, 'export'])
+            ->middleware('role:admin,editor,verifikator1,verifikator2,viewer')
+            ->name('export');
+        
+        // Admin-only analytics management
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/cleanup', [AnalyticsController::class, 'cleanup'])->name('cleanup');
+            Route::post('/estimate-cleanup', [AnalyticsController::class, 'estimateCleanup'])->name('estimate-cleanup');
+            Route::post('/optimize', [AnalyticsController::class, 'optimize'])->name('optimize');
+        });
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification Management (Non-tracked)
     |--------------------------------------------------------------------------
     */
     
@@ -276,33 +294,48 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | Badge Management Routes
+    | Badge Management Routes (Non-tracked)
     |--------------------------------------------------------------------------
     */
     
     Route::post('/reset-notification-badge', function () {
-        Session::put('notification_badge_hidden', true);
+        session(['notification_badge_hidden' => true]);
         return response()->json(['success' => true]);
     })->name('reset.notification.badge');
 
     Route::post('/reset-rejected-badge', function () {
-        Session::put('rejected_badge_hidden', true);
+        session(['rejected_badge_hidden' => true]);
         return response()->json(['success' => true]);
     })->name('reset.rejected.badge');
 
     Route::get('/show-rejected-badge', function () {
-        Session::forget('rejected_badge_hidden');
+        session()->forget('rejected_badge_hidden');
         return redirect()->back();
     })->name('show.rejected.badge');
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Endpoints (Non-tracked)
+    |--------------------------------------------------------------------------
+    */
+    
+    Route::get('/api/trending/selected', [TrendingController::class, 'getSelectedTrendings'])
+        ->name('api.trending.selected');
+
+    // Analytics duration update endpoint
+    Route::post('/api/analytics/update-duration', [AnalyticsController::class, 'updateDuration'])
+        ->name('api.analytics.update-duration');
 });
 
 /*
 |--------------------------------------------------------------------------
-| Development Routes (Only in Debug Mode)
+| Development & Testing Routes (Non-tracked)
 |--------------------------------------------------------------------------
 */
 
 if (config('app.debug')) {
+    
+    // Development routes untuk admin
     Route::middleware(['auth', 'role:admin'])->prefix('dev')->name('dev.')->group(function () {
         Route::get('/test-api', function () {
             return view('dev.test-api', [
@@ -311,8 +344,7 @@ if (config('app.debug')) {
             ]);
         })->name('test-api');
         
-        Route::post('/test-api-connection', [AuthController::class, 'testApiConnection'])
-             ->name('test-api-connection');
+        Route::post('/test-api-connection', [AuthController::class, 'testApiConnection'])->name('test-api-connection');
         
         Route::get('/system-health', function () {
             return response()->json([
@@ -324,4 +356,74 @@ if (config('app.debug')) {
             ]);
         })->name('system-health');
     });
+
+    // Analytics monitoring untuk development
+    Route::middleware(['web', 'auth'])->get('/analytics-monitor', function () {
+        $user = auth()->user();
+        $userRole = $user->getHighestRoleName();
+        
+        // Base query berdasarkan role
+        $baseQuery = \App\Models\UserAnalytics::activeUsersOnly();
+        
+        if ($userRole === 'admin') {
+            // Admin bisa lihat semua
+        } elseif (in_array($userRole, ['editor', 'verifikator1', 'verifikator2'])) {
+            $baseQuery = $baseQuery->where('role_name', 'viewer');
+        } else {
+            $baseQuery = $baseQuery->where('user_id', $user->id);
+        }
+        
+        $analytics = $baseQuery->with('user:id,name,username')
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'user' => $item->user ? $item->user->name : 'Unknown',
+                    'role' => $item->role_name ?? 'Unknown',
+                    'page_name' => $item->page_name,
+                    'page_title' => $item->page_title,
+                    'visited_at' => $item->visited_at->format('Y-m-d H:i:s'),
+                    'duration' => $item->duration_seconds,
+                    'ip_address' => $item->ip_address
+                ];
+            });
+        
+        $totalQuery = \App\Models\UserAnalytics::query();
+        if ($userRole !== 'admin') {
+            if (in_array($userRole, ['editor', 'verifikator1', 'verifikator2'])) {
+                $totalQuery = $totalQuery->where('role_name', 'viewer');
+            } else {
+                $totalQuery = $totalQuery->where('user_id', $user->id);
+            }
+        }
+        
+        return response()->json([
+            'user_role' => $userRole,
+            'total_records' => $totalQuery->count(),
+            'today_records' => $totalQuery->whereDate('visited_at', today())->count(),
+            'unique_users_today' => $totalQuery->whereDate('visited_at', today())->distinct('user_id')->count(),
+            'latest_activities' => $analytics
+        ]);
+    })->name('analytics.monitor');
 }
+
+/*
+|--------------------------------------------------------------------------
+| Static/Public Routes (Non-tracked)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/up', function () {
+    return response('OK', 200);
+});
+
+// Storage route for file access
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+    if (file_exists($filePath)) {
+        return response()->file($filePath);
+    }
+    abort(404);
+})->where('path', '.*')->name('storage.local');
