@@ -512,44 +512,57 @@ Route::get('/debug-access', function () {
     return response()->json($debugInfo, 200, [], JSON_PRETTY_PRINT);
 })->middleware(['web', 'auth'])->name('debug.access');
 
-// Tambahkan di routes/web.php 
 
-// TEST DIRECT ACCESS - HAPUS SETELAH DEBUG
-Route::get('/test-direct-isu-create', function () {
-    \Log::info('=== DIRECT ISU CREATE TEST ===');
+//ROUTE AI
+
+/*
+|--------------------------------------------------------------------------
+| AI-Powered Isu Creator Routes - NEW
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('isu')->name('isu.')->middleware('auth')->group(function () {
     
-    // Simulasi authentication
-    if (!Auth::check()) {
-        return 'User not authenticated - please login first';
-    }
+    // Existing isu routes tetap...
     
-    try {
-        // Test controller instantiation
-        $controller = app(\App\Http\Controllers\IsuController::class);
+    // NEW: AI-powered routes untuk development/testing
+    Route::get('/ai-create', [IsuController::class, 'aiCreate'])
+        ->name('ai.create');
+        // ->middleware('role:admin,editor,verifikator1,verifikator2'); // Commented out untuk testing
         
-        // Test method exists
-        if (!method_exists($controller, 'create')) {
-            return 'Method create() does not exist in IsuController';
-        }
+    Route::get('/ai-results/{sessionId?}', [IsuController::class, 'aiResults'])
+        ->name('ai.results');
+        // ->middleware('role:admin,editor,verifikator1,verifikator2'); // Commented out untuk testing
         
-        // Simulate request
-        $request = request();
+    // API endpoints untuk AI functionality
+    Route::post('/ai-analyze', [IsuController::class, 'aiAnalyze'])
+        ->name('ai.analyze');
         
-        \Log::info('Calling IsuController@create directly');
+    Route::get('/ai-status/{sessionId}', [IsuController::class, 'aiStatus'])
+        ->name('ai.status');
         
-        // Call method directly
-        $response = $controller->create();
-        
-        \Log::info('IsuController@create executed successfully');
-        
-        return $response;
-        
-    } catch (\Exception $e) {
-        \Log::error('Direct access test failed', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        return 'Error: ' . $e->getMessage();
-    }
-})->name('test.direct.isu.create');
+    Route::post('/ai-store', [IsuController::class, 'aiStore'])
+        ->name('ai.store');
+});
+
+/*
+|--------------------------------------------------------------------------
+| AI API Routes - Untuk AJAX calls
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('api')->middleware('auth')->group(function () {
+    // URL validation dan preview
+    Route::post('/check-url', [IsuController::class, 'checkUrl']);
+    Route::post('/preview-content', [IsuController::class, 'previewContent']);
+    Route::post('/preview-single-url', [IsuController::class, 'previewSingleUrl']);
+    
+    // AI processing
+    Route::post('/ai-analyze', [IsuController::class, 'apiAiAnalyze']);
+    Route::get('/ai-progress/{sessionId}', [IsuController::class, 'apiAiProgress']);
+    Route::post('/ai-cancel/{sessionId}', [IsuController::class, 'apiAiCancel']);
+    
+    // AI content generation
+    Route::post('/ai-generate-titles', [IsuController::class, 'apiGenerateMoreTitles']);
+    Route::post('/ai-regenerate', [IsuController::class, 'apiRegenerateContent']);
+});

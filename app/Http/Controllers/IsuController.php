@@ -14,6 +14,9 @@ use App\Helpers\ThumbnailHelper;
 use App\Models\User;
 use App\Models\LogIsu;
 use App\Services\IsuNotificationService;
+use App\Services\AIAnalysisService;
+use App\Services\WebScrapingService;
+use App\Services\GroqAIService;
 use Embed\Embed;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -1851,5 +1854,308 @@ class IsuController extends Controller
             DB::rollBack();
             return back()->with('error', 'Terjadi kesalahan saat mempublikasikan isu: ' . $e->getMessage());
         }
+    }
+
+    //AI part
+    /*
+    |--------------------------------------------------------------------------
+    | AI-Powered Isu Creator Methods - NEW
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Display AI Create Interface
+     */
+    public function aiCreate()
+    {
+        return view('isu.ai-create');
+    }
+
+    /**
+     * Display AI Results Interface
+     */
+    public function aiResults($sessionId = null)
+    {
+        // Generate dummy data untuk testing tampilan
+        $analysisResult = $this->getDummyAnalysisResult($sessionId);
+        $confidenceScores = $this->getDummyConfidenceScores();
+        
+        return view('isu.ai-results', compact('analysisResult', 'confidenceScores'));
+    }
+
+    /**
+     * Process AI Analysis (form submission)
+     */
+    public function aiAnalyze(Request $request)
+    {
+        // TODO: Implement actual AI analysis
+        // For now, redirect to results with dummy session ID
+        $sessionId = 'AI-' . date('Ymd-His') . '-' . uniqid();
+        
+        return redirect()->route('isu.ai.results', $sessionId)
+            ->with('success', 'Analisis AI berhasil diselesaikan!');
+    }
+
+    /**
+     * Store AI Results as Isu
+     */
+    public function aiStore(Request $request)
+    {
+        try {
+            // TODO: Validate and store the AI results
+            
+            // For now, simulate success
+            return response()->json([
+                'success' => true,
+                'message' => 'Isu berhasil dibuat dari hasil AI!',
+                'redirect_url' => route('isu.index')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan isu: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get AI Analysis Status
+     */
+    public function aiStatus($sessionId)
+    {
+        // TODO: Implement actual status checking
+        return response()->json([
+            'status' => 'completed',
+            'progress' => 100,
+            'current_step' => 'Analisis selesai',
+            'completed_steps' => ['validation', 'extraction', 'analysis', 'generation'],
+            'redirect_url' => route('isu.ai.results', $sessionId)
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Endpoints untuk AJAX calls
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Check URL accessibility
+     */
+    public function checkUrl(Request $request)
+    {
+        $url = $request->input('url');
+        
+        try {
+            // Basic URL validation
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                return response()->json([
+                    'accessible' => false,
+                    'error' => 'Invalid URL format'
+                ]);
+            }
+            
+            // TODO: Implement actual URL checking
+            // For now, simulate accessibility check
+            $accessible = !str_contains($url, 'private') && !str_contains($url, 'blocked');
+            
+            return response()->json([
+                'accessible' => $accessible,
+                'status_code' => $accessible ? 200 : 403
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'accessible' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Preview multiple URLs content
+     */
+    public function previewContent(Request $request)
+    {
+        $urls = $request->input('urls', []);
+        $previews = [];
+        
+        foreach ($urls as $index => $url) {
+            $previews[] = [
+                'url' => $url,
+                'title' => 'Contoh Judul Berita ' . ($index + 1),
+                'excerpt' => 'Ini adalah preview konten dari URL ' . ($index + 1) . '. Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, voluptatum.',
+                'word_count' => rand(200, 800),
+                'domain' => parse_url($url, PHP_URL_HOST) ?? 'unknown'
+            ];
+        }
+        
+        return response()->json([
+            'success' => true,
+            'previews' => $previews
+        ]);
+    }
+
+    /**
+     * Preview single URL content
+     */
+    public function previewSingleUrl(Request $request)
+    {
+        $url = $request->input('url');
+        
+        try {
+            // TODO: Implement actual web scraping
+            // For now, return dummy data
+            return response()->json([
+                'success' => true,
+                'title' => 'Contoh Judul Berita dari URL',
+                'excerpt' => 'Ini adalah preview konten artikel. Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime, explicabo.',
+                'word_count' => rand(300, 600),
+                'domain' => parse_url($url, PHP_URL_HOST) ?? 'unknown'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * API AI Analysis (AJAX)
+     */
+    public function apiAiAnalyze(Request $request)
+    {
+        try {
+            // TODO: Implement actual AI analysis
+            $sessionId = 'AI-' . date('Ymd-His') . '-' . uniqid();
+            
+            return response()->json([
+                'success' => true,
+                'session_id' => $sessionId,
+                'message' => 'AI analysis started'
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get AI Progress (AJAX polling)
+     */
+    public function apiAiProgress($sessionId)
+    {
+        // TODO: Implement actual progress tracking
+        // For now, simulate progress
+        return response()->json([
+            'status' => 'completed',
+            'progress' => 100,
+            'current_step' => 'Generate Hasil',
+            'current_step_key' => 'generation',
+            'completed_steps' => ['validation', 'extraction', 'analysis'],
+            'estimated_time_remaining' => '0 menit'
+        ]);
+    }
+
+    /**
+     * Cancel AI Analysis
+     */
+    public function apiAiCancel($sessionId)
+    {
+        // TODO: Implement actual cancellation
+        return response()->json([
+            'success' => true,
+            'message' => 'Analysis cancelled'
+        ]);
+    }
+
+    /**
+     * Generate more titles
+     */
+    public function apiGenerateMoreTitles(Request $request)
+    {
+        // TODO: Implement actual AI title generation
+        $newTitles = [
+            'Indonesia Percepat Pembangunan Infrastruktur Digital untuk Era 5G',
+            'Revolusi Digital Indonesia: Startup Teknologi Berkembang Pesat',
+            'Pemerintah Fokus Digitalisasi Layanan Publik Nasional',
+            'Era Baru Teknologi: Indonesia Siap Kompetisi Global Digital',
+            'Transformasi Digital Indonesia Ciptakan Ekosistem Inovasi Baru'
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'suggestions' => $newTitles
+        ]);
+    }
+
+    /**
+     * Regenerate specific content
+     */
+    public function apiRegenerateContent(Request $request)
+    {
+        $contentTypes = $request->input('content_types', []);
+        
+        // TODO: Implement actual content regeneration
+        return response()->json([
+            'success' => true,
+            'message' => 'Content regenerated successfully',
+            'regenerated' => $contentTypes
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helper Methods untuk Dummy Data
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Generate dummy analysis result untuk testing
+     */
+    private function getDummyAnalysisResult($sessionId)
+    {
+        return (object) [
+            'session_id' => $sessionId ?: 'AI-20250814-123456-dummy',
+            'urls' => [
+                'https://example.com/berita-1',
+                'https://example.com/berita-2',
+                'https://example.com/berita-3'
+            ],
+            'ai_resume' => 'Pemerintah Indonesia mengumumkan kebijakan baru terkait pembangunan infrastruktur digital nasional yang akan dimulai pada tahun 2025. Kebijakan ini meliputi pembangunan jaringan 5G di seluruh Indonesia, digitalisasi layanan publik, dan pengembangan ekosistem startup teknologi. Menteri Komunikasi dan Informatika menyatakan bahwa program ini akan meningkatkan daya saing Indonesia di era digital dan menciptakan jutaan lapangan kerja baru di bidang teknologi informasi. Program ini diharapkan dapat mengurangi kesenjangan digital antara daerah urban dan rural, serta meningkatkan akses masyarakat terhadap teknologi modern.',
+            'ai_judul_suggestions' => [
+                'Pemerintah Luncurkan Program Infrastruktur Digital Nasional 2025',
+                'Indonesia Siap Bangun Ekosistem Digital dengan Jaringan 5G Nasional',
+                'Kebijakan Baru: Digitalisasi Layanan Publik dan Pengembangan Startup Tech',
+                'Jutaan Lapangan Kerja Teknologi Tercipta dari Program Digital Indonesia',
+                'Era Baru Indonesia Digital: 5G dan Startup Technology Ecosystem'
+            ],
+            'ai_narasi_positif' => 'Program infrastruktur digital nasional ini menunjukkan komitmen serius pemerintah dalam memajukan Indonesia di era digital. Investasi dalam jaringan 5G dan digitalisasi layanan publik akan meningkatkan aksesibilitas teknologi untuk seluruh rakyat Indonesia. Pengembangan ekosistem startup teknologi juga akan menciptakan peluang inovasi dan lapangan kerja baru, terutama untuk generasi muda. Program ini diharapkan dapat mempercepat transformasi digital Indonesia dan meningkatkan daya saing bangsa di kancah internasional.',
+            'ai_narasi_negatif' => 'Meskipun program ini terdengar ambisius, masih ada keraguan tentang kemampuan implementasi dan anggaran yang dibutuhkan. Infrastruktur digital memerlukan investasi besar yang mungkin membebani APBN. Selain itu, masih ada kesenjangan digital yang besar antara daerah urban dan rural yang perlu diatasi terlebih dahulu sebelum meluncurkan program skala nasional. Perlu ada strategi yang lebih matang untuk memastikan program ini tidak hanya menjadi wacana politik tanpa implementasi nyata.',
+            'ai_tone_suggestion' => 'positif',
+            'ai_skala_suggestion' => 'sedang',
+            'processing_time' => 2,
+            'ai_provider' => 'OpenAI GPT-4'
+        ];
+    }
+
+    /**
+     * Generate dummy confidence scores
+     */
+    private function getDummyConfidenceScores()
+    {
+        return [
+            'resume' => 92,
+            'judul' => 88,
+            'narasi_positif' => 85,
+            'narasi_negatif' => 87,
+            'tone' => 94,
+            'skala' => 89
+        ];
     }
 }
