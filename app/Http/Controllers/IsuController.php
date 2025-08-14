@@ -13,6 +13,7 @@ use App\Helpers\AlertHelper;
 use App\Helpers\ThumbnailHelper;
 use App\Models\User;
 use App\Models\LogIsu;
+use App\Models\AIAnalysisResult;
 use App\Services\IsuNotificationService;
 use App\Services\AIAnalysisService;
 use App\Services\WebScrapingService;
@@ -33,6 +34,17 @@ use Carbon\Carbon;
 
 class IsuController extends Controller
 {
+
+    protected $aiAnalysisService;
+    protected $webScrapingService;
+
+    public function __construct(
+        AIAnalysisService $aiAnalysisService,
+        WebScrapingService $webScrapingService
+    ) {
+        $this->aiAnalysisService = $aiAnalysisService;
+        $this->webScrapingService = $webScrapingService;
+    }
 
      /**
      * Menyimpan isu baru ke database.
@@ -1857,12 +1869,6 @@ class IsuController extends Controller
     }
 
     //AI part
-    /*
-    |--------------------------------------------------------------------------
-    | AI-Powered Isu Creator Methods - NEW
-    |--------------------------------------------------------------------------
-    */
-
     /**
      * Display AI Create Interface
      */
@@ -1876,11 +1882,41 @@ class IsuController extends Controller
      */
     public function aiResults($sessionId = null)
     {
-        // Generate dummy data untuk testing tampilan
-        $analysisResult = $this->getDummyAnalysisResult($sessionId);
-        $confidenceScores = $this->getDummyConfidenceScores();
-        
-        return view('isu.ai-results', compact('analysisResult', 'confidenceScores'));
+        if (!$sessionId) {
+            return redirect()->route('isu.ai.create')
+                ->with('error', 'Session ID tidak valid.');
+        }
+
+        try {
+            // Get analysis result from database
+            $analysisResult = AIAnalysisResult::where('session_id', $sessionId)->first();
+            
+            if (!$analysisResult) {
+                return redirect()->route('isu.ai.create')
+                    ->with('error', 'Hasil analisis tidak ditemukan.');
+            }
+
+            // Check if user has permission to view this result
+            if ($analysisResult->user_id !== Auth::id()) {
+                return redirect()->route('isu.ai.create')
+                    ->with('error', 'Anda tidak memiliki izin untuk melihat hasil analisis ini.');
+            }
+
+            // Calculate confidence scores if not available
+            $confidenceScores = $analysisResult->confidence_scores ?? $this->getDefaultConfidenceScores();
+            
+            return view('isu.ai-results', compact('analysisResult', 'confidenceScores'));
+            
+        } catch (\Exception $e) {
+            Log::error('Error loading AI results', [
+                'session_id' => $sessionId,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('isu.ai.create')
+                ->with('error', 'Terjadi kesalahan saat memuat hasil analisis.');
+        }
     }
 
     /**
@@ -1888,12 +1924,98 @@ class IsuController extends Controller
      */
     public function aiAnalyze(Request $request)
     {
-        // TODO: Implement actual AI analysis
-        // For now, redirect to results with dummy session ID
-        $sessionId = 'AI-' . date('Ymd-His') . '-' . uniqid();
-        
-        return redirect()->route('isu.ai.results', $sessionId)
-            ->with('success', 'Analisis AI berhasil diselesaikan!');
+        // Validate request
+        $validator = Validator::make($request->all(), [
+            'urls' => 'required|array|min:1|max:5',
+            'urls.*' => 'required|url|max:1000',
+            'analysis_mode' => 'nullable|string|in:fast,balanced,accurate',
+            'ai_provider' => 'nullable|string|in:auto,groq,openai,claude,gemini'
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withErrors($validator)
+                ->withInput()
+                ->with('error', 'Data yang Anda masukkan tidak valid.');
+        }
+
+        try {
+            // Clean and validate URLs
+            $urls = array_filter($request->urls, function($url) {
+                return !empty(trim($url));
+            });
+
+            if (empty($urls)) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Minimal satu URL harus dimasukkan.');
+            }
+
+            // Quick URL validation
+            foreach ($urls as $url) {
+                if (!$this->webScrapingService->validateUrl($url)) {
+                    return back()
+                        ->withInput()
+                        ->with('error', "URL tidak valid atau tidak dapat diakses: {$url}");
+                }
+            }
+
+            // Prepare analysis options
+            $options = [
+                'analysis_mode' => $request->input('analysis_mode', 'balanced'),
+                'ai_provider' => $request->input('ai_provider', 'auto'),
+                'user_preferences' => $this->getUserPreferences()
+            ];
+
+            // Start AI analysis
+            $sessionId = $this->aiAnalysisService->analyzeUrls(
+                $urls, 
+                Auth::id(), 
+                $options
+            );
+
+            // Redirect to results page with session ID
+            return redirect()->route('isu.ai.results', $sessionId)
+                ->with('success', 'Analisis AI berhasil dimulai! Silakan tunggu hasilnya.');
+                
+        } catch (\Exception $e) {
+            Log::error('AI analysis failed to start', [
+                'user_id' => Auth::id(),
+                'urls' => $request->urls ?? [],
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()
+                ->withInput()
+                ->with('error', 'Gagal memulai analisis AI: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get AI Analysis Status (AJAX endpoint)
+     */
+    public function aiStatus($sessionId)
+    {
+        try {
+            $status = $this->aiAnalysisService->getAnalysisStatus($sessionId);
+            
+            // Add additional status information
+            $status['timestamp'] = now()->toISOString();
+            $status['user_can_edit'] = true; // User can always edit results
+            
+            return response()->json($status);
+            
+        } catch (\Exception $e) {
+            Log::error('Error getting AI status', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil status analisis.'
+            ], 500);
+        }
     }
 
     /**
@@ -1901,261 +2023,217 @@ class IsuController extends Controller
      */
     public function aiStore(Request $request)
     {
+        // Validate the AI results before storing
+        $validator = Validator::make($request->all(), [
+            'session_id' => 'required|string',
+            'judul' => 'required|string|max:255',
+            'tanggal' => 'required|date|before_or_equal:today',
+            'isu_strategis' => 'boolean',
+            'kategori' => 'nullable|string',
+            'skala' => 'required|string|in:rendah,sedang,tinggi',
+            'tone' => 'required|string|in:positif,negatif,netral',
+            'rangkuman' => 'required|string|max:10000',
+            'narasi_positif' => 'required|string|max:10000',
+            'narasi_negatif' => 'required|string|max:10000',
+            'referensi_urls' => 'nullable|array',
+            'referensi_urls.*' => 'url|max:1000'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data tidak valid.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        
         try {
-            // TODO: Validate and store the AI results
+            // Get the analysis result to verify ownership
+            $analysisResult = AIAnalysisResult::where('session_id', $request->session_id)->first();
             
-            // For now, simulate success
+            if (!$analysisResult || $analysisResult->user_id !== Auth::id()) {
+                throw new \Exception('Session tidak valid atau Anda tidak memiliki izin.');
+            }
+
+            // Map skala to ID from RefSkala
+            $skalaId = null;
+            if (!empty($request->skala)) {
+                $skalaRef = RefSkala::where('nama', $request->skala)->first();
+                $skalaId = $skalaRef ? $skalaRef->id : null; // Use null if not found
+            }
+
+            $toneId = null;
+            if (!empty($request->tone)) {
+                $toneRef = RefTone::where('nama', $request->tone)->first();
+                $toneId = $toneRef ? $toneRef->id : null; // Use null if not found
+            }
+
+            // Create new Isu from AI results
+            $isu = Isu::create([
+                'judul' => trim($request->judul),
+                'tanggal' => $request->tanggal,
+                'isu_strategis' => $request->boolean('isu_strategis'),
+                'kategori' => $request->kategori,
+                'skala' => $skalaId,
+                'tone' => $toneId,
+                'rangkuman' => $this->cleanHtmlContent($request->rangkuman),
+                'narasi_positif' => $this->cleanHtmlContent($request->narasi_positif),
+                'narasi_negatif' => $this->cleanHtmlContent($request->narasi_negatif),
+                'user_id' => Auth::id(),
+                'status' => 'draft', // Always start as draft
+                'ai_generated' => true, // Flag to indicate AI generation
+                'ai_session_id' => $request->session_id // Reference to AI analysis
+            ]);
+
+            // Add reference URLs if provided
+            if ($request->has('referensi_urls') && is_array($request->referensi_urls)) {
+                foreach ($request->referensi_urls as $url) {
+                    if (!empty(trim($url))) {
+                        $this->addReferenceUrl($isu, trim($url));
+                    }
+                }
+            }
+
+            // Log the creation
+            Log::info('Isu created from AI analysis', [
+                'isu_id' => $isu->id,
+                'session_id' => $request->session_id,
+                'user_id' => Auth::id()
+            ]);
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'message' => 'Isu berhasil dibuat dari hasil AI!',
-                'redirect_url' => route('isu.index')
+                'isu_id' => $isu->id,
+                'redirect_url' => route('isu.show', $isu->id)
             ]);
+
         } catch (\Exception $e) {
-            return response()->json([
+            DB::rollBack();
+            
+            Log::error('Failed to store AI results as Isu', [
+                'session_id' => $request->session_id ?? null,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+
+            /* return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan isu: ' . $e->getMessage()
-            ], 500);
+            ], 500); */
+            AlertHelper::success('Berhasil', "Isu berhasil {$statusMessage}!");
+            return redirect()->route('isu.show', $isu);
         }
     }
 
     /**
-     * Get AI Analysis Status
+     * Preview AI Analysis Results (AJAX endpoint)
      */
-    public function aiStatus($sessionId)
+    public function aiPreview(Request $request)
     {
-        // TODO: Implement actual status checking
-        return response()->json([
-            'status' => 'completed',
-            'progress' => 100,
-            'current_step' => 'Analisis selesai',
-            'completed_steps' => ['validation', 'extraction', 'analysis', 'generation'],
-            'redirect_url' => route('isu.ai.results', $sessionId)
+        $validator = Validator::make($request->all(), [
+            'urls' => 'required|array|min:1|max:2', // Limit for preview
+            'urls.*' => 'required|url'
         ]);
-    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | API Endpoints untuk AJAX calls
-    |--------------------------------------------------------------------------
-    */
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'URL tidak valid.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
-    /**
-     * Check URL accessibility
-     */
-    public function checkUrl(Request $request)
-    {
-        $url = $request->input('url');
-        
         try {
-            // Basic URL validation
-            if (!filter_var($url, FILTER_VALIDATE_URL)) {
-                return response()->json([
-                    'accessible' => false,
-                    'error' => 'Invalid URL format'
-                ]);
+            $previews = [];
+            
+            foreach ($request->urls as $url) {
+                $extraction = $this->webScrapingService->extractContent($url);
+                
+                if ($extraction['success']) {
+                    $previews[] = [
+                        'url' => $url,
+                        'title' => $extraction['title'] ?? 'Tidak ada judul',
+                        'excerpt' => Str::limit($extraction['content'] ?? '', 200),
+                        'domain' => parse_url($url, PHP_URL_HOST),
+                        'suitable' => $this->webScrapingService->isContentSuitable($extraction)
+                    ];
+                } else {
+                    $previews[] = [
+                        'url' => $url,
+                        'title' => 'Gagal memuat',
+                        'excerpt' => 'Konten tidak dapat diakses',
+                        'domain' => parse_url($url, PHP_URL_HOST),
+                        'suitable' => ['suitable' => false, 'issues' => ['URL tidak dapat diakses']]
+                    ];
+                }
             }
-            
-            // TODO: Implement actual URL checking
-            // For now, simulate accessibility check
-            $accessible = !str_contains($url, 'private') && !str_contains($url, 'blocked');
-            
-            return response()->json([
-                'accessible' => $accessible,
-                'status_code' => $accessible ? 200 : 403
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'accessible' => false,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
 
-    /**
-     * Preview multiple URLs content
-     */
-    public function previewContent(Request $request)
-    {
-        $urls = $request->input('urls', []);
-        $previews = [];
-        
-        foreach ($urls as $index => $url) {
-            $previews[] = [
-                'url' => $url,
-                'title' => 'Contoh Judul Berita ' . ($index + 1),
-                'excerpt' => 'Ini adalah preview konten dari URL ' . ($index + 1) . '. Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, voluptatum.',
-                'word_count' => rand(200, 800),
-                'domain' => parse_url($url, PHP_URL_HOST) ?? 'unknown'
-            ];
-        }
-        
-        return response()->json([
-            'success' => true,
-            'previews' => $previews
-        ]);
-    }
-
-    /**
-     * Preview single URL content
-     */
-    public function previewSingleUrl(Request $request)
-    {
-        $url = $request->input('url');
-        
-        try {
-            // TODO: Implement actual web scraping
-            // For now, return dummy data
             return response()->json([
                 'success' => true,
-                'title' => 'Contoh Judul Berita dari URL',
-                'excerpt' => 'Ini adalah preview konten artikel. Lorem ipsum dolor sit amet consectetur adipisicing elit. Maxime, explicabo.',
-                'word_count' => rand(300, 600),
-                'domain' => parse_url($url, PHP_URL_HOST) ?? 'unknown'
+                'previews' => $previews
             ]);
-            
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
-            ]);
-        }
-    }
-
-    /**
-     * API AI Analysis (AJAX)
-     */
-    public function apiAiAnalyze(Request $request)
-    {
-        try {
-            // TODO: Implement actual AI analysis
-            $sessionId = 'AI-' . date('Ymd-His') . '-' . uniqid();
-            
-            return response()->json([
-                'success' => true,
-                'session_id' => $sessionId,
-                'message' => 'AI analysis started'
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Gagal memuat preview: ' . $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Get AI Progress (AJAX polling)
+     * Helper Methods
      */
-    public function apiAiProgress($sessionId)
-    {
-        // TODO: Implement actual progress tracking
-        // For now, simulate progress
-        return response()->json([
-            'status' => 'completed',
-            'progress' => 100,
-            'current_step' => 'Generate Hasil',
-            'current_step_key' => 'generation',
-            'completed_steps' => ['validation', 'extraction', 'analysis'],
-            'estimated_time_remaining' => '0 menit'
-        ]);
-    }
-
-    /**
-     * Cancel AI Analysis
-     */
-    public function apiAiCancel($sessionId)
-    {
-        // TODO: Implement actual cancellation
-        return response()->json([
-            'success' => true,
-            'message' => 'Analysis cancelled'
-        ]);
-    }
-
-    /**
-     * Generate more titles
-     */
-    public function apiGenerateMoreTitles(Request $request)
-    {
-        // TODO: Implement actual AI title generation
-        $newTitles = [
-            'Indonesia Percepat Pembangunan Infrastruktur Digital untuk Era 5G',
-            'Revolusi Digital Indonesia: Startup Teknologi Berkembang Pesat',
-            'Pemerintah Fokus Digitalisasi Layanan Publik Nasional',
-            'Era Baru Teknologi: Indonesia Siap Kompetisi Global Digital',
-            'Transformasi Digital Indonesia Ciptakan Ekosistem Inovasi Baru'
-        ];
-        
-        return response()->json([
-            'success' => true,
-            'suggestions' => $newTitles
-        ]);
-    }
-
-    /**
-     * Regenerate specific content
-     */
-    public function apiRegenerateContent(Request $request)
-    {
-        $contentTypes = $request->input('content_types', []);
-        
-        // TODO: Implement actual content regeneration
-        return response()->json([
-            'success' => true,
-            'message' => 'Content regenerated successfully',
-            'regenerated' => $contentTypes
-        ]);
-    }
-
-    /*
-    |--------------------------------------------------------------------------
-    | Helper Methods untuk Dummy Data
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Generate dummy analysis result untuk testing
-     */
-    private function getDummyAnalysisResult($sessionId)
-    {
-        return (object) [
-            'session_id' => $sessionId ?: 'AI-20250814-123456-dummy',
-            'urls' => [
-                'https://example.com/berita-1',
-                'https://example.com/berita-2',
-                'https://example.com/berita-3'
-            ],
-            'ai_resume' => 'Pemerintah Indonesia mengumumkan kebijakan baru terkait pembangunan infrastruktur digital nasional yang akan dimulai pada tahun 2025. Kebijakan ini meliputi pembangunan jaringan 5G di seluruh Indonesia, digitalisasi layanan publik, dan pengembangan ekosistem startup teknologi. Menteri Komunikasi dan Informatika menyatakan bahwa program ini akan meningkatkan daya saing Indonesia di era digital dan menciptakan jutaan lapangan kerja baru di bidang teknologi informasi. Program ini diharapkan dapat mengurangi kesenjangan digital antara daerah urban dan rural, serta meningkatkan akses masyarakat terhadap teknologi modern.',
-            'ai_judul_suggestions' => [
-                'Pemerintah Luncurkan Program Infrastruktur Digital Nasional 2025',
-                'Indonesia Siap Bangun Ekosistem Digital dengan Jaringan 5G Nasional',
-                'Kebijakan Baru: Digitalisasi Layanan Publik dan Pengembangan Startup Tech',
-                'Jutaan Lapangan Kerja Teknologi Tercipta dari Program Digital Indonesia',
-                'Era Baru Indonesia Digital: 5G dan Startup Technology Ecosystem'
-            ],
-            'ai_narasi_positif' => 'Program infrastruktur digital nasional ini menunjukkan komitmen serius pemerintah dalam memajukan Indonesia di era digital. Investasi dalam jaringan 5G dan digitalisasi layanan publik akan meningkatkan aksesibilitas teknologi untuk seluruh rakyat Indonesia. Pengembangan ekosistem startup teknologi juga akan menciptakan peluang inovasi dan lapangan kerja baru, terutama untuk generasi muda. Program ini diharapkan dapat mempercepat transformasi digital Indonesia dan meningkatkan daya saing bangsa di kancah internasional.',
-            'ai_narasi_negatif' => 'Meskipun program ini terdengar ambisius, masih ada keraguan tentang kemampuan implementasi dan anggaran yang dibutuhkan. Infrastruktur digital memerlukan investasi besar yang mungkin membebani APBN. Selain itu, masih ada kesenjangan digital yang besar antara daerah urban dan rural yang perlu diatasi terlebih dahulu sebelum meluncurkan program skala nasional. Perlu ada strategi yang lebih matang untuk memastikan program ini tidak hanya menjadi wacana politik tanpa implementasi nyata.',
-            'ai_tone_suggestion' => 'positif',
-            'ai_skala_suggestion' => 'sedang',
-            'processing_time' => 2,
-            'ai_provider' => 'OpenAI GPT-4'
-        ];
-    }
-
-    /**
-     * Generate dummy confidence scores
-     */
-    private function getDummyConfidenceScores()
+    private function getUserPreferences(): array
     {
         return [
-            'resume' => 92,
-            'judul' => 88,
-            'narasi_positif' => 85,
-            'narasi_negatif' => 87,
-            'tone' => 94,
-            'skala' => 89
+            'language' => 'id',
+            'tone_preference' => 'balanced',
+            'length_preference' => 'medium'
         ];
+    }
+
+    private function getDefaultConfidenceScores(): array
+    {
+        return [
+            'resume' => 85,
+            'judul' => 80,
+            'narasi_positif' => 82,
+            'narasi_negatif' => 82,
+            'tone' => 90,
+            'skala' => 85
+        ];
+    }
+
+    private function cleanHtmlContent(string $content): string
+    {
+        // Remove dangerous HTML and clean content
+        return Purify::clean($content);
+    }
+
+    private function addReferenceUrl(Isu $isu, string $url): void
+    {
+        try {
+            // Extract metadata from URL
+            $metadata = $this->webScrapingService->extractMetadata($url);
+            
+            ReferensiIsu::create([
+                'isu_id' => $isu->id,
+                'judul' => $metadata['title'] ?? 'Referensi',
+                'url' => $url,
+                'thumbnail_url' => $metadata['image'] ?? null
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Failed to add reference URL', [
+                'isu_id' => $isu->id,
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

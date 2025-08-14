@@ -523,46 +523,90 @@ Route::get('/debug-access', function () {
 
 Route::prefix('isu')->name('isu.')->middleware('auth')->group(function () {
     
-    // Existing isu routes tetap...
+    // Existing routes remain unchanged...
     
-    // NEW: AI-powered routes untuk development/testing
+    // NEW: AI-powered routes
     Route::get('/ai-create', [IsuController::class, 'aiCreate'])
-        ->name('ai.create');
-        // ->middleware('role:admin,editor,verifikator1,verifikator2'); // Commented out untuk testing
+        ->name('ai.create')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
         
-    Route::get('/ai-results/{sessionId?}', [IsuController::class, 'aiResults'])
-        ->name('ai.results');
-        // ->middleware('role:admin,editor,verifikator1,verifikator2'); // Commented out untuk testing
-        
-    // API endpoints untuk AI functionality
     Route::post('/ai-analyze', [IsuController::class, 'aiAnalyze'])
-        ->name('ai.analyze');
+        ->name('ai.analyze')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
+        
+    Route::get('/ai-results/{sessionId}', [IsuController::class, 'aiResults'])
+        ->name('ai.results')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
         
     Route::get('/ai-status/{sessionId}', [IsuController::class, 'aiStatus'])
-        ->name('ai.status');
+        ->name('ai.status')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
         
     Route::post('/ai-store', [IsuController::class, 'aiStore'])
-        ->name('ai.store');
+        ->name('ai.store')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
+        
+    Route::post('/ai-preview', [IsuController::class, 'aiPreview'])
+        ->name('ai.preview')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
 });
 
-/*
-|--------------------------------------------------------------------------
-| AI API Routes - Untuk AJAX calls
-|--------------------------------------------------------------------------
-*/
+// Admin routes for AI management
+Route::prefix('admin/ai')->name('admin.ai.')->middleware(['auth', 'role:admin'])->group(function () {
+    
+    // AI Analytics Dashboard
+    Route::get('/dashboard', [AIAdminController::class, 'dashboard'])
+        ->name('dashboard');
+    
+    // AI Usage Analytics
+    Route::get('/analytics', [AIAdminController::class, 'analytics'])
+        ->name('analytics');
+    
+    // AI Configuration Management
+    Route::get('/config', [AIAdminController::class, 'config'])
+        ->name('config');
+    Route::post('/config', [AIAdminController::class, 'updateConfig'])
+        ->name('config.update');
+    
+    // AI Usage Logs
+    Route::get('/logs', [AIAdminController::class, 'logs'])
+        ->name('logs');
+    Route::get('/logs/{id}', [AIAdminController::class, 'logDetail'])
+        ->name('logs.detail');
+    
+    // AI Provider Management
+    Route::get('/providers', [AIAdminController::class, 'providers'])
+        ->name('providers');
+    Route::post('/providers/test', [AIAdminController::class, 'testProvider'])
+        ->name('providers.test');
+    
+    // AI Performance Monitoring
+    Route::get('/performance', [AIAdminController::class, 'performance'])
+        ->name('performance');
+    
+    // Export AI data
+    Route::get('/export/usage', [AIAdminController::class, 'exportUsage'])
+        ->name('export.usage');
+    Route::get('/export/analytics', [AIAdminController::class, 'exportAnalytics'])
+        ->name('export.analytics');
+});
 
-Route::prefix('api')->middleware('auth')->group(function () {
-    // URL validation dan preview
-    Route::post('/check-url', [IsuController::class, 'checkUrl']);
-    Route::post('/preview-content', [IsuController::class, 'previewContent']);
-    Route::post('/preview-single-url', [IsuController::class, 'previewSingleUrl']);
+// API routes for AI features (if needed for external integrations)
+Route::prefix('api/ai')->name('api.ai.')->middleware(['auth:sanctum'])->group(function () {
     
-    // AI processing
-    Route::post('/ai-analyze', [IsuController::class, 'apiAiAnalyze']);
-    Route::get('/ai-progress/{sessionId}', [IsuController::class, 'apiAiProgress']);
-    Route::post('/ai-cancel/{sessionId}', [IsuController::class, 'apiAiCancel']);
+    // AI Analysis API
+    Route::post('/analyze', [AIApiController::class, 'analyze'])
+        ->middleware('throttle:ai-analyze');
     
-    // AI content generation
-    Route::post('/ai-generate-titles', [IsuController::class, 'apiGenerateMoreTitles']);
-    Route::post('/ai-regenerate', [IsuController::class, 'apiRegenerateContent']);
+    // AI Status Check API
+    Route::get('/status/{sessionId}', [AIApiController::class, 'status'])
+        ->middleware('throttle:ai-status');
+    
+    // AI Results API
+    Route::get('/results/{sessionId}', [AIApiController::class, 'results'])
+        ->middleware('throttle:ai-results');
+    
+    // AI Usage Statistics API
+    Route::get('/usage/stats', [AIApiController::class, 'usageStats'])
+        ->middleware('role:admin,editor');
 });

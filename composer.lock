@@ -4240,16 +4240,16 @@
         },
         {
             "name": "stevebauman/purify",
-            "version": "v6.3.0",
+            "version": "v6.3.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/stevebauman/purify.git",
-                "reference": "2e5e6e1bfe072189b6056c6ad4a8c68ba57f3ba1"
+                "reference": "3acb5e77904f420ce8aad8fa1c7f394e82daa500"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/stevebauman/purify/zipball/2e5e6e1bfe072189b6056c6ad4a8c68ba57f3ba1",
-                "reference": "2e5e6e1bfe072189b6056c6ad4a8c68ba57f3ba1",
+                "url": "https://api.github.com/repos/stevebauman/purify/zipball/3acb5e77904f420ce8aad8fa1c7f394e82daa500",
+                "reference": "3acb5e77904f420ce8aad8fa1c7f394e82daa500",
                 "shasum": ""
             },
             "require": {
@@ -4300,9 +4300,9 @@
             ],
             "support": {
                 "issues": "https://github.com/stevebauman/purify/issues",
-                "source": "https://github.com/stevebauman/purify/tree/v6.3.0"
+                "source": "https://github.com/stevebauman/purify/tree/v6.3.1"
             },
-            "time": "2025-02-18T23:08:15+00:00"
+            "time": "2025-05-21T16:53:09+00:00"
         },
         {
             "name": "symfony/clock",

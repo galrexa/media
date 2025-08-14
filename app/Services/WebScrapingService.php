@@ -241,6 +241,94 @@ class WebScrapingService
         return null;
     }
 
+    public function extractMetadata(string $url): array
+    {
+        try {
+            // Quick validation
+            $validation = $this->validateUrl($url);
+            if (!$validation['accessible']) {
+                return [
+                    'success' => false,
+                    'error' => $validation['error'] ?? 'URL not accessible',
+                    'title' => null,
+                    'image' => null
+                ];
+            }
+
+            // Fetch only first part of content for metadata
+            $response = $this->client->get($url, [
+                'headers' => [
+                    'Range' => 'bytes=0-16384' // Get first 16KB for metadata
+                ]
+            ]);
+
+            $html = $response->getBody()->getContents();
+
+            // Create DOMDocument for parsing
+            $dom = new DOMDocument();
+            libxml_use_internal_errors(true);
+            $dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+            libxml_clear_errors();
+
+            $xpath = new DOMXPath($dom);
+
+            // Extract title
+            $title = $this->extractTitle($xpath) ?: 'Referensi';
+
+            // Extract image (thumbnail)
+            $image = null;
+            $imageSelectors = [
+                '//meta[@property="og:image"]/@content',
+                '//meta[@name="twitter:image"]/@content',
+                '//img[@class="thumbnail"]/@src',
+                '//img[1]/@src'
+            ];
+
+            foreach ($imageSelectors as $selector) {
+                $nodes = $xpath->query($selector);
+                if ($nodes->length > 0) {
+                    $image = trim($nodes->item(0)->nodeValue);
+                    if (filter_var($image, FILTER_VALIDATE_URL)) {
+                        break;
+                    } elseif (preg_match('/^\/[^\/]/', $image)) {
+                        // Relative URL, prepend domain
+                        $image = rtrim(parse_url($url, PHP_URL_SCHEME) . '://' . parse_url($url, PHP_URL_HOST), '/') . $image;
+                    }
+                }
+            }
+
+            return [
+                'success' => true,
+                'title' => $this->cleanText($title),
+                'image' => $image,
+                'url' => $url
+            ];
+
+        } catch (RequestException $e) {
+            Log::error('Metadata extraction failed', [
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
+            return [
+                'success' => false,
+                'error' => 'Failed to fetch metadata: ' . $e->getMessage(),
+                'title' => null,
+                'image' => null
+            ];
+        } catch (\Exception $e) {
+            Log::error('Metadata parsing failed', [
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
+            return [
+                'success' => false,
+                'error' => 'Failed to parse metadata: ' . $e->getMessage(),
+                'title' => null,
+                'image' => null
+            ];
+        }
+    }
+
     /**
      * Extract main content from article
      */

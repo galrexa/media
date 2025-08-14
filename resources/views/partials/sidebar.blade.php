@@ -136,12 +136,7 @@
                 <a class="nav-link" href="{{ route('isu.ai.create') }}">
                     <i class="fas fa-robot me-2"></i>AI Creator
                 </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('isu.ai.results', 'demo') }}">
-                    <i class="fas fa-chart-line me-2"></i>AI Results
-                </a>
-            </li>            
+            </li>          
             @endif
 
             <!-- Manajemen Dokumen -->
