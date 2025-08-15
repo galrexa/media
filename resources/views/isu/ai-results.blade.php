@@ -359,12 +359,12 @@
                                     <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-btn">
                                         <i class="fas fa-save me-2"></i>Simpan Isu
                                     </button>
-                                    <button type="button" class="btn btn-outline-secondary w-100" onclick="saveDraft()">
+                                    <!-- <button type="button" class="btn btn-outline-secondary w-100" onclick="saveDraft()">
                                         <i class="fas fa-file-alt me-2"></i>Simpan sebagai Draft
                                     </button>
                                     <button type="button" class="btn btn-outline-warning w-100" onclick="exportToManual()">
                                         <i class="fas fa-edit me-2"></i>Edit Manual
-                                    </button>
+                                    </button> -->
                                     <a href="{{ route('isu.ai.create') }}" class="btn btn-outline-danger w-100 text-center">
                                         <i class="fas fa-times me-2"></i>Batal
                                     </a>

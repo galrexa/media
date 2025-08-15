@@ -132,9 +132,11 @@
                     <span>Tambah Isu</span>
                 </a>
             </li>
+            @endif
+            @if(Auth::user()->isAdmin())
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('isu.ai.create') }}">
-                    <i class="fas fa-robot me-2"></i>AI Creator
+                    <i class="fas fa-wand-magic-sparkles me-2"></i>Pembuat AI
                 </a>
             </li>          
             @endif

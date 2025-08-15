@@ -2105,12 +2105,7 @@ class IsuController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Isu berhasil dibuat dari hasil AI!',
-                'isu_id' => $isu->id,
-                'redirect_url' => route('isu.show', $isu->id)
-            ]);
+            return redirect()->route('isu.show', $isu->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -2121,12 +2116,10 @@ class IsuController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            /* return response()->json([
+            return response()->json([
                 'success' => false,
                 'message' => 'Gagal menyimpan isu: ' . $e->getMessage()
-            ], 500); */
-            AlertHelper::success('Berhasil', "Isu berhasil {$statusMessage}!");
-            return redirect()->route('isu.show', $isu);
+            ], 500);
         }
     }
 
