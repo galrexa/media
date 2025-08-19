@@ -1920,7 +1920,7 @@ class IsuController extends Controller
     }
 
     /**
-     * Process AI Analysis (form submission)
+     * Process AI Analysis with improved error handling
      */
     public function aiAnalyze(Request $request)
     {
@@ -1967,41 +1967,194 @@ class IsuController extends Controller
                 'user_preferences' => $this->getUserPreferences()
             ];
 
-            // Start AI analysis
-            $sessionId = $this->aiAnalysisService->analyzeUrls(
-                $urls, 
-                Auth::id(), 
-                $options
-            );
+            // Start AI analysis with improved error handling
+            try {
+                $sessionId = $this->aiAnalysisService->analyzeUrls(
+                    $urls, 
+                    Auth::id(), 
+                    $options
+                );
 
-            // Redirect to results page with session ID
-            return redirect()->route('isu.ai.results', $sessionId)
-                ->with('success', 'Analisis AI berhasil dimulai! Silakan tunggu hasilnya.');
+                // Redirect to results page with session ID
+                return redirect()->route('isu.ai.results', $sessionId)
+                    ->with('success', 'Analisis AI berhasil dimulai! Silakan tunggu hasilnya.');
+                    
+            } catch (\Exception $analysisException) {
+                // Parse dan handle specific AI errors
+                $userFriendlyError = $this->parseAIError($analysisException);
                 
+                Log::error('AI analysis failed to start', [
+                    'user_id' => Auth::id(),
+                    'urls' => $urls,
+                    'error' => $analysisException->getMessage(),
+                    'parsed_error' => $userFriendlyError
+                ]);
+                
+                return back()
+                    ->withInput()
+                    ->with('error', $userFriendlyError['message'])
+                    ->with('error_details', $userFriendlyError['details'] ?? null);
+            }
+            
         } catch (\Exception $e) {
-            Log::error('AI analysis failed to start', [
+            Log::error('General AI analysis error', [
                 'user_id' => Auth::id(),
                 'urls' => $request->urls ?? [],
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             
             return back()
                 ->withInput()
-                ->with('error', 'Gagal memulai analisis AI: ' . $e->getMessage());
+                ->with('error', 'Terjadi kesalahan sistem. Silakan coba lagi dalam beberapa menit.');
         }
     }
 
     /**
-     * Get AI Analysis Status (AJAX endpoint)
+     * Parse AI service errors into user-friendly messages
+     */
+    private function parseAIError(\Exception $exception): array
+    {
+        $message = $exception->getMessage();
+        
+        // Rate limit error detection
+        if (str_contains($message, 'rate_limit_exceeded') || str_contains($message, 'Too Many Requests')) {
+            return $this->parseRateLimitError($message);
+        }
+        
+        // API connection errors
+        if (str_contains($message, 'Connection timeout') || str_contains($message, 'cURL error')) {
+            return [
+                'message' => 'Layanan AI sedang tidak tersedia. Silakan coba lagi dalam beberapa menit.',
+                'details' => [
+                    'type' => 'connection_error',
+                    'suggestion' => 'Periksa koneksi internet Anda atau coba lagi nanti.'
+                ]
+            ];
+        }
+        
+        // Authentication errors
+        if (str_contains($message, 'Unauthorized') || str_contains($message, 'Invalid API key')) {
+            return [
+                'message' => 'Konfigurasi layanan AI bermasalah. Silakan hubungi administrator.',
+                'details' => [
+                    'type' => 'auth_error',
+                    'suggestion' => 'Hubungi tim teknis untuk pemeriksaan konfigurasi API.'
+                ]
+            ];
+        }
+        
+        // Content length errors
+        if (str_contains($message, 'content too long') || str_contains($message, 'token limit')) {
+            return [
+                'message' => 'Konten terlalu panjang untuk diproses. Coba dengan URL yang lebih sedikit.',
+                'details' => [
+                    'type' => 'content_length_error',
+                    'suggestion' => 'Kurangi jumlah URL atau pilih artikel yang lebih pendek.'
+                ]
+            ];
+        }
+        
+        // Generic API errors
+        if (str_contains($message, 'Groq API failed') || str_contains($message, 'API request failed')) {
+            return [
+                'message' => 'Layanan analisis AI sedang mengalami gangguan. Silakan coba lagi nanti.',
+                'details' => [
+                    'type' => 'api_error',
+                    'suggestion' => 'Sistem akan kembali normal dalam beberapa menit.'
+                ]
+            ];
+        }
+        
+        // Undefined array key "results" - specific fix for your issue
+        if (str_contains($message, 'Undefined array key "results"')) {
+            return [
+                'message' => 'Layanan AI tidak dapat menyelesaikan analisis. Silakan coba lagi.',
+                'details' => [
+                    'type' => 'processing_error',
+                    'suggestion' => 'Tunggu beberapa menit dan coba lagi, atau gunakan mode manual.'
+                ]
+            ];
+        }
+        
+        // Default fallback
+        return [
+            'message' => 'Gagal memulai analisis AI. Silakan coba lagi atau gunakan mode manual.',
+            'details' => [
+                'type' => 'unknown_error',
+                'suggestion' => 'Jika masalah berlanjut, hubungi administrator sistem.'
+            ]
+        ];
+    }
+
+    /**
+     * Parse rate limit specific errors and extract timing information
+     */
+    private function parseRateLimitError(string $errorMessage): array
+    {
+        // Extract wait time from error message
+        $waitTime = null;
+        if (preg_match('/try again in ([\d.]+)s/', $errorMessage, $matches)) {
+            $waitTime = (float) $matches[1];
+        } elseif (preg_match('/try again in ([\d.]+) seconds/', $errorMessage, $matches)) {
+            $waitTime = (float) $matches[1];
+        }
+        
+        // Extract usage information
+        $currentUsage = null;
+        $limit = null;
+        if (preg_match('/Used (\d+)/', $errorMessage, $matches)) {
+            $currentUsage = (int) $matches[1];
+        }
+        if (preg_match('/Limit (\d+)/', $errorMessage, $matches)) {
+            $limit = (int) $matches[1];
+        }
+        
+        // Build user-friendly message
+        if ($waitTime) {
+            $waitMinutes = ceil($waitTime / 60);
+            $message = "Layanan AI sedang sibuk. Silakan coba lagi dalam {$waitMinutes} menit.";
+            
+            if ($waitTime < 60) {
+                $waitSeconds = ceil($waitTime);
+                $message = "Layanan AI sedang sibuk. Silakan coba lagi dalam {$waitSeconds} detik.";
+            }
+        } else {
+            $message = "Layanan AI mencapai batas maksimum. Silakan coba lagi dalam beberapa menit.";
+        }
+        
+        return [
+            'message' => $message,
+            'details' => [
+                'type' => 'rate_limit',
+                'wait_time' => $waitTime,
+                'current_usage' => $currentUsage,
+                'limit' => $limit,
+                'suggestion' => 'Gunakan mode manual sementara atau tunggu hingga layanan tersedia kembali.'
+            ]
+        ];
+    }
+
+    /**
+     * Get AI Analysis Status with enhanced error info
      */
     public function aiStatus($sessionId)
     {
         try {
             $status = $this->aiAnalysisService->getAnalysisStatus($sessionId);
             
+            // Check if status indicates an error
+            if (isset($status['status']) && $status['status'] === 'error') {
+                // Parse error for better user display
+                if (isset($status['error_message'])) {
+                    $parsedError = $this->parseAIError(new \Exception($status['error_message']));
+                    $status['user_friendly_error'] = $parsedError;
+                }
+            }
+            
             // Add additional status information
             $status['timestamp'] = now()->toISOString();
-            $status['user_can_edit'] = true; // User can always edit results
+            $status['user_can_edit'] = true;
             
             return response()->json($status);
             
@@ -2011,15 +2164,18 @@ class IsuController extends Controller
                 'error' => $e->getMessage()
             ]);
             
+            $parsedError = $this->parseAIError($e);
+            
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil status analisis.'
+                'message' => $parsedError['message'],
+                'user_friendly_error' => $parsedError
             ], 500);
         }
     }
 
     /**
-     * Store AI Results as Isu
+     * Enhanced AI Store method with better error handling
      */
     public function aiStore(Request $request)
     {
@@ -2061,13 +2217,13 @@ class IsuController extends Controller
             $skalaId = null;
             if (!empty($request->skala)) {
                 $skalaRef = RefSkala::where('nama', $request->skala)->first();
-                $skalaId = $skalaRef ? $skalaRef->id : null; // Use null if not found
+                $skalaId = $skalaRef ? $skalaRef->id : null;
             }
 
             $toneId = null;
             if (!empty($request->tone)) {
                 $toneRef = RefTone::where('nama', $request->tone)->first();
-                $toneId = $toneRef ? $toneRef->id : null; // Use null if not found
+                $toneId = $toneRef ? $toneRef->id : null;
             }
 
             // Create new Isu from AI results
@@ -2075,16 +2231,16 @@ class IsuController extends Controller
                 'judul' => trim($request->judul),
                 'tanggal' => $request->tanggal,
                 'isu_strategis' => $request->boolean('isu_strategis'),
-                'kategori' => $request->kategori,
                 'skala' => $skalaId,
                 'tone' => $toneId,
                 'rangkuman' => $this->cleanHtmlContent($request->rangkuman),
                 'narasi_positif' => $this->cleanHtmlContent($request->narasi_positif),
                 'narasi_negatif' => $this->cleanHtmlContent($request->narasi_negatif),
-                'user_id' => Auth::id(),
-                'status' => 'draft', // Always start as draft
-                'ai_generated' => true, // Flag to indicate AI generation
-                'ai_session_id' => $request->session_id // Reference to AI analysis
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+                'status_id' => RefStatus::getDraftId(), // Always start as draft
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
             // Add reference URLs if provided
@@ -2097,15 +2253,23 @@ class IsuController extends Controller
             }
 
             // Log the creation
-            Log::info('Isu created from AI analysis', [
-                'isu_id' => $isu->id,
-                'session_id' => $request->session_id,
-                'user_id' => Auth::id()
-            ]);
+            LogHelper::logIsuActivity(
+                $isu->id,
+                'CREATE',
+                null,
+                null,
+                json_encode($isu->toArray()),
+                $request,
+                RefStatus::getDraftId()
+            );
 
             DB::commit();
 
-            return redirect()->route('isu.show', $isu->id);
+            return response()->json([
+                'success' => true,
+                'message' => 'Isu berhasil dibuat dari hasil AI.',
+                'redirect_url' => route('isu.show', $isu->id)
+            ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -2116,9 +2280,12 @@ class IsuController extends Controller
                 'error' => $e->getMessage()
             ]);
 
+            $parsedError = $this->parseAIError($e);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyimpan isu: ' . $e->getMessage()
+                'message' => $parsedError['message'],
+                'error_details' => $parsedError['details'] ?? null
             ], 500);
         }
     }

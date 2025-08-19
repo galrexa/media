@@ -317,20 +317,20 @@ NARASI POSITIF:";
     {
         return "Anda adalah analis risiko yang membuat narasi negatif untuk media monitoring pemerintah.
 
-TUGAS: Buatlah narasi negatif berdasarkan berita berikut.
+                TUGAS: Buatlah narasi negatif berdasarkan berita berikut.
 
-KONTEN BERITA:
-{$content['full_content']}
+                KONTEN BERITA:
+                {$content['full_content']}
 
-PANDUAN NARASI NEGATIF:
-1. Panjang: 150-200 kata
-2. Fokus pada risiko, tantangan, dan kritik
-3. Soroti potensi dampak negatif atau masalah
-4. Tetap objektif dan berdasarkan fakta
-5. Hindari spekulasi berlebihan
-6. Sebutkan kekhawatiran yang wajar
+                PANDUAN NARASI NEGATIF:
+                1. Panjang: 150-200 kata
+                2. Fokus pada risiko, tantangan, dan kritik
+                3. Soroti potensi dampak negatif atau masalah
+                4. Tetap objektif dan berdasarkan fakta
+                5. Hindari spekulasi berlebihan
+                6. Sebutkan kekhawatiran yang wajar
 
-NARASI NEGATIF:";
+                NARASI NEGATIF:";
     }
 
     /**
@@ -340,17 +340,17 @@ NARASI NEGATIF:";
     {
         return "Analisis tone/sentimen berita berikut dan tentukan apakah berita ini memiliki tone POSITIF, NEGATIF, atau NETRAL.
 
-KONTEN BERITA:
-{$content['full_content']}
+                KONTEN BERITA:
+                {$content['full_content']}
 
-KRITERIA:
-- POSITIF: Berita yang menggambarkan hal-hal baik, keberhasilan, kemajuan
-- NEGATIF: Berita yang menggambarkan masalah, kegagalan, kritik
-- NETRAL: Berita yang seimbang atau hanya menyampaikan informasi faktual
+                KRITERIA:
+                - POSITIF: Berita yang menggambarkan hal-hal baik, keberhasilan, kemajuan
+                - NEGATIF: Berita yang menggambarkan masalah, kegagalan, kritik
+                - NETRAL: Berita yang seimbang atau hanya menyampaikan informasi faktual
 
-Jawab dengan SATU KATA saja: POSITIF, NEGATIF, atau NETRAL
+                Jawab dengan SATU KATA saja: POSITIF, NEGATIF, atau NETRAL
 
-TONE:";
+                TONE:";
     }
 
     /**
@@ -360,17 +360,17 @@ TONE:";
     {
         return "Analisis skala dampak isu dari berita berikut dan tentukan apakah ini termasuk isu skala RENDAH, SEDANG, atau TINGGI.
 
-KONTEN BERITA:
-{$content['full_content']}
+                KONTEN BERITA:
+                {$content['full_content']}
 
-KRITERIA SKALA:
-- TINGGI: Isu nasional, kebijakan besar, dampak luas ke masyarakat
-- SEDANG: Isu regional/sektoral, dampak terbatas tapi signifikan
-- RENDAH: Isu lokal/teknis, dampak minimal atau spesifik
+                KRITERIA SKALA:
+                - TINGGI: Isu nasional, kebijakan besar, dampak luas ke masyarakat
+                - SEDANG: Isu regional/sektoral, dampak terbatas tapi signifikan
+                - RENDAH: Isu lokal/teknis, dampak minimal atau spesifik
 
-Jawab dengan SATU KATA saja: RENDAH, SEDANG, atau TINGGI
+                Jawab dengan SATU KATA saja: RENDAH, SEDANG, atau TINGGI
 
-SKALA:";
+                SKALA:";
     }
 
     /**
@@ -870,6 +870,40 @@ JUDUL ALTERNATIF:";
                 'total_time' => $totalTime
             ]
         ];
+    }
+
+    // Di GroqAIService.php - method untuk parse rate limit info
+    private function parseRateLimitError($responseBody): array 
+    {
+        $data = json_decode($responseBody, true);
+        if (isset($data['error']['message'])) {
+            $message = $data['error']['message'];
+            // Extract "Please try again in 11.297s"
+            if (preg_match('/try again in ([\d.]+)s/', $message, $matches)) {
+                return [
+                    'wait_time' => $matches[1],
+                    'limit_type' => 'tokens per minute',
+                    'limit_value' => '12,000',
+                    'current_usage' => $this->extractUsageFromMessage($message)
+                ];
+            }
+        }
+        return null;
+    }
+
+    // Update error handling untuk memberikan pesan yang lebih informatif
+    public function generateUserFriendlyError($exception): string 
+    {
+        if (str_contains($exception->getMessage(), 'rate_limit_exceeded')) {
+            $rateLimitInfo = $this->parseRateLimitError($exception->getMessage());
+            if ($rateLimitInfo) {
+                return "Layanan AI sedang sibuk. Silakan coba lagi dalam {$rateLimitInfo['wait_time']} detik. " .
+                    "Atau gunakan mode manual untuk sementara.";
+            }
+            return "Layanan AI mencapai batas maksimum. Silakan coba lagi dalam beberapa menit.";
+        }
+        
+        return "Gagal memulai analisis AI. Silakan coba lagi atau gunakan mode manual.";
     }
 
     // ADD debug method untuk troubleshooting

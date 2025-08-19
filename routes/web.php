@@ -45,31 +45,7 @@ Route::get('/up', function () {
 
 Route::middleware(['web', 'auth', \App\Http\Middleware\AnalyticsMiddleware::class])->group(function () { 
     // Homepage/Dashboard - tracked untuk semua role
-    Route::get('/', function () {
-        if (auth()->check()) {
-            $user = auth()->user();
-            
-            // Cek apakah user masih aktif
-            if (isset($user->is_active) && !$user->is_active) {
-                auth()->logout();
-                request()->session()->invalidate();
-                request()->session()->regenerateToken();
-                return redirect()->route('login')
-                               ->with('error', 'Akun Anda telah dinonaktifkan. Silakan hubungi administrator.');
-            }
-            
-            // Redirect berdasarkan role
-            if ($user->isAdmin() || $user->isEditor()) {
-                return redirect()->route('dashboard.admin');
-            }
-            
-            // Viewer ke home controller
-            return app(HomeController::class)->index(request());
-        }
-        return redirect()->route('login');
-    })->name('home');
-
-    Route::get('/home', [HomeController::class, 'index'])->name('home.index');
+    Route::get('/', [HomeController::class, 'index'])->name('home');
 
     Route::get('/dashboard-landing', function () {
         $user = auth()->user();

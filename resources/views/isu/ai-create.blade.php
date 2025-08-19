@@ -12,23 +12,12 @@
                     <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                         <div>
                             <h2 class="text-primary mb-1 fw-bold">
-                                <i class="fas fa-robot me-2"></i>AI Isu Creator
+                                <i class="fas fa-wand-magic-sparkles me-2"></i>Pembuat Isu AI
                             </h2>
                             <p class="text-muted mb-0 small">Buat isu strategis dari URL berita menggunakan AI</p>
                         </div>
-                        <div>
-                            <span class="badge bg-primary text-white px-3 py-2 fs-6">
-                                <i class="fas fa-magic me-1"></i>AI Powered Analysis
-                            </span>
-                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Success Alert -->
-            <div class="alert alert-success mb-4">
-                <h5>✅ AI Isu Creator - Working Functions!</h5>
-                <p class="mb-0">Semua fungsi AI sekarang berfungsi penuh dengan implementasi yang sebenarnya.</p>
             </div>
 
             <div class="row g-4">
@@ -57,7 +46,6 @@
                                                 <i class="fas fa-link text-primary"></i>
                                             </span>
                                             <input type="url" name="urls[]" class="form-control url-input" 
-                                                   value="https://www.kompas.com/sulawesi-selatan/read/2025/03/21/11523488/6-jemaah-umrah-wni-men"
                                                    placeholder="https://example.com/berita-1"
                                                    oninput="validateSingleURL(this)">
                                             <button type="button" class="btn btn-outline-danger" onclick="removeURL(this)" style="display: none;">
@@ -104,7 +92,7 @@
                                         <i class="fas fa-check-circle me-1"></i>Validate URLs
                                     </button>
                                     <button type="button" onclick="submitAnalysis()" class="btn btn-primary">
-                                        <i class="fas fa-magic me-1"></i>Mulai Analisis AI
+                                        <i class="fas fa-wand-magic-sparkles me-1"></i>Mulai Analisis AI
                                     </button>
                                 </div>
                             </form>
@@ -460,81 +448,134 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const urls = getAllURLs();
         if (urls.length === 0) {
-            alert('⚠️ Masukkan minimal 1 URL terlebih dahulu');
+            Swal.fire({
+                icon: 'warning',
+                title: 'URL Kosong',
+                text: 'Masukkan minimal 1 URL terlebih dahulu',
+                confirmButtonColor: '#0d6efd'
+            });
             return;
         }
         
         console.log('URLs to validate:', urls);
         
-        // Check if Bootstrap modal is available
-        const modalElement = document.getElementById('validationModal');
-        if (typeof bootstrap === 'undefined' || !modalElement) {
-            // Fallback: Show in alert
-            let results = 'Hasil Validasi URL:\n\n';
+        // Show loading SweetAlert
+        Swal.fire({
+            title: 'Memvalidasi URLs...',
+            html: `
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    <span>Sedang memvalidasi ${urls.length} URL...</span>
+                </div>
+            `,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        // Simulate validation process (replace with actual validation if needed)
+        setTimeout(() => {
+            let validCount = 0;
+            let invalidCount = 0;
+            let validationResults = '';
+            
             urls.forEach((url, index) => {
                 const isValid = isValidURL(url);
                 const domain = getDomain(url);
-                results += `URL ${index + 1}: ${isValid ? '✅ Valid' : '❌ Invalid'}\n`;
-                results += `Domain: ${domain}\n`;
-                results += `URL: ${url}\n\n`;
+                
+                if (isValid) {
+                    validCount++;
+                } else {
+                    invalidCount++;
+                }
+                
+                const statusIcon = isValid ? '✅' : '❌';
+                const statusColor = isValid ? 'text-success' : 'text-danger';
+                const truncatedUrl = url.length > 50 ? url.substring(0, 50) + '...' : url;
+                
+                validationResults += `
+                    <div class="d-flex justify-content-between align-items-start border-bottom py-2 mb-2">
+                        <div class="flex-grow-1 text-start">
+                            <strong>URL ${index + 1}:</strong> ${statusIcon}
+                            <br>
+                            <small class="text-muted">Domain: ${domain}</small>
+                            <br>
+                            <small class="text-muted">${truncatedUrl}</small>
+                            <br>
+                            <small class="${statusColor}">
+                                ${isValid ? 'Format URL benar dan dapat diproses' : 'Format URL tidak valid atau tidak dapat diakses'}
+                            </small>
+                        </div>
+                    </div>
+                `;
             });
-            alert(results);
-            updateDebugInfo('Validation completed (fallback alert)');
-            return;
-        }
-        
-        // Show Bootstrap modal
-        const modal = new bootstrap.Modal(modalElement);
-        const results = document.getElementById('validation-results');
-        
-        if (results) {
-            results.innerHTML = `
-                <div class="text-center py-3">
-                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-                    <span>Memvalidasi URLs...</span>
-                </div>
-            `;
-        }
-        
-        modal.show();
-        
-        // Simulate validation process
-        setTimeout(() => {
-            if (results) {
-                let html = '';
-                urls.forEach((url, index) => {
-                    const isValid = isValidURL(url);
-                    const domain = getDomain(url);
-                    const statusClass = isValid ? 'success' : 'danger';
-                    const statusText = isValid ? 'Valid' : 'Invalid';
-                    
-                    html += `
-                        <div class="d-flex justify-content-between align-items-start border-bottom py-3">
-                            <div class="flex-grow-1">
-                                <strong>URL ${index + 1}:</strong>
-                                <br>
-                                <small class="text-muted">Domain: ${domain}</small>
-                                <br>
-                                <small class="text-muted">${url.length > 60 ? url.substring(0, 60) + '...' : url}</small>
-                                <br>
-                                <small class="${isValid ? 'text-success' : 'text-danger'}">
-                                    ${isValid ? 'Format URL benar dan dapat diproses' : 'Format URL tidak valid atau tidak dapat diakses'}
-                                </small>
+            
+            // Determine overall status
+            const overallStatus = invalidCount === 0 ? 'success' : validCount > 0 ? 'warning' : 'error';
+            const overallTitle = invalidCount === 0 ? 'Semua URL Valid!' : 
+                            validCount > 0 ? 'Validasi Selesai dengan Peringatan' : 'Semua URL Tidak Valid';
+            
+            // Show results in SweetAlert
+            Swal.fire({
+                icon: overallStatus,
+                title: overallTitle,
+                html: `
+                    <div class="mb-3">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="bg-success bg-opacity-10 p-2 rounded">
+                                    <strong class="text-success">${validCount}</strong>
+                                    <br>
+                                    <small class="text-success">Valid</small>
+                                </div>
                             </div>
-                            <div class="text-end">
-                                <span class="badge bg-${statusClass} fs-6">
-                                    <i class="fas fa-${isValid ? 'check' : 'times'} me-1"></i>
-                                    ${statusText}
-                                </span>
+                            <div class="col-6">
+                                <div class="bg-danger bg-opacity-10 p-2 rounded">
+                                    <strong class="text-danger">${invalidCount}</strong>
+                                    <br>
+                                    <small class="text-danger">Invalid</small>
+                                </div>
                             </div>
                         </div>
-                    `;
-                });
-                
-                results.innerHTML = html;
-            }
+                    </div>
+                    <div class="text-start" style="max-height: 300px; overflow-y: auto;">
+                        ${validationResults}
+                    </div>
+                    ${invalidCount > 0 ? 
+                        '<div class="alert alert-warning mt-3 p-2"><i class="fas fa-exclamation-triangle me-1"></i><strong>Perhatian:</strong> URL yang tidak valid akan diabaikan saat analisis.</div>' : 
+                        '<div class="alert alert-success mt-3 p-2"><i class="fas fa-check-circle me-1"></i><strong>Bagus!</strong> Semua URL siap untuk dianalisis.</div>'
+                    }
+                `,
+                width: '600px',
+                confirmButtonColor: '#0d6efd',
+                confirmButtonText: validCount > 0 ? 'Lanjut Analisis' : 'Perbaiki URL',
+                showCancelButton: true,
+                cancelButtonText: 'Tutup',
+                cancelButtonColor: '#6c757d'
+            }).then((result) => {
+                if (result.isConfirmed && validCount > 0) {
+                    // Auto-trigger analysis if user confirms and there are valid URLs
+                    Swal.fire({
+                        icon: 'question',
+                        title: 'Lanjut ke Analisis?',
+                        text: `Memulai analisis untuk ${validCount} URL yang valid?`,
+                        showCancelButton: true,
+                        confirmButtonColor: '#0d6efd',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Ya, Mulai!',
+                        cancelButtonText: 'Batalkan'
+                    }).then((confirmResult) => {
+                        if (confirmResult.isConfirmed) {
+                            submitAnalysis();
+                        }
+                    });
+                }
+            });
             
-            updateDebugInfo(`Validation completed for ${urls.length} URLs`);
+            updateDebugInfo(`Validation completed: ${validCount} valid, ${invalidCount} invalid`);
         }, 1500);
     };
 
@@ -542,69 +583,71 @@ document.addEventListener('DOMContentLoaded', function() {
     window.submitAnalysis = function() {
         console.log('🚀 Submitting analysis...');
         updateDebugInfo('Preparing submission');
-        
+
         const urls = getAllURLs();
         if (urls.length === 0) {
-            alert('⚠️ Masukkan minimal 1 URL terlebih dahulu');
+            Swal.fire({
+                icon: 'warning',
+                title: 'URL Kosong',
+                text: 'Masukkan minimal 1 URL berita untuk memulai analisis.',
+            });
             return;
         }
         
         const validURLs = urls.filter(url => isValidURL(url));
         if (validURLs.length === 0) {
-            alert('❌ Tidak ada URL yang valid untuk dianalisis');
+            Swal.fire({
+                icon: 'error',
+                title: 'URL Tidak Valid',
+                text: 'Tidak ada URL yang valid untuk dianalisis. Periksa kembali format URL Anda.',
+            });
             return;
         }
-        
-        // Get form data
+
         const form = document.getElementById('ai-analysis-form');
-        if (!form) {
-            alert('❌ Form tidak ditemukan');
-            return;
-        }
-        
         const analysisMode = form.querySelector('[name="analysis_mode"]')?.value || 'balanced';
-        
-        const confirmMessage = `🚀 Mulai Analisis AI?
+        const estimatedTime = getEstimatedTime(analysisMode, validURLs.length);
+        const urlListHtml = validURLs.slice(0, 5).map(url => `<li><small>${url.length > 50 ? url.substring(0, 50) + '...' : url}</small></li>`).join('');
 
-📊 Detail Analisis:
-• URLs: ${validURLs.length} valid dari ${urls.length} total
-• Mode: ${analysisMode}
+        Swal.fire({
+            title: 'Konfirmasi Analisis AI',
+            html: `
+                <div class="text-start">
+                    <p>Apakah Anda yakin ingin memulai analisis ini?</p>
+                    <strong>Detail Analisis:</strong>
+                    <ul>
+                        <li><strong>Jumlah URL:</strong> ${validURLs.length}</li>
+                        <li><strong>Mode Analisis:</strong> ${analysisMode.charAt(0).toUpperCase() + analysisMode.slice(1)}</li>
+                        <li><strong>Estimasi Waktu:</strong> ${estimatedTime}</li>
+                    </ul>
+                    <p class="mb-0"><strong>URLs:</strong></p>
+                    <ul class="list-unstyled small ps-3">
+                        ${urlListHtml}
+                    </ul>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Mulai Analisis!',
+            cancelButtonText: 'Batalkan'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                console.log('Form submission confirmed by SweetAlert');
+                updateDebugInfo('Form submission confirmed by SweetAlert');
 
-🔍 URLs yang akan dianalisis:
-${validURLs.slice(0, 3).join('\n')}${validURLs.length > 3 ? '\n...' : ''}
-
-⏱️ Estimasi waktu: ${getEstimatedTime(analysisMode, validURLs.length)}
-
-Lanjutkan analisis?`;
-        
-        if (confirm(confirmMessage)) {
-            console.log('Form submission confirmed');
-            console.log('URLs to analyze:', validURLs);
-            console.log('Analysis mode:', analysisMode);
-            
-            updateDebugInfo('Form submission confirmed');
-            
-            // Disable submit button and show loading
-            const submitBtn = document.querySelector('[onclick="submitAnalysis()"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Memulai Analisis...';
-            }
-            
-            // Submit the form
-            try {
-                form.submit();
-            } catch (error) {
-                console.error('Form submission error:', error);
-                alert('❌ Gagal submit form: ' + error.message);
+                const submitBtn = document.querySelector('[onclick="submitAnalysis()"]');
                 if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="fas fa-magic me-1"></i>Mulai Analisis AI';
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Memulai Analisis...';
                 }
+                
+                form.submit();
+            } else {
+                updateDebugInfo('Form submission cancelled by SweetAlert');
             }
-        } else {
-            updateDebugInfo('Form submission cancelled');
-        }
+        });
     };
 
     // ============================
