@@ -2265,11 +2265,8 @@ class IsuController extends Controller
 
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Isu berhasil dibuat dari hasil AI.',
-                'redirect_url' => route('isu.show', $isu->id)
-            ]);
+            return redirect()->route('isu.show', $isu->id)
+                ->with('success', 'Isu berhasil dibuat dari hasil AI.');
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -29,7 +29,7 @@ return [
     
     'groq_api_key' => env('AI_GROQ_API_KEY'),
     'groq_base_url' => env('AI_GROQ_BASE_URL', 'https://api.groq.com/openai/v1'), // Sesuai curl docs
-    'groq_model' => env('AI_GROQ_MODEL', 'llama-3.1-8b-instant'), // Model dari curl docs
+    'groq_model' => env('AI_GROQ_MODEL', 'gemma2-9b-it'), // Model dari curl docs
     
     /*
     |--------------------------------------------------------------------------
@@ -76,7 +76,7 @@ return [
                 'cost_per_1m_input' => 0.59,
                 'cost_per_1m_output' => 0.79
             ],
-            'llama-3.1-8b-instant' => [
+            'gemma2-9b-it' => [
                 'name' => 'Llama 3.1 8B Instant',
                 'description' => 'Fast and efficient model',
                 'context_length' => 8192,
@@ -121,13 +121,13 @@ return [
             'description' => 'Cepat tapi akurasi standar'
         ],
         'balanced' => [
-            'model' => 'llama-3.1-8b-instant',
+            'model' => 'gemma2-9b-it',
             'temperature' => 0.4,
             'max_tokens' => 1500,
             'description' => 'Seimbang antara kecepatan dan akurasi'
         ],
         'accurate' => [
-            'model' => 'llama-3.1-8b-instant',
+            'model' => 'gemma2-9b-it',
             'temperature' => 0.2,
             'max_tokens' => 2000,
             'description' => 'Akurasi tinggi tapi lebih lambat'
