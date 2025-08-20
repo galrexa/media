@@ -29,7 +29,7 @@ return new class extends Migration
             $table->integer('processing_time')->nullable(); // in seconds
             $table->text('error_message')->nullable();
             $table->string('ai_provider')->default('groq'); // groq, openai, claude, etc
-            $table->string('ai_model')->nullable(); // llama-3.1-8b-instant, etc
+            $table->string('ai_model')->nullable(); // gemma2-9b-it, etc
             $table->timestamps();
             
             // Indexes
@@ -94,7 +94,7 @@ return new class extends Migration
             ],
             [
                 'key' => 'default_model',
-                'value' => 'llama-3.1-8b-instant',
+                'value' => 'gemma2-9b-it',
                 'category' => 'model',
                 'description' => 'Default Llama model for analysis',
                 'created_at' => now(),
