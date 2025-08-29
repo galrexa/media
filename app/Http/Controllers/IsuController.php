@@ -30,6 +30,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Cache;
 use Stevebauman\Purify\Facades\Purify;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
 
 class IsuController extends Controller
@@ -2393,4 +2394,346 @@ class IsuController extends Controller
             ]);
         }
     }
+    
+    /**
+     * Export isu yang dipublikasikan per hari ke PDF
+     */
+    public function exportDailyPdf(Request $request)
+    {
+        $validated = $request->validate([
+            'tanggal' => 'required|date|before_or_equal:today',
+            'format' => 'nullable|in:detail,ringkas'
+        ]);
+
+        $tanggal = $validated['tanggal'];
+        $format = $validated['format'] ?? 'detail';
+
+        try {
+            // Ambil isu yang dipublikasikan
+            $isus = Isu::with(['referensi', 'refSkala', 'refTone', 'kategoris', 'status', 'creator'])
+                ->whereDate('tanggal', $tanggal)
+                ->where('status_id', RefStatus::getDipublikasiId())
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            if ($isus->isEmpty()) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'Tidak ada isu yang dipublikasikan pada tanggal ' . date('d F Y', strtotime($tanggal)));
+            }
+
+            // Handle logo untuk PDF
+            $logoPath = public_path('logo.png');
+            $logoBase64 = null;
+            
+            if (file_exists($logoPath)) {
+                $logoData = file_get_contents($logoPath);
+                $logoBase64 = base64_encode($logoData);
+            }
+
+            // Generate PDF dengan data logo
+            $pdf = PDF::loadView('isu.export-daily-pdf', [
+                'isus' => $isus,
+                'tanggal' => $tanggal,
+                'format' => $format,
+                'exported_at' => now(),
+                'exported_by' => auth()->user(),
+                'logo_base64' => $logoBase64  // Pass logo ke template
+            ])
+            ->setPaper('A4', 'portrait')
+            ->setOptions([
+                'defaultFont' => 'DejaVu Sans',
+                'isRemoteEnabled' => false,
+                'isHtml5ParserEnabled' => true,
+                'chroot' => public_path(),
+                'logOutputFile' => storage_path('logs/dompdf.log'),
+                'isPhpEnabled' => false
+            ]);
+
+            $filename = 'laporan-isu-harian-' . date('Y-m-d', strtotime($tanggal)) . '-' . date('His') . '.pdf';
+
+            // Log successful export
+            \Log::info('PDF Export Success', [
+                'user_id' => auth()->id(),
+                'export_date' => $tanggal,
+                'isu_count' => $isus->count(),
+                'filename' => $filename,
+                'has_logo' => !is_null($logoBase64)
+            ]);
+
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            \Log::error('PDF Export Error', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'export_date' => $tanggal
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Terjadi kesalahan saat membuat PDF: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show export form for daily PDF
+     *
+     * @return \Illuminate\View\View
+     */
+    public function showExportForm()
+    {
+        // Ambil tanggal-tanggal yang memiliki isu dipublikasikan
+        $availableDates = Isu::where('status_id', RefStatus::getDipublikasiId())
+            ->selectRaw('DATE(tanggal) as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->orderBy('date', 'desc')
+            ->limit(30) // 30 hari terakhir
+            ->get();
+
+        \Log::info('Available dates for export:', $availableDates->toArray());
+        return view('isu.export-form', compact('availableDates'));
+    }
+
+    /**
+     * AJAX endpoint untuk preview count isu
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getPreviewCount(Request $request)
+    {
+        $request->validate([
+            'tanggal' => 'required|date'
+        ]);
+
+        $tanggal = $request->tanggal;
+        
+        // Hitung isu yang dipublikasikan pada tanggal tersebut
+        $count = Isu::whereDate('tanggal', $tanggal)
+            ->where('status_id', RefStatus::getDipublikasiId())
+            ->count();
+        
+        // Ambil detail isu untuk preview
+        $isus = Isu::with(['refTone', 'refSkala'])
+            ->whereDate('tanggal', $tanggal)
+            ->where('status_id', RefStatus::getDipublikasiId())
+            ->select('id', 'judul', 'isu_strategis', 'tone', 'skala')
+            ->get();
+        
+        $summary = [
+            'total' => $count,
+            'strategis' => $isus->where('isu_strategis', true)->count(),
+            'biasa' => $isus->where('isu_strategis', false)->count(),
+            'tone_breakdown' => [
+                'positif' => $isus->filter(function($isu) {
+                    return $isu->refTone && strtolower($isu->refTone->nama) == 'positif';
+                })->count(),
+                'negatif' => $isus->filter(function($isu) {
+                    return $isu->refTone && strtolower($isu->refTone->nama) == 'negatif';
+                })->count(),
+                'netral' => $isus->filter(function($isu) {
+                    return !$isu->refTone || strtolower($isu->refTone->nama) == 'netral';
+                })->count(),
+            ]
+        ];
+
+        return response()->json([
+            'success' => true,
+            'count' => $count,
+            'summary' => $summary,
+            'message' => $count > 0 ? 
+                "Ditemukan {$count} isu yang dipublikasikan pada tanggal " . date('d F Y', strtotime($tanggal)) :
+                "Tidak ada isu yang dipublikasikan pada tanggal " . date('d F Y', strtotime($tanggal))
+        ]);
+    }
+
+    /**
+     * Get count of published issues for a specific date (AJAX)
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getExportPreview(Request $request)
+    {
+        try {
+            $request->validate([
+                'tanggal' => 'required|date'
+            ]);
+
+            $tanggal = $request->tanggal;
+
+            \Log::info('Preview request for date: ' . $tanggal);
+            
+            // Query isu yang dipublikasikan
+            $isusQuery = Isu::with(['refTone', 'refSkala', 'kategoris'])
+                ->whereDate('tanggal', $tanggal)
+                ->where('status_id', RefStatus::getDipublikasiId());
+            
+            $count = $isusQuery->count();
+            
+            \Log::info('Found count: ' . $count . ' for date: ' . $tanggal);
+            
+            if ($count > 0) {
+                $isus = $isusQuery->get();
+                
+                // Hitung breakdown
+                $strategis = $isus->where('isu_strategis', true)->count();
+                $biasa = $isus->where('isu_strategis', false)->count();
+                
+                $toneBreakdown = [
+                    'positif' => $isus->filter(function($isu) {
+                        return $isu->refTone && strtolower($isu->refTone->nama) === 'positif';
+                    })->count(),
+                    'negatif' => $isus->filter(function($isu) {
+                        return $isu->refTone && strtolower($isu->refTone->nama) === 'negatif';
+                    })->count(),
+                    'netral' => $isus->filter(function($isu) {
+                        return !$isu->refTone || strtolower($isu->refTone->nama) === 'netral';
+                    })->count(),
+                ];
+
+                $skalaBreakdown = [
+                    'nasional' => $isus->filter(function($isu) {
+                        return $isu->refSkala && strtolower($isu->refSkala->nama) === 'nasional';
+                    })->count(),
+                    'regional' => $isus->filter(function($isu) {
+                        return $isu->refSkala && strtolower($isu->refSkala->nama) === 'regional';
+                    })->count(),
+                    'lokal' => $isus->filter(function($isu) {
+                        return !$isu->refSkala || strtolower($isu->refSkala->nama) === 'lokal';
+                    })->count(),
+                ];
+
+                return response()->json([
+                    'success' => true,
+                    'count' => $count,
+                    'breakdown' => [
+                        'strategis' => $strategis,
+                        'biasa' => $biasa,
+                        'tone' => $toneBreakdown,
+                        'skala' => $skalaBreakdown
+                    ],
+                    'message' => "Siap untuk diekspor: {$count} isu pada " . date('d F Y', strtotime($tanggal)),
+                    'formatted_date' => date('d F Y', strtotime($tanggal))
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'count' => 0,
+                    'message' => 'Tidak ada isu yang dipublikasikan pada tanggal ' . date('d F Y', strtotime($tanggal)),
+                    'formatted_date' => date('d F Y', strtotime($tanggal))
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Error in export preview: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'count' => 0,
+                'message' => 'Terjadi kesalahan saat memuat data. Silakan coba lagi.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Debug method untuk testing export functionality
+     * Hapus method ini setelah fitur berfungsi normal
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function debugExport()
+    {
+        try {
+            $debugInfo = [
+                'total_isu' => Isu::count(),
+                'published_isu' => Isu::where('status_id', RefStatus::getDipublikasiId())->count(),
+                'dipublikasi_status_id' => RefStatus::getDipublikasiId(),
+                'all_statuses' => RefStatus::all()->pluck('nama', 'id')->toArray(),
+                'sample_isu' => Isu::with(['status', 'refTone', 'refSkala'])
+                    ->where('status_id', RefStatus::getDipublikasiId())
+                    ->first(),
+                'available_dates_raw' => Isu::where('status_id', RefStatus::getDipublikasiId())
+                    ->selectRaw('DATE(tanggal) as date, COUNT(*) as count, MIN(tanggal) as first_time, MAX(tanggal) as last_time')
+                    ->groupBy('date')
+                    ->orderBy('date', 'desc')
+                    ->limit(10)
+                    ->get(),
+                'recent_isu_dates' => Isu::orderBy('tanggal', 'desc')
+                    ->limit(10)
+                    ->pluck('tanggal', 'id'),
+                'current_user' => [
+                    'id' => auth()->id(),
+                    'name' => auth()->user()->name,
+                    'roles' => auth()->user()->roles->pluck('name')
+                ]
+            ];
+
+            return response()->json($debugInfo, 200, [], JSON_PRETTY_PRINT);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
+     * Test route untuk simulasi data (development only)
+     */
+    public function createTestData()
+    {
+        if (!app()->isLocal()) {
+            abort(403, 'Only available in local environment');
+        }
+
+        try {
+            // Buat beberapa isu test dengan status dipublikasikan
+            $testDates = [
+                now()->format('Y-m-d'),
+                now()->subDay()->format('Y-m-d'),
+                now()->subDays(2)->format('Y-m-d'),
+            ];
+
+            foreach ($testDates as $date) {
+                $isu = Isu::create([
+                    'judul' => 'Test Isu untuk Export - ' . $date,
+                    'tanggal' => $date . ' 10:00:00',
+                    'isu_strategis' => true,
+                    'skala' => 1, // Sesuaikan dengan ID skala yang ada
+                    'tone' => 1,  // Sesuaikan dengan ID tone yang ada
+                    'status_id' => RefStatus::getDipublikasiId(),
+                    'rangkuman' => '<p>Ini adalah rangkuman test untuk isu tanggal ' . $date . '</p>',
+                    'narasi_positif' => '<p>Narasi positif untuk testing export PDF.</p>',
+                    'narasi_negatif' => '<p>Narasi negatif untuk testing export PDF.</p>',
+                    'created_by' => auth()->id(),
+                    'updated_by' => auth()->id(),
+                ]);
+
+                // Tambahkan referensi test
+                $isu->referensi()->create([
+                    'judul' => 'Berita Test - ' . $date,
+                    'url' => 'https://example.com/berita-' . $date,
+                    'description' => 'Deskripsi berita test'
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test data created successfully',
+                'created_dates' => $testDates
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

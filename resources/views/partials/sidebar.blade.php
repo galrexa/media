@@ -126,6 +126,7 @@
                 </div>
             </li>
 
+
             @if(Auth::user()->isAdmin() || Auth::user()->isEditor())
             <li class="nav-item submenu">
                 <a class="nav-link {{ request()->routeIs('isu.create') ? 'active' : '' }}" href="{{ route('isu.create') }}">
@@ -134,11 +135,21 @@
             </li>
             @endif
             @if(Auth::user()->isAdmin())
-            <li class="nav-item">
+            <li class="nav-item submenu">
                 <a class="nav-link" href="{{ route('isu.ai.create') }}">
                     <i class="fas fa-wand-magic-sparkles me-2"></i>Pembuat AI
                 </a>
             </li>          
+            @endif
+
+            @if(auth()->user()->isAdmin() || auth()->user()->isEditor() || auth()->user()->isVerifikator1() || auth()->user()->isVerifikator2())
+            <li class="nav-item submenu">
+                <a class="nav-link {{ request()->routeIs('isu.export.*') ? 'active' : '' }}" 
+                href="{{ route('isu.export.daily.form') }}">
+                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                    Export Laporan PDF
+                </a>
+            </li>
             @endif
 
             <!-- Manajemen Dokumen -->

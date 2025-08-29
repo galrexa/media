@@ -1,0 +1,326 @@
+{{-- resources/views/isu/export-form.blade.php --}}
+@extends('layouts.admin')
+
+@section('title', 'Export Laporan Isu Harian PDF')
+
+@section('content')
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                        Export Laporan Isu Harian ke PDF
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    {{-- Alert Info --}}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Info:</strong> Export ini akan menghasilkan dokumen PDF berisi semua isu yang telah dipublikasikan pada tanggal yang dipilih, lengkap dengan konten detail.
+                    </div>
+
+                    {{-- Form Export --}}
+                    <form action="{{ route('isu.export.daily.pdf') }}" method="POST" id="exportForm">
+                        @csrf
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tanggal" class="form-label">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Pilih Tanggal
+                                    </label>
+                                    <input type="date" 
+                                           class="form-control @error('tanggal') is-invalid @enderror" 
+                                           id="tanggal" 
+                                           name="tanggal" 
+                                           value="{{ old('tanggal', date('Y-m-d')) }}"
+                                           max="{{ date('Y-m-d') }}"
+                                           required>
+                                    @error('tanggal')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Pilih tanggal untuk melihat isu yang dipublikasikan</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="format" class="form-label">
+                                        <i class="fas fa-list me-1"></i>
+                                        Format Export
+                                    </label>
+                                    <select class="form-select" id="format" name="format">
+                                        <option value="detail" selected>Detail Lengkap</option>
+                                        <option value="ringkas">Ringkasan</option>
+                                    </select>
+                                    <small class="text-muted">Detail lengkap mencakup semua konten isu</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Preview Count --}}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div id="preview-count" class="alert alert-secondary" style="display: none;">
+                                    <i class="fas fa-eye me-2"></i>
+                                    <span id="count-text">Memuat...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Action Buttons --}}
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ route('isu.index') }}" class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-1"></i>
+                                        Kembali
+                                    </a>
+                                    
+                                    <div>
+                                        <button type="button" class="btn btn-outline-primary me-2" id="previewBtn">
+                                            <i class="fas fa-search me-1"></i>
+                                            Preview
+                                        </button>
+                                        <button type="submit" class="btn btn-danger" id="exportBtn" disabled>
+                                            <i class="fas fa-file-pdf me-1"></i>
+                                            Export PDF
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {{-- Available Dates Card --}}
+            @if($availableDates && $availableDates->count() > 0)
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Tanggal Tersedia ({{ $availableDates->count() }} hari)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @foreach($availableDates as $date)
+                        <div class="col-md-3 col-sm-4 col-6 mb-2">
+                            <button type="button" 
+                                    class="btn btn-outline-secondary btn-sm w-100 date-quick-select"
+                                    data-date="{{ $date->date }}"
+                                    title="Klik untuk pilih tanggal {{ date('d F Y', strtotime($date->date)) }}">
+                                <strong>{{ date('d/m/Y', strtotime($date->date)) }}</strong>
+                                <small class="text-muted d-block">({{ $date->count }} isu)</small>
+                            </button>
+                        </div>
+                        @endforeach
+                    </div>
+                    
+                    {{-- Debug Info --}}
+                    @if(config('app.debug'))
+                    <div class="mt-3 p-2 bg-light rounded">
+                        <small class="text-muted">
+                            <strong>Debug:</strong> Ditemukan {{ $availableDates->count() }} tanggal dengan isu dipublikasikan
+                        </small>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @else
+            <div class="card mt-4">
+                <div class="card-body text-center">
+                    <i class="fas fa-calendar-times text-muted" style="font-size: 3rem;"></i>
+                    <h6 class="text-muted mt-2">Belum Ada Tanggal Tersedia</h6>
+                    <p class="text-muted">Belum ada isu yang dipublikasikan dalam 30 hari terakhir.</p>
+                    
+                    {{-- Debug untuk development --}}
+                    @if(config('app.debug'))
+                    <div class="alert alert-info mt-3">
+                        <strong>Debug Info:</strong><br>
+                        - Total isu in database: {{ \App\Models\Isu::count() }}<br>
+                        - Published isu: {{ \App\Models\Isu::where('status_id', \App\Models\RefStatus::getDipublikasiId())->count() }}<br>
+                        - Status ID untuk "Dipublikasikan": {{ \App\Models\RefStatus::getDipublikasiId() }}
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tanggalInput = document.getElementById('tanggal');
+    const previewBtn = document.getElementById('previewBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const previewCount = document.getElementById('preview-count');
+    const countText = document.getElementById('count-text');
+
+    // Quick date selection
+    document.querySelectorAll('.date-quick-select').forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            document.querySelectorAll('.date-quick-select').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-outline-secondary');
+            });
+            
+            // Add active class to clicked button
+            this.classList.remove('btn-outline-secondary');
+            this.classList.add('btn-primary');
+            
+            // Set date and check
+            const selectedDate = this.dataset.date;
+            tanggalInput.value = selectedDate;
+            checkAvailableIsu();
+        });
+    });
+
+    // Preview functionality
+    previewBtn.addEventListener('click', function() {
+        checkAvailableIsu();
+    });
+
+    // Check isu count for selected date
+    function checkAvailableIsu() {
+        const selectedDate = tanggalInput.value;
+        if (!selectedDate) {
+            previewCount.style.display = 'none';
+            exportBtn.disabled = true;
+            return;
+        }
+
+        previewCount.style.display = 'block';
+        countText.textContent = 'Memuat...';
+        previewCount.className = 'alert alert-secondary';
+        exportBtn.disabled = true;
+        previewBtn.disabled = true;
+
+        // API call untuk mendapatkan count
+        fetch(`{{ route('isu.export.preview.count') }}?tanggal=${selectedDate}`, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            previewBtn.disabled = false;
+            document.getElementById('previewBtnText').textContent = 'Preview';
+            
+            if (data.success && data.count > 0) {
+                const breakdown = data.breakdown;
+                countText.innerHTML = `
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        <strong>${data.count} isu</strong> siap diekspor pada ${data.formatted_date}
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <small class="text-muted d-block">Jenis Isu</small>
+                            <span class="badge bg-primary">${breakdown.strategis} Strategis</span>
+                            <span class="badge bg-secondary">${breakdown.biasa} Biasa</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Tone</small>
+                            <span class="badge bg-success">${breakdown.tone.positif} Positif</span>
+                            <span class="badge bg-danger">${breakdown.tone.negatif} Negatif</span>
+                            <span class="badge bg-warning">${breakdown.tone.netral} Netral</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-muted d-block">Skala</small>
+                            <span class="badge bg-dark">${breakdown.skala.nasional} Nasional</span>
+                            <span class="badge bg-info">${breakdown.skala.regional} Regional</span>
+                            <span class="badge bg-light text-dark">${breakdown.skala.lokal} Lokal</span>
+                        </div>
+                    </div>
+                `;
+                previewCount.className = 'alert alert-success';
+                exportBtn.disabled = false;
+            } else {
+                countText.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-exclamation-circle text-warning me-2"></i>
+                        ${data.message}
+                    </div>
+                `;
+                previewCount.className = 'alert alert-warning';
+                exportBtn.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            previewBtn.disabled = false;
+            document.getElementById('previewBtnText').textContent = 'Preview';
+            countText.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    Gagal memuat data preview. Silakan coba lagi.
+                    <br><small class="text-muted">Error: ${error.message}</small>
+                </div>
+            `;
+            previewCount.className = 'alert alert-danger';
+            exportBtn.disabled = true;
+        });
+    }
+
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long', 
+            year: 'numeric'
+        });
+    }
+
+    // Auto-check on page load if date is set
+    if (tanggalInput.value) {
+        checkAvailableIsu();
+    }
+
+    // Auto-check when date changes
+    tanggalInput.addEventListener('change', checkAvailableIsu);
+
+    // Form submit handling
+    document.getElementById('exportForm').addEventListener('submit', function(e) {
+        const exportBtnText = document.getElementById('exportBtnText');
+        const exportBtn = document.getElementById('exportBtn');
+        
+        // Show loading state
+        exportBtnText.textContent = 'Membuat PDF...';
+        exportBtn.disabled = true;
+        
+        // Note: Form akan submit normal, loading state akan reset setelah download
+    });
+
+    // Loading state untuk preview button
+    previewBtn.addEventListener('click', function() {
+        const previewBtnText = document.getElementById('previewBtnText');
+        const originalText = previewBtnText.textContent;
+        
+        previewBtnText.textContent = 'Memuat...';
+        previewBtn.disabled = true;
+        
+        setTimeout(() => {
+            checkAvailableIsu();
+        }, 100);
+    });
+});
+</script>
+@endpush
