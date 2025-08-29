@@ -32,7 +32,38 @@
                         </div>
                         <div class="card-body p-3">
                             <form id="ai-analysis-form" method="POST" action="{{ route('isu.ai.analyze') }}">
-                                @csrf
+                                @csrf                                
+                                <!-- TAMBAHKAN BAGIAN INI - Provider Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-cogs me-1"></i>AI Provider
+                                    </label>
+                                    <div class="row g-3" id="providerSelection">
+                                        <!-- Providers will be loaded here -->
+                                    </div>
+                                </div>
+
+                                <!-- TAMBAHKAN BAGIAN INI - Model Selection -->
+                                <div class="mb-4" id="modelSelection" style="display: none;">
+                                    <label class="form-label fw-bold">
+                                        <i class="fas fa-microchip me-1"></i>Model Selection
+                                    </label>
+                                    <select class="form-select" id="modelSelect" name="ai_model">
+                                        <option value="">Select Model (Optional)</option>
+                                    </select>
+                                    <div class="form-text">Leave empty to use default model</div>
+                                </div>
+
+                                <!-- TAMBAHKAN BAGIAN INI - Connection Test -->
+                                <div class="mb-4" id="connectionTest" style="display: none;">
+                                    <button type="button" class="btn btn-outline-info btn-sm" id="testConnectionBtn">
+                                        <i class="fas fa-wifi me-1"></i>Test Connection
+                                    </button>
+                                    <div id="connectionResult" class="mt-2"></div>
+                                </div>
+
+                                <!-- TAMBAHKAN INPUT HIDDEN UNTUK PROVIDER -->
+                                <input type="hidden" name="provider" id="selectedProvider" value="">
                                 
                                 <!-- URL Input Section -->
                                 <div class="mb-4">
@@ -84,6 +115,13 @@
                                             <option value="accurate">Accurate (3-4 menit)</option>
                                         </select>
                                     </div>
+                                    <div class="col-md-6" id="providerInfo">
+                                        <label class="form-label fw-bold">Provider Info:</label>
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-arrow-left me-1"></i>
+                                            Select a provider to see details
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Action Buttons -->
@@ -91,11 +129,20 @@
                                     <button type="button" onclick="validateURLs()" class="btn btn-outline-warning">
                                         <i class="fas fa-check-circle me-1"></i>Validate URLs
                                     </button>
-                                    <button type="button" onclick="submitAnalysis()" class="btn btn-primary">
+                                    <button type="button" onclick="submitAnalysis()" class="btn btn-primary" id="analyzeBtn" disabled>
                                         <i class="fas fa-wand-magic-sparkles me-1"></i>Mulai Analisis AI
                                     </button>
                                 </div>
                             </form>
+                            <div id="analysisProgress" style="display: none;" class="mt-4">
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                        role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div class="text-center">
+                                    <small class="text-muted" id="progressText">Initializing...</small>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -193,12 +240,34 @@
         </div>
     </div>
 </div>
+<!-- Results Modal -->
+<div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-chart-line me-2"></i>AI Analysis Results
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="analysisResults">
+                <!-- Results will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="saveResultsBtn">
+                    <i class="fas fa-save me-1"></i>Save Results
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- SCRIPT INLINE AGAR PASTI BERJALAN -->
 <script type="text/javascript">
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Loading AI Isu Creator with working functions...');
+    console.log('🚀 Loading AI Isu Creator with Provider Support...');
     
     // ============================
     // GLOBAL VARIABLES
@@ -206,9 +275,524 @@ document.addEventListener('DOMContentLoaded', function() {
     let urlCounter = 1;
     const maxUrls = 5;
     let debugMode = true;
+    
+    // Provider management variables
+    let selectedProvider = null;
+    let selectedModel = null;
+    let sessionId = null;
+    let providers = {};
 
     // ============================
-    // HELPER FUNCTIONS (Define first)
+    // PROVIDER FUNCTIONS
+    // ============================
+    
+    async function initializeProviders() {
+        try {
+            console.log('🔧 Initializing AI providers...');
+            
+            // Static providers configuration
+            providers = {
+                'groq': {
+                    name: 'Groq',
+                    description: 'Cloud-based AI dengan kecepatan tinggi',
+                    icon: 'fas fa-bolt',
+                    is_available: true,
+                    models: {
+                        'gemma2-9b-it': 'Gemma2 9B (Recommended)',
+                        'llama-3.3-70b-versatile': 'Llama 3.3 70B (Powerful)'
+                    }
+                },
+                'ollama': {
+                    name: 'Ollama', 
+                    description: 'Local AI models untuk privacy dan kontrol penuh',
+                    icon: 'fas fa-server',
+                    is_available: false, // Will be checked
+                    models: {
+                        'llama3.2': 'Llama 3.2 (Recommended)',
+                        'gemma2': 'Gemma2 (Google)'
+                    }
+                }
+            };
+            
+            await checkOllamaAvailability();
+            renderProviders();
+            
+            // Auto-select Groq if available
+            if (providers['groq'].is_available) {
+                selectProvider('groq');
+            }
+            
+            console.log('✅ Providers initialized successfully');
+            
+        } catch (error) {
+            console.error('❌ Failed to initialize providers:', error);
+        }
+    }
+
+    async function checkOllamaAvailability() {
+        try {
+            const response = await fetch('/api/ai/health');
+            const data = await response.json();
+            if (data.providers && data.providers.ollama) {
+                providers.ollama.is_available = data.providers.ollama.status === 'available';
+            }
+            console.log('Ollama availability:', providers.ollama.is_available);
+        } catch (error) {
+            console.log('Ollama check failed (expected if not installed):', error.message);
+            providers.ollama.is_available = false;
+        }
+    }
+
+    function renderProviders() {
+        const container = document.getElementById('providerSelection');
+        if (!container) {
+            console.warn('Provider selection container not found');
+            return;
+        }
+        
+        container.innerHTML = '';
+
+        Object.entries(providers).forEach(([key, provider]) => {
+            const card = document.createElement('div');
+            card.className = 'col-md-6';
+            card.innerHTML = `
+                <div class="provider-card p-3 position-relative" data-provider="${key}">
+                    <div class="provider-status">
+                        <i class="fas fa-circle ${provider.is_available ? 'status-available' : 'status-unavailable'}"></i>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="${provider.icon} fa-2x text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-0">${provider.name}</h6>
+                            <small class="text-muted">${provider.is_available ? 'Available' : 'Unavailable'}</small>
+                        </div>
+                    </div>
+                    <p class="mb-0 small">${provider.description}</p>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        // Add click listeners for provider selection
+        document.querySelectorAll('.provider-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const provider = card.dataset.provider;
+                if (providers[provider].is_available) {
+                    selectProvider(provider);
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Provider Tidak Tersedia',
+                        text: `${providers[provider].name} sedang tidak tersedia saat ini.`
+                    });
+                }
+            });
+        });
+    }
+
+    function selectProvider(providerKey) {
+        console.log(`🎯 Selecting provider: ${providerKey}`);
+        
+        // Remove previous selection
+        document.querySelectorAll('.provider-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+
+        // Select new provider
+        const providerCard = document.querySelector(`[data-provider="${providerKey}"]`);
+        if (providerCard) {
+            providerCard.classList.add('selected');
+            selectedProvider = providerKey;
+            
+            // Update hidden input
+            const hiddenInput = document.getElementById('selectedProvider');
+            if (hiddenInput) {
+                hiddenInput.value = providerKey;
+            }
+            
+            showModelSelection();
+            showConnectionTest();
+            showProviderInfo();
+            validateAnalysisButton();
+            
+            updateDebugInfo(`Provider ${providerKey} selected`);
+        }
+    }
+
+    function showModelSelection() {
+        const provider = providers[selectedProvider];
+        const modelSelect = document.getElementById('modelSelect');
+        const modelSelection = document.getElementById('modelSelection');
+        
+        if (!modelSelect || !modelSelection) return;
+        
+        modelSelect.innerHTML = '<option value="">Select Model (Optional)</option>';
+        
+        if (provider.models) {
+            Object.entries(provider.models).forEach(([key, name]) => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = name;
+                modelSelect.appendChild(option);
+            });
+        }
+        
+        modelSelection.style.display = 'block';
+        
+        // Add change listener for model selection
+        modelSelect.removeEventListener('change', handleModelChange);
+        modelSelect.addEventListener('change', handleModelChange);
+    }
+
+    function handleModelChange(e) {
+        selectedModel = e.target.value;
+        updateDebugInfo(`Model selected: ${selectedModel || 'default'}`);
+    }
+
+    function showConnectionTest() {
+        const connectionTest = document.getElementById('connectionTest');
+        if (!connectionTest) return;
+        
+        connectionTest.style.display = 'block';
+        
+        const testBtn = document.getElementById('testConnectionBtn');
+        if (testBtn) {
+            // Remove existing listeners
+            testBtn.replaceWith(testBtn.cloneNode(true));
+            const newTestBtn = document.getElementById('testConnectionBtn');
+            
+            newTestBtn.addEventListener('click', async () => {
+                await testProviderConnection();
+            });
+        }
+    }
+
+    async function testProviderConnection() {
+        const btn = document.getElementById('testConnectionBtn');
+        const resultDiv = document.getElementById('connectionResult');
+        
+        if (!btn || !resultDiv) return;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Testing...';
+        
+        try {
+            const response = await fetch('/api/ai/test-provider', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    provider: selectedProvider,
+                    model: selectedModel
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                resultDiv.innerHTML = `
+                    <div class="connection-success">
+                        <i class="fas fa-check-circle me-1"></i>
+                        ${data.data.message || 'Connection successful'}
+                        ${data.data.response_time ? `<br><small>Response time: ${data.data.response_time}ms</small>` : ''}
+                    </div>
+                `;
+                updateDebugInfo(`${selectedProvider} connection test successful`);
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="connection-error">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        ${data.message}
+                    </div>
+                `;
+                updateDebugInfo(`${selectedProvider} connection test failed`);
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <div class="connection-error">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Connection test failed: ${error.message}
+                </div>
+            `;
+            console.error('Connection test error:', error);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wifi me-1"></i>Test Connection';
+        }
+    }
+
+    function showProviderInfo() {
+        const provider = providers[selectedProvider];
+        const infoContainer = document.getElementById('providerInfo');
+        
+        if (!infoContainer) return;
+        
+        infoContainer.innerHTML = `
+            <label class="form-label fw-bold">Provider Info:</label>
+            <div class="text-center">
+                <i class="${provider.icon} fa-2x text-primary mb-2"></i>
+                <h6>${provider.name}</h6>
+                <p class="small text-muted mb-2">${provider.description}</p>
+                <span class="badge ${provider.is_available ? 'bg-success' : 'bg-danger'}">
+                    ${provider.is_available ? 'Available' : 'Unavailable'}
+                </span>
+                <br><small class="text-muted mt-1">${Object.keys(provider.models || {}).length} models available</small>
+            </div>
+        `;
+    }
+
+    function validateAnalysisButton() {
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        if (!analyzeBtn) return;
+        
+        const urls = getAllURLs();
+        const validUrls = urls.filter(url => isValidURL(url));
+        const hasProvider = selectedProvider !== null;
+        
+        const isValid = hasProvider && validUrls.length > 0;
+        analyzeBtn.disabled = !isValid;
+        
+        // Update button text based on validation
+        if (!hasProvider) {
+            analyzeBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Pilih Provider Dulu';
+        } else if (validUrls.length === 0) {
+            analyzeBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Tambah URL Dulu';
+        } else {
+            analyzeBtn.innerHTML = '<i class="fas fa-wand-magic-sparkles me-1"></i>Mulai Analisis AI';
+        }
+    }
+
+    // ============================
+    // ENHANCED AI ANALYSIS FUNCTIONS
+    // ============================
+    
+    async function startAIAnalysis(urls) {
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        
+        if (analyzeBtn) {
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Starting Analysis...';
+        }
+        
+        showProgress();
+
+        try {
+            const response = await fetch('/api/ai/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    urls: urls,
+                    provider: selectedProvider,
+                    model: selectedModel
+                })
+            });
+
+            // CHECK RESPONSE STATUS FIRST
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // CHECK CONTENT TYPE
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text);
+                throw new Error('Server returned non-JSON response. Check server logs.');
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                sessionId = data.session_id;
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Analisis Dimulai!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                pollAnalysisStatus();
+                updateDebugInfo(`Analysis started with session: ${sessionId}`);
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Analysis start failed:', error);
+            
+            let errorMessage = 'Failed to start analysis';
+            
+            if (error.message.includes('JSON')) {
+                errorMessage = 'Server configuration error. Please check server logs.';
+            } else if (error.message.includes('HTTP')) {
+                errorMessage = 'Server error: ' + error.message;
+            } else {
+                errorMessage = error.message;
+            }
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Memulai Analisis',
+                text: errorMessage,
+                footer: '<small>Check browser console for more details</small>'
+            });
+            hideProgress();
+        } finally {
+            if (analyzeBtn) {
+                analyzeBtn.disabled = false;
+                validateAnalysisButton();
+            }
+        }
+    }
+
+    function showProgress() {
+        const progressDiv = document.getElementById('analysisProgress');
+        if (progressDiv) {
+            progressDiv.style.display = 'block';
+            updateProgress(10, 'Starting analysis...');
+        }
+    }
+
+    function hideProgress() {
+        const progressDiv = document.getElementById('analysisProgress');
+        if (progressDiv) {
+            progressDiv.style.display = 'none';
+        }
+    }
+
+    function updateProgress(percentage, text) {
+        const progressBar = document.querySelector('.progress-bar');
+        const progressText = document.getElementById('progressText');
+        
+        if (progressBar) {
+            progressBar.style.width = percentage + '%';
+        }
+        if (progressText) {
+            progressText.textContent = text;
+        }
+    }
+
+    async function pollAnalysisStatus() {
+        if (!sessionId) return;
+
+        try {
+            const response = await fetch(`/api/ai/status/${sessionId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                const status = data.data.processing_status;
+                const progress = data.data.progress || 0;
+                const step = data.data.current_step || 'Processing...';
+                
+                updateProgress(progress, step);
+                updateDebugInfo(`Analysis status: ${status} (${progress}%)`);
+                
+                if (status === 'completed') {
+                    updateProgress(100, 'Analysis completed!');
+                    setTimeout(() => {
+                        hideProgress();
+                        showResults();
+                    }, 1000);
+                } else if (status === 'failed') {
+                    hideProgress();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Analisis Gagal',
+                        text: data.data.error_message || 'Unknown error'
+                    });
+                    updateDebugInfo(`Analysis failed: ${data.data.error_message}`);
+                } else {
+                    // Continue polling
+                    setTimeout(() => pollAnalysisStatus(), 3000);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to poll status:', error);
+            setTimeout(() => pollAnalysisStatus(), 5000);
+        }
+    }
+
+    async function showResults() {
+        try {
+            const response = await fetch(`/api/ai/result/${sessionId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const results = data.data;
+                displayResultsModal(results);
+                updateDebugInfo('Results displayed successfully');
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            console.error('Failed to load results:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Memuat Hasil',
+                text: 'Failed to load analysis results'
+            });
+        }
+    }
+
+    function displayResultsModal(results) {
+        const resultsContainer = document.getElementById('analysisResults');
+        if (!resultsContainer) {
+            console.warn('Results container not found');
+            return;
+        }
+        
+        resultsContainer.innerHTML = `
+            <div class="row">
+                <div class="col-md-12 mb-4">
+                    <h6><i class="fas fa-file-alt me-1"></i> Resume</h6>
+                    <div class="bg-light p-3 rounded">${results.ai_resume || 'No resume generated'}</div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6><i class="fas fa-heading me-1"></i> Title Suggestions</h6>
+                    <div class="bg-light p-3 rounded">
+                        ${formatTitleSuggestions(results.ai_judul_suggestions)}
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6><i class="fas fa-chart-bar me-1"></i> Analysis Metrics</h6>
+                    <div class="bg-light p-3 rounded">
+                        <strong>Tone:</strong> ${results.ai_tone_suggestion || 'N/A'}<br>
+                        <strong>Scale:</strong> ${results.ai_skala_suggestion || 'N/A'}<br>
+                        <strong>Provider:</strong> ${results.ai_provider || 'N/A'}<br>
+                        <strong>Processing Time:</strong> ${results.processing_time || 0}s
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6><i class="fas fa-smile me-1"></i> Positive Narrative</h6>
+                    <div class="bg-light p-3 rounded">${results.ai_narasi_positif || 'No positive narrative generated'}</div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <h6><i class="fas fa-frown me-1"></i> Negative Narrative</h6>
+                    <div class="bg-light p-3 rounded">${results.ai_narasi_negatif || 'No negative narrative generated'}</div>
+                </div>
+            </div>
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('resultsModal'));
+        modal.show();
+    }
+
+    function formatTitleSuggestions(suggestions) {
+        if (!suggestions || !Array.isArray(suggestions)) {
+            return 'No title suggestions generated';
+        }
+        
+        return suggestions.map((title, index) => 
+            `<div class="mb-2"><strong>${index + 1}.</strong> ${title}</div>`
+        ).join('');
+    }
+
+    // ============================
+    // EXISTING HELPER FUNCTIONS (Keep all original functions)
     // ============================
     
     function getAllURLs() {
@@ -284,7 +868,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ============================
-    // MAIN FUNCTIONS (Define as global)
+    // EXISTING MAIN FUNCTIONS (Enhanced with provider validation)
     // ============================
     
     // Validate single URL
@@ -296,6 +880,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!url) {
             statusDiv.style.display = 'none';
+            validateAnalysisButton(); // Add provider validation
             return;
         }
         
@@ -308,6 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
             statusDiv.className = 'url-status mt-1 small text-danger';
         }
         statusDiv.style.display = 'block';
+        validateAnalysisButton(); // Add provider validation
     };
 
     // Add new URL input field
@@ -316,7 +902,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateDebugInfo('Adding URL input');
         
         if (urlCounter >= maxUrls) {
-            alert(`⚠️ Maksimal ${maxUrls} URL per analisis`);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Batas Maksimal',
+                text: `Maksimal ${maxUrls} URL per analisis`
+            });
             return;
         }
         
@@ -349,6 +939,7 @@ document.addEventListener('DOMContentLoaded', function() {
         container.appendChild(newDiv);
         updateRemoveButtons();
         updateURLCount();
+        validateAnalysisButton(); // Add provider validation
         updateDebugInfo(`URL input ${urlCounter} added`);
         
         console.log(`✅ URL input ${urlCounter} added successfully`);
@@ -371,6 +962,7 @@ document.addEventListener('DOMContentLoaded', function() {
             urlCounter--;
             updateRemoveButtons();
             updateURLCount();
+            validateAnalysisButton(); // Add provider validation
             updateDebugInfo('URL input removed');
             console.log('✅ URL input removed successfully');
         }
@@ -405,7 +997,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (urls.length > maxUrls) {
-            alert(`⚠️ Maksimal ${maxUrls} URL. Hanya ${maxUrls} URL pertama yang akan digunakan.`);
+            Swal.fire({
+                icon: 'warning',
+                title: 'Terlalu Banyak URL',
+                text: `Maksimal ${maxUrls} URL. Hanya ${maxUrls} URL pertama yang akan digunakan.`
+            });
         }
         
         // Clear existing additional inputs
@@ -437,11 +1033,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear textarea
         bulkTextarea.value = '';
         
-        alert(`✅ ${urlsToProcess.length} URL berhasil di-parse dan ditambahkan`);
+        Swal.fire({
+            icon: 'success',
+            title: 'URLs Berhasil Di-parse',
+            text: `${urlsToProcess.length} URL berhasil ditambahkan`,
+            timer: 2000,
+            showConfirmButton: false
+        });
         updateDebugInfo(`${urlsToProcess.length} URLs parsed successfully`);
     };
 
-    // Validate URLs functionality
+    // Keep the existing validateURLs function unchanged
     window.validateURLs = function() {
         console.log('✅ Validating URLs...');
         updateDebugInfo('Validating URLs');
@@ -579,27 +1181,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1500);
     };
 
-    // Submit analysis form
+    // Enhanced submit analysis with provider support
     window.submitAnalysis = function() {
-        console.log('🚀 Submitting analysis...');
-        updateDebugInfo('Preparing submission');
+        console.log('🚀 Submitting analysis with provider support...');
+        updateDebugInfo('Preparing AI analysis submission');
 
         const urls = getAllURLs();
+        const validURLs = urls.filter(url => isValidURL(url));
+        
+        // Validate provider selection
+        if (!selectedProvider) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Provider Belum Dipilih',
+                text: 'Pilih AI provider terlebih dahulu sebelum memulai analisis.',
+                confirmButtonColor: '#0d6efd'
+            });
+            return;
+        }
+        
+        // Validate URLs
         if (urls.length === 0) {
             Swal.fire({
                 icon: 'warning',
                 title: 'URL Kosong',
                 text: 'Masukkan minimal 1 URL berita untuk memulai analisis.',
+                confirmButtonColor: '#0d6efd'
             });
             return;
         }
         
-        const validURLs = urls.filter(url => isValidURL(url));
         if (validURLs.length === 0) {
             Swal.fire({
                 icon: 'error',
                 title: 'URL Tidak Valid',
                 text: 'Tidak ada URL yang valid untuk dianalisis. Periksa kembali format URL Anda.',
+                confirmButtonColor: '#0d6efd'
             });
             return;
         }
@@ -608,6 +1225,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const analysisMode = form.querySelector('[name="analysis_mode"]')?.value || 'balanced';
         const estimatedTime = getEstimatedTime(analysisMode, validURLs.length);
         const urlListHtml = validURLs.slice(0, 5).map(url => `<li><small>${url.length > 50 ? url.substring(0, 50) + '...' : url}</small></li>`).join('');
+        
+        const providerName = providers[selectedProvider].name;
+        const modelName = selectedModel || 'Default Model';
 
         Swal.fire({
             title: 'Konfirmasi Analisis AI',
@@ -616,6 +1236,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <p>Apakah Anda yakin ingin memulai analisis ini?</p>
                     <strong>Detail Analisis:</strong>
                     <ul>
+                        <li><strong>AI Provider:</strong> ${providerName}</li>
+                        <li><strong>Model:</strong> ${modelName}</li>
                         <li><strong>Jumlah URL:</strong> ${validURLs.length}</li>
                         <li><strong>Mode Analisis:</strong> ${analysisMode.charAt(0).toUpperCase() + analysisMode.slice(1)}</li>
                         <li><strong>Estimasi Waktu:</strong> ${estimatedTime}</li>
@@ -634,18 +1256,13 @@ document.addEventListener('DOMContentLoaded', function() {
             cancelButtonText: 'Batalkan'
         }).then((result) => {
             if (result.isConfirmed) {
-                console.log('Form submission confirmed by SweetAlert');
-                updateDebugInfo('Form submission confirmed by SweetAlert');
-
-                const submitBtn = document.querySelector('[onclick="submitAnalysis()"]');
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Memulai Analisis...';
-                }
+                console.log('AI analysis confirmed by user');
+                updateDebugInfo('AI analysis confirmed by user');
                 
-                form.submit();
+                // Start AI analysis instead of form submission
+                startAIAnalysis(validURLs);
             } else {
-                updateDebugInfo('Form submission cancelled by SweetAlert');
+                updateDebugInfo('AI analysis cancelled by user');
             }
         });
     };
@@ -654,19 +1271,40 @@ document.addEventListener('DOMContentLoaded', function() {
     // INITIALIZATION
     // ============================
     
-    updateDebugInfo('Page initialized');
-    updateURLCount();
-    updateRemoveButtons();
-    
-    // Validate existing URLs on page load
-    const existingInputs = document.querySelectorAll('input[name="urls[]"]');
-    existingInputs.forEach(input => {
-        if (input.value.trim()) {
-            validateSingleURL(input);
-        }
-    });
-    
-    console.log('✅ AI Isu Creator initialization complete!');
+    async function initializeApplication() {
+        updateDebugInfo('Application initializing...');
+        
+        // Initialize providers first
+        await initializeProviders();
+        
+        // Initialize existing functionality
+        updateURLCount();
+        updateRemoveButtons();
+        
+        // Validate existing URLs on page load
+        const existingInputs = document.querySelectorAll('input[name="urls[]"]');
+        existingInputs.forEach(input => {
+            if (input.value.trim()) {
+                validateSingleURL(input);
+            }
+        });
+        
+        // Initial validation of analysis button
+        validateAnalysisButton();
+        
+        // Add event listeners for URL inputs
+        document.addEventListener('input', (e) => {
+            if (e.target.classList.contains('url-input')) {
+                validateSingleURL(e.target);
+            }
+        });
+        
+        updateDebugInfo('Application initialized successfully');
+        console.log('✅ AI Isu Creator with Provider Support initialization complete!');
+    }
+
+    // Start initialization
+    initializeApplication();
 });
 </script>
 @endsection
@@ -736,42 +1374,88 @@ textarea.form-control {
     border-left: 4px solid #0dcaf0;
 }
 
-/* RESPONSIVE DESIGN */
-@media (max-width: 768px) {
+    /* RESPONSIVE DESIGN */
+    @media (max-width: 768px) {
+        .container-fluid {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .d-grid.gap-2.d-md-flex {
+            display: flex !important;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .url-input-group {
+            padding: 10px;
+        }
+        
+        /* Hide system status on mobile */
+        .col-lg-4 .card:last-child {
+            display: none;
+        }
+    }
+
+    /* ADDITIONAL FIXES */
     .container-fluid {
-        padding-left: 10px;
-        padding-right: 10px;
+        max-width: 100%;
     }
-    
-    .card-body {
-        padding: 1rem !important;
+
+    .row {
+        margin: 0;
     }
-    
-    .d-grid.gap-2.d-md-flex {
-        display: flex !important;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .url-input-group {
-        padding: 10px;
-    }
-    
-    /* Hide system status on mobile */
-    .col-lg-4 .card:last-child {
-        display: none;
-    }
+
+}
+.provider-card {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    cursor: pointer;
 }
 
-/* ADDITIONAL FIXES */
-.container-fluid {
-    max-width: 100%;
+.provider-card:hover {
+    border-color: #007bff;
+    box-shadow: 0 4px 8px rgba(0,123,255,0.1);
 }
 
-.row {
-    margin: 0;
+.provider-card.selected {
+    border-color: #007bff;
+    background-color: #f8f9ff;
 }
 
+.provider-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+.status-available {
+    color: #28a745;
+}
+
+.status-unavailable {
+    color: #dc3545;
+}
+
+.connection-success {
+    color: #28a745;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+.connection-error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    padding: 10px;
 }
 </style>
 @endpush

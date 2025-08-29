@@ -1,33 +1,31 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+// GANTI SELURUH AIApiController.php dengan versi simplified ini:
+
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Services\AIProviderManager;
-use App\Services\WebScrapingService;
-use App\Services\AIAnalysisService;
 use App\Models\AIAnalysisResult;
 use App\Models\AIUsageLog;
+use App\Jobs\ProcessAIAnalysis;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Validator;
 
 class AIApiController extends Controller
 {
-    private $providerManager;
-    private $webScrapingService;
-    private $aiAnalysisService;
-
-    public function __construct(
-        AIProviderManager $providerManager,
-        WebScrapingService $webScrapingService,
-        AIAnalysisService $aiAnalysisService
-    ) {
-        $this->providerManager = $providerManager;
-        $this->webScrapingService = $webScrapingService;
-        $this->aiAnalysisService = $aiAnalysisService;
+    /**
+     * Test endpoint
+     */
+    public function testEndpoint(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => 'AIApiController working',
+            'user_id' => auth()->id(),
+            'timestamp' => now()->toISOString()
+        ]);
     }
 
     /**
@@ -36,30 +34,34 @@ class AIApiController extends Controller
     public function getProviders(): JsonResponse
     {
         try {
-            $status = $this->providerManager->getProviderStatus();
-            $providerDetails = [];
+            $providers = [];
+            
+            // Static provider configuration
+            $providerConfigs = [
+                'groq' => [
+                    'name' => 'Groq',
+                    'description' => 'Cloud-based AI dengan kecepatan tinggi',
+                    'icon' => 'fas fa-bolt',
+                    'is_available' => !empty(config('ai.groq_api_key')),
+                    'models' => config('ai.groq_models', [])
+                ],
+                'ollama' => [
+                    'name' => 'Ollama',
+                    'description' => 'Local AI models untuk privacy dan kontrol penuh', 
+                    'icon' => 'fas fa-server',
+                    'is_available' => $this->checkOllamaAvailability(),
+                    'models' => config('ai.ollama_models', [])
+                ]
+            ];
 
-            foreach (config('ai.providers', []) as $name => $config) {
-                if ($config['enabled']) {
-                    $providerDetails[$name] = [
-                        'name' => $name,
-                        'enabled' => $config['enabled'],
-                        'priority' => $config['priority'],
-                        'status' => 'checking...', // Will be updated by separate status calls
-                        'description' => $this->getProviderDescription($name),
-                        'models' => $this->getProviderModels($name)
-                    ];
-                }
+            foreach ($providerConfigs as $key => $config) {
+                $providers[$key] = $config;
             }
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'default_provider' => $status['default_provider'],
-                    'available_providers' => $status['available_providers'],
-                    'total_providers' => $status['total_providers'],
-                    'providers' => $providerDetails
-                ]
+                'data' => $providers,
+                'default_provider' => config('ai.default_provider', 'groq')
             ]);
 
         } catch (\Exception $e) {
@@ -77,305 +79,134 @@ class AIApiController extends Controller
     }
 
     /**
-     * Check specific provider status
+     * Test provider connection
      */
-    public function checkProviderStatus(string $provider): JsonResponse
-    {
-        try {
-            $cacheKey = "provider_status_{$provider}_" . auth()->id();
-            
-            $status = Cache::remember($cacheKey, 60, function () use ($provider) {
-                return $this->providerManager->testProvider($provider);
-            });
-
-            return response()->json([
-                'success' => true,
-                'provider' => $provider,
-                'data' => $status,
-                'timestamp' => now()->toISOString()
-            ]);
-
-        } catch (\Exception $e) {
-            Log::warning("Provider {$provider} status check failed", [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'provider' => $provider,
-                'message' => "Provider {$provider} tidak tersedia",
-                'error' => $e->getMessage()
-            ], 503);
-        }
-    }
-
-    /**
-     * Test provider connection (Admin/Editor only)
-     */
-    public function testProvider(string $provider): JsonResponse
-    {
-        try {
-            $startTime = microtime(true);
-            
-            $result = $this->providerManager->testProvider($provider);
-            
-            $testTime = round((microtime(true) - $startTime) * 1000);
-
-            Log::info("Provider {$provider} test completed", [
-                'result' => $result,
-                'test_time' => $testTime,
-                'user_id' => auth()->id()
-            ]);
-
-            // Clear cache to force fresh status
-            Cache::forget("provider_status_{$provider}_" . auth()->id());
-
-            return response()->json([
-                'success' => true,
-                'provider' => $provider,
-                'test_time' => $testTime,
-                'data' => $result
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error("Provider {$provider} test failed", [
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'provider' => $provider,
-                'message' => "Test provider {$provider} gagal",
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Switch default provider (Admin only)
-     */
-    public function switchProvider(Request $request): JsonResponse
+    public function testProvider(Request $request): JsonResponse
     {
         $request->validate([
-            'provider' => 'required|string|in:groq,ollama,openai,claude'
+            'provider' => 'required|string|in:groq,ollama',
+            'model' => 'nullable|string'
         ]);
 
         try {
             $provider = $request->input('provider');
+            $model = $request->input('model');
             
-            // Test provider before switching
-            $testResult = $this->providerManager->testProvider($provider);
-            
-            if (!$testResult['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Cannot switch to {$provider}: Provider test failed",
-                    'test_result' => $testResult
-                ], 400);
-            }
-
-            // Update configuration
-            config(['ai.default_provider' => $provider]);
-            
-            // TODO: Save to database or config file for persistence
-            
-            Log::info("Default provider switched", [
-                'old_provider' => config('ai.default_provider'),
-                'new_provider' => $provider,
+            Log::info('Testing provider', [
+                'provider' => $provider,
+                'model' => $model,
                 'user_id' => auth()->id()
             ]);
+            
+            $result = $this->testProviderConnection($provider, $model);
 
             return response()->json([
-                'success' => true,
-                'message' => "Default provider berhasil diubah ke {$provider}",
-                'provider' => $provider,
-                'test_result' => $testResult
+                'success' => $result['success'],
+                'data' => $result
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Provider switch failed', [
-                'requested_provider' => $request->input('provider'),
+            Log::error('Provider test failed', [
+                'provider' => $request->input('provider'),
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengganti provider',
+                'message' => 'Test koneksi gagal',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Validate URLs for analysis
+     * Start AI analysis
      */
-    public function validateUrls(Request $request): JsonResponse
+    public function analyzeUrls(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
+        $request->validate([
             'urls' => 'required|array|min:1|max:5',
-            'urls.*' => 'required|url|max:2000'
+            'urls.*' => 'required|url',
+            'provider' => 'required|string|in:groq,ollama',
+            'model' => 'nullable|string'
         ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi URL gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
 
         try {
             $urls = $request->input('urls');
-            $validationResults = [];
+            $provider = $request->input('provider');
+            $model = $request->input('model');
+            $sessionId = 'ai_' . time() . '_' . auth()->id();
 
-            foreach ($urls as $index => $url) {
-                $startTime = microtime(true);
-                
-                try {
-                    $isReachable = $this->webScrapingService->validateUrl($url);
-                    $metadata = $this->webScrapingService->extractMetadata($url);
-                    $responseTime = round((microtime(true) - $startTime) * 1000);
-
-                    $validationResults[] = [
-                        'url' => $url,
-                        'index' => $index,
-                        'valid' => true,
-                        'reachable' => $isReachable,
-                        'response_time' => $responseTime,
-                        'metadata' => $metadata,
-                        'issues' => []
-                    ];
-
-                } catch (\Exception $e) {
-                    $responseTime = round((microtime(true) - $startTime) * 1000);
-                    
-                    $validationResults[] = [
-                        'url' => $url,
-                        'index' => $index,
-                        'valid' => false,
-                        'reachable' => false,
-                        'response_time' => $responseTime,
-                        'metadata' => null,
-                        'issues' => [$e->getMessage()]
-                    ];
-                }
+            // Validate provider availability
+            if (!$this->checkProviderAvailability($provider)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Provider {$provider} tidak tersedia saat ini"
+                ], 400);
             }
 
-            $validCount = collect($validationResults)->where('valid', true)->count();
-            $reachableCount = collect($validationResults)->where('reachable', true)->count();
+            // Create initial analysis record
+            $analysis = AIAnalysisResult::create([
+                'session_id' => $sessionId,
+                'user_id' => auth()->id(),
+                'urls' => $urls,
+                'processing_status' => 'pending',
+                'ai_provider' => $provider,
+                'ai_model' => $model ?: config("ai.{$provider}_model")
+            ]);
+
+            // Dispatch job with selected provider
+            ProcessAIAnalysis::dispatch($analysis, $provider, $model);
+
+            Log::info('AI analysis started', [
+                'session_id' => $sessionId,
+                'provider' => $provider,
+                'user_id' => auth()->id()
+            ]);
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'results' => $validationResults,
-                    'summary' => [
-                        'total' => count($urls),
-                        'valid' => $validCount,
-                        'reachable' => $reachableCount,
-                        'invalid' => count($urls) - $validCount
-                    ]
+                'session_id' => $sessionId,
+                'message' => 'Analisis dimulai dengan provider ' . ucfirst($provider),
+                'provider_info' => [
+                    'name' => $provider,
+                    'model' => $model ?: config("ai.{$provider}_model")
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('URL validation failed', [
+            Log::error('Failed to start AI analysis', [
                 'urls' => $request->input('urls'),
+                'provider' => $request->input('provider'),
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memvalidasi URL',
+                'message' => 'Gagal memulai analisis',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Preview content from URLs
+     * Get analysis status
      */
-    public function previewContent(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'urls' => 'required|array|min:1|max:3', // Limit for preview
-            'urls.*' => 'required|url|max:2000'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi URL gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        try {
-            $urls = $request->input('urls');
-            $previewResults = [];
-
-            foreach ($urls as $index => $url) {
-                try {
-                    $extractionResult = $this->webScrapingService->extractContent($url);
-                    
-                    $previewResults[] = [
-                        'url' => $url,
-                        'index' => $index,
-                        'success' => $extractionResult['success'],
-                        'title' => $extractionResult['data']['title'] ?? 'No title',
-                        'description' => $extractionResult['data']['description'] ?? 'No description',
-                        'content_preview' => substr($extractionResult['data']['content'] ?? '', 0, 500) . '...',
-                        'word_count' => str_word_count($extractionResult['data']['content'] ?? ''),
-                        'language' => $extractionResult['data']['language'] ?? 'unknown',
-                        'domain' => parse_url($url, PHP_URL_HOST),
-                        'extracted_at' => now()->toISOString()
-                    ];
-
-                } catch (\Exception $e) {
-                    $previewResults[] = [
-                        'url' => $url,
-                        'index' => $index,
-                        'success' => false,
-                        'error' => $e->getMessage(),
-                        'title' => null,
-                        'description' => null,
-                        'content_preview' => null
-                    ];
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $previewResults
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Content preview failed', [
-                'urls' => $request->input('urls'),
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal preview konten',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Get analysis progress
-     */
-    public function getProgress(string $sessionId): JsonResponse
+    public function getAnalysisStatus(string $sessionId): JsonResponse
     {
         try {
             $analysis = AIAnalysisResult::where('session_id', $sessionId)
                 ->where('user_id', auth()->id())
-                ->firstOrFail();
+                ->first();
+
+            if (!$analysis) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Session tidak ditemukan'
+                ], 404);
+            }
 
             $progress = $this->calculateProgress($analysis);
 
@@ -383,16 +214,19 @@ class AIApiController extends Controller
                 'success' => true,
                 'data' => [
                     'session_id' => $sessionId,
-                    'status' => $analysis->processing_status,
-                    'progress' => $progress,
+                    'processing_status' => $analysis->processing_status,
+                    'progress' => $progress['percentage'],
+                    'current_step' => $progress['step'],
                     'created_at' => $analysis->created_at,
                     'updated_at' => $analysis->updated_at,
-                    'estimated_completion' => $this->estimateCompletion($analysis)
+                    'ai_provider' => $analysis->ai_provider,
+                    'ai_model' => $analysis->ai_model,
+                    'error_message' => $analysis->error_message
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Failed to get analysis progress', [
+            Log::error('Failed to get analysis status', [
                 'session_id' => $sessionId,
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id()
@@ -400,55 +234,59 @@ class AIApiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil progress analisis',
+                'message' => 'Gagal mengambil status analisis',
                 'error' => $e->getMessage()
-            ], 404);
+            ], 500);
         }
     }
 
     /**
      * Get analysis results
      */
-    public function getResults(string $sessionId): JsonResponse
+    public function getAnalysisResult(string $sessionId): JsonResponse
     {
         try {
             $analysis = AIAnalysisResult::where('session_id', $sessionId)
                 ->where('user_id', auth()->id())
-                ->firstOrFail();
+                ->first();
+
+            if (!$analysis) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Session tidak ditemukan'
+                ], 404);
+            }
 
             if ($analysis->processing_status !== 'completed') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Analisis belum selesai',
                     'status' => $analysis->processing_status
-                ], 202); // Accepted but not complete
+                ], 202);
             }
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'session_id' => $sessionId,
-                    'results' => [
-                        'resume' => $analysis->ai_resume,
-                        'title_suggestions' => $analysis->ai_judul_suggestions,
-                        'narasi_positif' => $analysis->ai_narasi_positif,
-                        'narasi_negatif' => $analysis->ai_narasi_negatif,
-                        'tone_suggestion' => $analysis->ai_tone_suggestion,
-                        'skala_suggestion' => $analysis->ai_skala_suggestion,
-                        'confidence_scores' => $analysis->confidence_scores
-                    ],
-                    'metadata' => [
-                        'urls' => $analysis->urls,
-                        'processing_time' => $analysis->processing_time,
-                        'ai_provider' => $analysis->ai_provider,
-                        'created_at' => $analysis->created_at,
-                        'completed_at' => $analysis->updated_at
-                    ]
+                    'ai_resume' => $analysis->ai_resume,
+                    'ai_judul_suggestions' => $analysis->ai_judul_suggestions,
+                    'ai_narasi_positif' => $analysis->ai_narasi_positif,
+                    'ai_narasi_negatif' => $analysis->ai_narasi_negatif,
+                    'ai_tone_suggestion' => $analysis->ai_tone_suggestion,
+                    'ai_skala_suggestion' => $analysis->ai_skala_suggestion,
+                    'confidence_scores' => $analysis->confidence_scores,
+                    'urls' => $analysis->urls,
+                    'processing_time' => $analysis->processing_time,
+                    'ai_provider' => $analysis->ai_provider,
+                    'ai_model' => $analysis->ai_model,
+                    'created_at' => $analysis->created_at,
+                    'completed_at' => $analysis->updated_at
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Failed to get analysis results', [
+            Log::error('Failed to get analysis result', [
                 'session_id' => $sessionId,
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id()
@@ -458,19 +296,26 @@ class AIApiController extends Controller
                 'success' => false,
                 'message' => 'Gagal mengambil hasil analisis',
                 'error' => $e->getMessage()
-            ], 404);
+            ], 500);
         }
     }
 
     /**
-     * Cancel ongoing analysis
+     * Cancel analysis
      */
     public function cancelAnalysis(string $sessionId): JsonResponse
     {
         try {
             $analysis = AIAnalysisResult::where('session_id', $sessionId)
                 ->where('user_id', auth()->id())
-                ->firstOrFail();
+                ->first();
+
+            if (!$analysis) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Session tidak ditemukan'
+                ], 404);
+            }
 
             if (!in_array($analysis->processing_status, ['pending', 'processing'])) {
                 return response()->json([
@@ -483,11 +328,6 @@ class AIApiController extends Controller
             $analysis->update([
                 'processing_status' => 'cancelled',
                 'error_message' => 'Cancelled by user'
-            ]);
-
-            Log::info('Analysis cancelled by user', [
-                'session_id' => $sessionId,
-                'user_id' => auth()->id()
             ]);
 
             return response()->json([
@@ -512,70 +352,60 @@ class AIApiController extends Controller
     }
 
     /**
-     * Get user usage statistics
+     * Get recent analysis
      */
-    public function getUserStats(): JsonResponse
+    public function getRecentAnalysis(): JsonResponse
     {
         try {
-            $userId = auth()->id();
-            $now = now();
-            
-            $stats = [
-                'today' => [
-                    'analyses' => AIAnalysisResult::where('user_id', $userId)
-                        ->whereDate('created_at', $now->toDateString())
-                        ->count(),
-                    'urls_processed' => AIAnalysisResult::where('user_id', $userId)
-                        ->whereDate('created_at', $now->toDateString())
-                        ->sum(\DB::raw('JSON_LENGTH(urls)')),
-                    'successful' => AIAnalysisResult::where('user_id', $userId)
-                        ->whereDate('created_at', $now->toDateString())
-                        ->where('processing_status', 'completed')
-                        ->count()
-                ],
-                'this_month' => [
-                    'analyses' => AIAnalysisResult::where('user_id', $userId)
-                        ->whereMonth('created_at', $now->month)
-                        ->whereYear('created_at', $now->year)
-                        ->count(),
-                    'avg_processing_time' => AIAnalysisResult::where('user_id', $userId)
-                        ->whereMonth('created_at', $now->month)
-                        ->whereYear('created_at', $now->year)
-                        ->where('processing_status', 'completed')
-                        ->avg('processing_time')
-                ],
-                'total' => [
-                    'analyses' => AIAnalysisResult::where('user_id', $userId)->count(),
-                    'success_rate' => $this->calculateSuccessRate($userId)
-                ],
-                'recent_analyses' => AIAnalysisResult::where('user_id', $userId)
-                    ->latest()
-                    ->take(5)
-                    ->select(['session_id', 'processing_status', 'created_at', 'processing_time'])
-                    ->get()
-            ];
+            $recent = AIAnalysisResult::where('user_id', auth()->id())
+                ->orderBy('created_at', 'desc')
+                ->take(10)
+                ->get(['id', 'session_id', 'ai_provider', 'ai_model', 'processing_status', 'created_at']);
 
             return response()->json([
                 'success' => true,
-                'data' => $stats
+                'data' => $recent
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Failed to get user stats', [
+            Log::error('Failed to get recent analysis', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil statistik pengguna',
+                'message' => 'Gagal mengambil riwayat analisis',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Get usage analytics (Admin only)
+     * Get provider models
+     */
+    public function getProviderModels(string $provider): JsonResponse
+    {
+        try {
+            $models = config("ai.{$provider}_models", []);
+            
+            return response()->json([
+                'success' => true,
+                'provider' => $provider,
+                'models' => $models
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil daftar model',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get usage analytics (admin only)
      */
     public function getUsageAnalytics(): JsonResponse
     {
@@ -584,30 +414,8 @@ class AIApiController extends Controller
                 'overview' => [
                     'total_analyses' => AIAnalysisResult::count(),
                     'total_users' => AIAnalysisResult::distinct('user_id')->count(),
-                    'success_rate' => $this->calculateOverallSuccessRate(),
-                    'avg_processing_time' => AIAnalysisResult::where('processing_status', 'completed')
-                        ->avg('processing_time')
-                ],
-                'daily_stats' => AIAnalysisResult::select(\DB::raw('DATE(created_at) as date'))
-                    ->selectRaw('COUNT(*) as total')
-                    ->selectRaw('SUM(CASE WHEN processing_status = "completed" THEN 1 ELSE 0 END) as successful')
-                    ->where('created_at', '>=', now()->subDays(30))
-                    ->groupBy('date')
-                    ->orderBy('date')
-                    ->get(),
-                'provider_stats' => AIAnalysisResult::select('ai_provider')
-                    ->selectRaw('COUNT(*) as count')
-                    ->selectRaw('AVG(processing_time) as avg_time')
-                    ->whereNotNull('ai_provider')
-                    ->groupBy('ai_provider')
-                    ->get(),
-                'top_users' => AIAnalysisResult::select('user_id')
-                    ->selectRaw('COUNT(*) as analysis_count')
-                    ->groupBy('user_id')
-                    ->orderByDesc('analysis_count')
-                    ->take(10)
-                    ->with('user:id,name,email')
-                    ->get()
+                    'success_rate' => $this->calculateOverallSuccessRate()
+                ]
             ];
 
             return response()->json([
@@ -633,22 +441,65 @@ class AIApiController extends Controller
     // PRIVATE HELPER METHODS
     // ========================================
 
-    private function getProviderDescription(string $provider): string
+    private function checkOllamaAvailability(): bool
     {
-        $descriptions = [
-            'groq' => 'Cloud-based AI service dengan kecepatan tinggi',
-            'ollama' => 'Local AI models untuk privacy dan kontrol penuh',
-            'openai' => 'OpenAI GPT models untuk kualitas tinggi',
-            'claude' => 'Anthropic Claude untuk analisis yang mendalam'
-        ];
-
-        return $descriptions[$provider] ?? 'AI Provider';
+        try {
+            $client = new \GuzzleHttp\Client(['timeout' => 5]);
+            $response = $client->get(config('ai.ollama_base_url', 'http://localhost:11434') . '/api/tags');
+            return $response->getStatusCode() === 200;
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
-    private function getProviderModels(string $provider): array
+    private function checkProviderAvailability(string $provider): bool
     {
-        $models = config("ai.{$provider}_models", []);
-        return array_keys($models);
+        switch ($provider) {
+            case 'groq':
+                return !empty(config('ai.groq_api_key'));
+            case 'ollama':
+                return $this->checkOllamaAvailability();
+            default:
+                return false;
+        }
+    }
+
+    private function testProviderConnection(string $provider, ?string $model = null): array
+    {
+        try {
+            switch ($provider) {
+                case 'groq':
+                    if (class_exists('\App\Services\GroqAIService')) {
+                        $service = new \App\Services\GroqAIService();
+                        return $service->testConnection();
+                    }
+                    break;
+                case 'ollama':
+                    if (class_exists('\App\Services\OllamaAIService')) {
+                        $service = new \App\Services\OllamaAIService();
+                        return $service->testConnection();
+                    }
+                    break;
+            }
+            
+            // Fallback simple test
+            return [
+                'success' => $this->checkProviderAvailability($provider),
+                'message' => $this->checkProviderAvailability($provider) ? 
+                    "Provider {$provider} tersedia" : 
+                    "Provider {$provider} tidak tersedia",
+                'provider' => $provider,
+                'model' => $model
+            ];
+            
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'message' => 'Test koneksi gagal: ' . $e->getMessage(),
+                'provider' => $provider,
+                'model' => $model
+            ];
+        }
     }
 
     private function calculateProgress(AIAnalysisResult $analysis): array
@@ -663,19 +514,16 @@ class AIApiController extends Controller
 
         $percentage = $statusProgress[$analysis->processing_status] ?? 0;
         
-        // Add time-based progress for processing status
         if ($analysis->processing_status === 'processing') {
             $elapsed = $analysis->created_at->diffInSeconds(now());
-            $estimated = 120; // 2 minutes estimate
-            $timeProgress = min(($elapsed / $estimated) * 40, 40); // Max 40% from time
+            $estimated = 120; // 2 minutes
+            $timeProgress = min(($elapsed / $estimated) * 40, 40);
             $percentage = 50 + $timeProgress;
         }
 
         return [
             'percentage' => min($percentage, 100),
-            'status' => $analysis->processing_status,
-            'step' => $this->getCurrentStep($analysis),
-            'elapsed_time' => $analysis->created_at->diffInSeconds(now())
+            'step' => $this->getCurrentStep($analysis)
         ];
     }
 
@@ -685,13 +533,7 @@ class AIApiController extends Controller
             case 'pending':
                 return 'Menunggu antrian';
             case 'processing':
-                if (empty($analysis->extracted_content)) {
-                    return 'Mengekstrak konten';
-                } elseif (empty($analysis->ai_resume)) {
-                    return 'Menganalisis dengan AI';
-                } else {
-                    return 'Menyelesaikan analisis';
-                }
+                return 'Menganalisis dengan AI';
             case 'completed':
                 return 'Selesai';
             case 'failed':
@@ -701,28 +543,6 @@ class AIApiController extends Controller
             default:
                 return 'Unknown';
         }
-    }
-
-    private function estimateCompletion(AIAnalysisResult $analysis): ?string
-    {
-        if ($analysis->processing_status !== 'processing') {
-            return null;
-        }
-
-        $elapsed = $analysis->created_at->diffInSeconds(now());
-        $remaining = max(120 - $elapsed, 30); // Minimum 30 seconds remaining
-        
-        return now()->addSeconds($remaining)->toISOString();
-    }
-
-    private function calculateSuccessRate(int $userId): float
-    {
-        $total = AIAnalysisResult::where('user_id', $userId)->count();
-        $successful = AIAnalysisResult::where('user_id', $userId)
-            ->where('processing_status', 'completed')
-            ->count();
-        
-        return $total > 0 ? round(($successful / $total) * 100, 2) : 0;
     }
 
     private function calculateOverallSuccessRate(): float

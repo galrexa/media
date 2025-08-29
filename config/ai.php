@@ -23,6 +23,27 @@ return [
     
     /*
     |--------------------------------------------------------------------------
+    | Available Providers
+    |--------------------------------------------------------------------------
+    */
+    
+    'providers' => [
+        'groq' => [
+            'name' => 'Groq',
+            'description' => 'Cloud-based AI dengan kecepatan tinggi',
+            'icon' => 'fas fa-bolt',
+            'status' => 'active'
+        ],
+        'ollama' => [
+            'name' => 'Ollama',
+            'description' => 'Local AI models untuk privacy dan kontrol penuh',
+            'icon' => 'fas fa-server',
+            'status' => 'active'
+        ]
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Groq Configuration - CORRECTED sesuai dokumentasi
     |--------------------------------------------------------------------------
     */
@@ -31,6 +52,35 @@ return [
     'groq_base_url' => env('AI_GROQ_BASE_URL', 'https://api.groq.com/openai/v1'), // Sesuai curl docs
     'groq_model' => env('AI_GROQ_MODEL', 'gemma2-9b-it'), // Model dari curl docs
     
+    /*
+    |--------------------------------------------------------------------------
+    | Ollama Configuration
+    |--------------------------------------------------------------------------
+    */
+    
+    'ollama_base_url' => env('AI_OLLAMA_BASE_URL', 'http://localhost:11434'),
+    'ollama_model' => env('AI_OLLAMA_MODEL', 'gemma3:12b'),
+    'ollama_timeout' => env('AI_OLLAMA_TIMEOUT', 120), // Longer timeout for local processing
+
+    /*
+    |--------------------------------------------------------------------------
+    | Available Models per Provider
+    |--------------------------------------------------------------------------
+    */
+    
+    'groq_models' => [
+        'gemma2-9b-it' => 'Gemma2 9B (Recommended)',
+        'llama-3.3-70b-versatile' => 'Llama 3.3 70B (Powerful)',
+        'llama-3.1-70b-versatile' => 'Llama 3.1 70B',
+        'mixtral-8x7b-32768' => 'Mixtral 8x7B'
+    ],
+    
+    'ollama_models' => [
+        'gemma3:12b' => 'gemma3 12B (Recommended)',
+        'gemma3:4b' => 'gemma3 4B (Fastest)',
+        'lamma3.1:8b' => 'Lamma3.1 8B (Fast)'
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Processing Limits
@@ -60,52 +110,7 @@ return [
     
     'daily_budget_usd' => env('AI_DAILY_BUDGET_USD', 10.00),
     'cost_alert_threshold' => env('AI_COST_ALERT_THRESHOLD', 80),
-    
-    /*
-    |--------------------------------------------------------------------------
-    | Available Models
-    |--------------------------------------------------------------------------
-    */
-    
-    'available_models' => [
-        'groq' => [
-            'llama-3.3-70b-versatile' => [
-                'name' => 'Llama 3.3 70B Versatile',
-                'description' => 'Latest and most capable model',
-                'context_length' => 32768,
-                'cost_per_1m_input' => 0.59,
-                'cost_per_1m_output' => 0.79
-            ],
-            'gemma2-9b-it' => [
-                'name' => 'Llama 3.1 8B Instant',
-                'description' => 'Fast and efficient model',
-                'context_length' => 8192,
-                'cost_per_1m_input' => 0.05,
-                'cost_per_1m_output' => 0.08
-            ],
-            'llama-3.1-70b-versatile' => [
-                'name' => 'Llama 3.1 70B Versatile',
-                'description' => 'Previous generation 70B model',
-                'context_length' => 32768,
-                'cost_per_1m_input' => 0.59,
-                'cost_per_1m_output' => 0.79
-            ],
-            'mixtral-8x7b-32768' => [
-                'name' => 'Mixtral 8x7B',
-                'description' => 'Mixtral model for specialized tasks',
-                'context_length' => 32768,
-                'cost_per_1m_input' => 0.24,
-                'cost_per_1m_output' => 0.24
-            ],
-            'gemma2-9b-it' => [
-                'name' => 'Gemma 2 9B IT',
-                'description' => 'Google Gemma instruction-tuned',
-                'context_length' => 8192,
-                'cost_per_1m_input' => 0.20,
-                'cost_per_1m_output' => 0.20
-            ]
-        ]
-    ],
+
     
     /*
     |--------------------------------------------------------------------------
@@ -162,13 +167,13 @@ return [
     'prompts' => [
         'system_role' => 'Anda adalah asisten AI profesional untuk media monitoring pemerintah Indonesia yang ahli dalam analisis berita dan pembuatan konten strategis.',
         
-        'resume_instruction' => 'Buatlah resume berita yang komprehensif dengan struktur: Latar belakang → Inti berita → Dampak/implikasi. Gunakan 250-300 kata, bahasa Indonesia formal, fokus pada fakta objektif.',
+        'resume_instruction' => 'Buatlah resume berita yang komprehensif dengan struktur: Latar belakang → Inti berita → Dampak/implikasi. Gunakan maksimal 200 kata, bahasa Indonesia formal, fokus pada fakta objektif.',
         
-        'title_instruction' => 'Buatlah 5 judul isu strategis yang informatif dan menarik, panjang 60-100 karakter, cocok untuk laporan media monitoring.',
+        'title_instruction' => 'Buatlah 5 judul isu strategis yang informatif dan menarik, panjang maksimal 10 kata, cocok untuk laporan media monitoring.',
         
-        'positive_narrative_instruction' => 'Buatlah narasi positif 150-200 kata yang fokus pada aspek baik, manfaat untuk masyarakat, dan potensi keberhasilan program/kebijakan.',
+        'positive_narrative_instruction' => 'Berdasarkan resume berita, jika memang ada buatlah narasi positif 150-200 kata yang fokus pada aspek baik, manfaat untuk masyarakat, dan potensi keberhasilan program/kebijakan.',
         
-        'negative_narrative_instruction' => 'Buatlah narasi negatif 150-200 kata yang fokus pada risiko, tantangan, kritik, dan potensi dampak negatif secara objektif.',
+        'negative_narrative_instruction' => 'Berdasarkan resume berita, jika memang ada buatlah narasi negatif 150-200 kata yang fokus pada risiko, tantangan, kritik, dan potensi dampak negatif secara objektif.',
         
         'tone_instruction' => 'Analisis tone berita dan jawab dengan SATU KATA: POSITIF (hal baik/kemajuan), NEGATIF (masalah/kritik), atau NETRAL (faktual/seimbang).',
         
@@ -196,10 +201,8 @@ return [
     |--------------------------------------------------------------------------
     */
     
-    'rate_limits' => [
-        'requests_per_minute' => 20,
-        'requests_per_hour' => 100,
-        'requests_per_day' => 500,
-        'tokens_per_day' => 1000000
-    ]
+    'rate_limit' => [
+        'requests_per_minute' => env('AI_RATE_LIMIT_RPM', 60),
+        'requests_per_hour' => env('AI_RATE_LIMIT_RPH', 1000),
+    ],
 ];

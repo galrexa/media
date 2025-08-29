@@ -489,19 +489,17 @@ Route::get('/debug-access', function () {
 })->middleware(['web', 'auth'])->name('debug.access');
 
 
-//ROUTE AI
+
 
 /*
 |--------------------------------------------------------------------------
-| AI-Powered Isu Creator Routes - NEW
+| AI-Powered Isu Creator Routes - UPDATED WITH PROVIDER SUPPORT
 |--------------------------------------------------------------------------
 */
 
 Route::prefix('isu')->name('isu.')->middleware('auth')->group(function () {
     
-    // Existing routes remain unchanged...
-    
-    // NEW: AI-powered routes
+    // NEW: AI-powered routes with provider support
     Route::get('/ai-create', [IsuController::class, 'aiCreate'])
         ->name('ai.create')
         ->middleware('role:admin,editor,verifikator1,verifikator2');
@@ -525,14 +523,105 @@ Route::prefix('isu')->name('isu.')->middleware('auth')->group(function () {
     Route::post('/ai-preview', [IsuController::class, 'aiPreview'])
         ->name('ai.preview')
         ->middleware('role:admin,editor,verifikator1,verifikator2');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Export PDF Routes - NEW FEATURE
+    |--------------------------------------------------------------------------
+    */
+    
+    // Show export form
+    Route::get('/export/daily-pdf', [IsuController::class, 'showExportForm'])
+        ->name('export.daily.form')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
+    
+    // Process export
+    Route::post('/export/daily-pdf', [IsuController::class, 'exportDailyPdf'])
+        ->name('export.daily.pdf')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
+    
+    // AJAX endpoint untuk preview count
+    Route::get('/export/preview-count', [IsuController::class, 'getExportPreview'])
+        ->name('export.preview.count')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
+
 });
 
-// Admin routes for AI management
+Route::middleware(['auth'])->group(function() {
+    
+    // Debug export functionality - DEVELOPMENT ONLY
+    Route::get('/debug/export', [IsuController::class, 'debugExport'])
+        ->name('debug.export');
+    
+    // Create test data - LOCAL ONLY
+    Route::post('/debug/create-test-data', [IsuController::class, 'createTestData'])
+        ->name('debug.create-test-data');
+    
+});
+
+/*
+|--------------------------------------------------------------------------
+| AI Provider Management Routes - FIXED VERSION
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('api/ai')->name('api.ai.')->middleware(['auth'])->group(function () {
+    
+    // Test endpoint
+    Route::get('/test', [AIApiController::class, 'testEndpoint'])
+        ->name('test');
+    
+    // Provider Management
+    Route::get('/providers', [AIApiController::class, 'getProviders'])
+        ->name('providers');
+    
+    Route::post('/test-provider', [AIApiController::class, 'testProvider'])
+        ->name('test-provider');
+    
+    // AI Analysis with Provider Selection
+    Route::post('/analyze', [AIApiController::class, 'analyzeUrls'])
+        ->name('analyze')
+        ->middleware('role:admin,editor,verifikator1,verifikator2');
+    
+    // AI Status and Results
+    Route::get('/status/{sessionId}', [AIApiController::class, 'getAnalysisStatus'])
+        ->name('status');
+    
+    Route::get('/result/{sessionId}', [AIApiController::class, 'getAnalysisResult'])
+        ->name('result');
+    
+    Route::delete('/cancel/{sessionId}', [AIApiController::class, 'cancelAnalysis'])
+        ->name('cancel');
+    
+    // Recent Analysis
+    Route::get('/recent', [AIApiController::class, 'getRecentAnalysis'])
+        ->name('recent');
+    
+    // Analytics and Monitoring
+    Route::get('/analytics', [AIApiController::class, 'getUsageAnalytics'])
+        ->name('analytics')
+        ->middleware('role:admin,editor');
+    
+    // Models per Provider
+    Route::get('/models/{provider}', [AIApiController::class, 'getProviderModels'])
+        ->name('models');
+});
+
+/*
+|--------------------------------------------------------------------------
+| AI Admin Management Routes - UPDATED
+|--------------------------------------------------------------------------
+*/
+
 Route::prefix('admin/ai')->name('admin.ai.')->middleware(['auth', 'role:admin'])->group(function () {
     
     // AI Analytics Dashboard
     Route::get('/dashboard', [AIAdminController::class, 'dashboard'])
         ->name('dashboard');
+    
+    // Provider Management Dashboard
+    Route::get('/providers', [AIAdminController::class, 'providersDashboard'])
+        ->name('providers.dashboard');
     
     // AI Usage Analytics
     Route::get('/analytics', [AIAdminController::class, 'analytics'])
@@ -544,17 +633,17 @@ Route::prefix('admin/ai')->name('admin.ai.')->middleware(['auth', 'role:admin'])
     Route::post('/config', [AIAdminController::class, 'updateConfig'])
         ->name('config.update');
     
+    // Provider Configuration
+    Route::post('/providers/toggle', [AIAdminController::class, 'toggleProvider'])
+        ->name('providers.toggle');
+    Route::post('/providers/test-all', [AIAdminController::class, 'testAllProviders'])
+        ->name('providers.test-all');
+    
     // AI Usage Logs
     Route::get('/logs', [AIAdminController::class, 'logs'])
         ->name('logs');
     Route::get('/logs/{id}', [AIAdminController::class, 'logDetail'])
         ->name('logs.detail');
-    
-    // AI Provider Management
-    Route::get('/providers', [AIAdminController::class, 'providers'])
-        ->name('providers');
-    Route::post('/providers/test', [AIAdminController::class, 'testProvider'])
-        ->name('providers.test');
     
     // AI Performance Monitoring
     Route::get('/performance', [AIAdminController::class, 'performance'])
@@ -586,3 +675,49 @@ Route::prefix('api/ai')->name('api.ai.')->middleware(['auth:sanctum'])->group(fu
     Route::get('/usage/stats', [AIApiController::class, 'usageStats'])
         ->middleware('role:admin,editor');
 });
+
+/*
+|--------------------------------------------------------------------------
+| AI Health Check Routes - NEW
+|--------------------------------------------------------------------------
+*/
+
+// Public health check route for AI services
+Route::get('/api/ai/health', function () {
+    $health = [
+        'status' => 'ok',
+        'timestamp' => now()->toISOString(),
+        'providers' => []
+    ];
+    
+    // Check Groq
+    try {
+        $groqAvailable = !empty(config('ai.groq_api_key'));
+        $health['providers']['groq'] = [
+            'status' => $groqAvailable ? 'available' : 'unavailable',
+            'reason' => $groqAvailable ? 'API key configured' : 'API key missing'
+        ];
+    } catch (\Exception $e) {
+        $health['providers']['groq'] = [
+            'status' => 'error',
+            'reason' => $e->getMessage()
+        ];
+    }
+    
+    // Check Ollama
+    try {
+        $client = new \GuzzleHttp\Client(['timeout' => 5]);
+        $response = $client->get(config('ai.ollama_base_url', 'http://localhost:11434') . '/api/tags');
+        $health['providers']['ollama'] = [
+            'status' => $response->getStatusCode() === 200 ? 'available' : 'unavailable',
+            'reason' => 'Service responding'
+        ];
+    } catch (\Exception $e) {
+        $health['providers']['ollama'] = [
+            'status' => 'unavailable',
+            'reason' => 'Service not reachable: ' . $e->getMessage()
+        ];
+    }
+    
+    return response()->json($health);
+})->name('api.ai.health');
